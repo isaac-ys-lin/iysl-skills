@@ -1,0 +1,22 @@
+interface:
+  display_name: "deck-ab"
+  short_description: "Create deck outlines, A/B slide prompts, and style-anchor workflows."
+  default_prompt: "Use $deck-ab for a source-faithful deck outline, Mode A/B prompts, or API-ready style-anchor workflow."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "generic"
+  activation:
+    mode: "manual"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "metadata-adapter"
+    generic: "neutral-source"

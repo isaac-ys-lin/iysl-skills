@@ -18,20 +18,25 @@ if [[ ! -f "$skill_dir/SKILL.md" ]]; then
 fi
 
 cd "$skill_dir"
-"$python_bin" -m unittest discover -s tests
+
+if [[ -d tests ]]; then
+  "$python_bin" -m unittest discover -s tests
+fi
 
 rm -rf "$outdir"
 mkdir -p "$outdir"
 
-for spec in assets/*-spec.json; do
-  base="$(basename "$spec" .json)"
-  "$python_bin" scripts/render_animated_diagram.py \
-    --spec "$spec" \
-    --outdir "$outdir/$base" \
-    --basename "$base" \
-    --verify \
-    --check >/dev/null
-done
+if [[ -f scripts/render_animated_diagram.py ]] && compgen -G "assets/*-spec.json" >/dev/null; then
+  for spec in assets/*-spec.json; do
+    base="$(basename "$spec" .json)"
+    "$python_bin" scripts/render_animated_diagram.py \
+      --spec "$spec" \
+      --outdir "$outdir/$base" \
+      --basename "$base" \
+      --verify \
+      --check >/dev/null
+  done
+fi
 
 codex debug prompt-input "\$$skill_name verify prompt visibility" | rg "$skill_name|Principled Animated Diagram|animated explanatory diagrams" >/dev/null
 

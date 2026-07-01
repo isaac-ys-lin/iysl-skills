@@ -1,0 +1,161 @@
+{
+  "optimizer_hints": {
+    "capability": "Convert content, talks, producer notes, slide briefs, or image prompt sets into source-faithful deck outlines, Mode A/B slide prompts, and style-anchor workflows.",
+    "inputs": [
+      "content",
+      "talk script",
+      "producer notes",
+      "slide brief",
+      "image prompt set",
+      "簡報素材",
+      "講稿",
+      "投影片設計稿",
+      "生圖 prompt"
+    ],
+    "trigger_actions": [
+      "create deck outline",
+      "turn content into slide briefs",
+      "generate STYLE_INSTRUCTIONS",
+      "prepare A/B image prompts",
+      "build style anchor workflow",
+      "轉成簡報大綱",
+      "產生 slide brief",
+      "整理 A/B 生圖 prompt",
+      "建立 style anchor"
+    ],
+    "exclusions": [
+      "PowerPoint file export",
+      "single image generation",
+      "writing polish only",
+      "asset search only",
+      "design critique only",
+      "只輸出 pptx",
+      "只生成圖片",
+      "只潤稿",
+      "只找圖片",
+      "只審查設計"
+    ]
+  },
+  "fallback_positive_concepts": [
+    "deck_outline",
+    "slide_brief",
+    "ab_image_prompts",
+    "style_anchor"
+  ],
+  "positive_concepts": {
+    "deck_outline": {
+      "weight": 0.32,
+      "phrases": [
+        "deck outline",
+        "slide outline",
+        "presentation outline",
+        "簡報大綱",
+        "投影片大綱",
+        "可閱讀分享的 deck",
+        "NARRATIVE GOAL",
+        "KEY CONTENT",
+        "VISUAL",
+        "LAYOUT"
+      ]
+    },
+    "slide_brief": {
+      "weight": 0.24,
+      "phrases": [
+        "slide brief",
+        "slide briefs",
+        "page brief",
+        "STYLE_INSTRUCTIONS",
+        "producer notes",
+        "SOURCE NEEDED",
+        "投影片設計 brief",
+        "投影片設計稿",
+        "簡報素材"
+      ]
+    },
+    "ab_image_prompts": {
+      "weight": 0.28,
+      "phrases": [
+        "A/B prompts",
+        "A/B image prompts",
+        "Mode A",
+        "Mode B",
+        "visible-label whitelist",
+        "image-generation prompts",
+        "生圖 prompt",
+        "A/B 生圖",
+        "白名單"
+      ]
+    },
+    "style_anchor": {
+      "weight": 0.42,
+      "phrases": [
+        "style anchor",
+        "reference image",
+        "anchor workflow",
+        "風格一致",
+        "風格不一致",
+        "參考圖",
+        "style-anchor workflow",
+        "reference-image workflow"
+      ]
+    }
+  },
+  "negative_concepts": {
+    "deck_export_only": {
+      "weight": 0.45,
+      "phrases": [
+        "PowerPoint 檔",
+        "pptx",
+        "Keynote",
+        "export deck",
+        "輸出 pptx",
+        "真正的 PowerPoint"
+      ]
+    },
+    "single_image_only": {
+      "weight": 0.4,
+      "phrases": [
+        "單張圖片",
+        "產品海報",
+        "generate one image",
+        "single poster",
+        "只生成圖片"
+      ]
+    },
+    "writing_only": {
+      "weight": 0.35,
+      "phrases": [
+        "潤稿",
+        "rewrite this paragraph",
+        "polish this text",
+        "寫得更自然"
+      ]
+    },
+    "asset_search_only": {
+      "weight": 0.35,
+      "phrases": [
+        "找三張",
+        "免費商用圖片",
+        "asset search",
+        "只找圖片"
+      ]
+    },
+    "review_only": {
+      "weight": 0.35,
+      "phrases": [
+        "審查",
+        "critique",
+        "review design",
+        "不要產生 prompt",
+        "do not generate prompts"
+      ]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "deck_export_only",
+    "single_image_only",
+    "writing_only",
+    "asset_search_only",
+    "review_only"
+  ]
+}

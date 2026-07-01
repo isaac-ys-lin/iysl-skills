@@ -1,0 +1,47 @@
+{
+  "recommended_threshold": 0.33,
+  "should_trigger": [
+    {
+      "text": "$deck-ab 把這份講稿轉成可閱讀分享的 deck outline，並保留 SOURCE NEEDED。",
+      "family": "explicit_trigger"
+    },
+    {
+      "text": "把這段產品上市資料整理成 12 頁 slide brief，先產生 STYLE_INSTRUCTIONS，再做 A/B 生圖 prompts。",
+      "family": "outline_to_prompts"
+    },
+    {
+      "text": "我有一份既有 slide brief，幫我整理 Mode A / Mode B prompt，Mode B 要列 visible-label whitelist。",
+      "family": "ab_prompts"
+    },
+    {
+      "text": "這組投影片生圖風格不一致，請幫我設計 reference image / style anchor workflow。",
+      "family": "style_anchor"
+    },
+    {
+      "text": "請把這份中文簡報素材轉成每頁 NARRATIVE GOAL、KEY CONTENT、VISUAL、LAYOUT 的 outline。",
+      "family": "zh_slide_outline"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "text": "幫我做一份真正的 PowerPoint 檔並輸出 pptx。",
+      "family": "deck_export"
+    },
+    {
+      "text": "直接幫我生成一張產品海報圖片。",
+      "family": "single_image_generation"
+    },
+    {
+      "text": "幫我把這段中文潤稿得更自然。",
+      "family": "writing_only"
+    },
+    {
+      "text": "找三張免費商用圖片放進我的簡報。",
+      "family": "asset_search"
+    },
+    {
+      "text": "審查這份投影片的設計問題，但不要產生 prompt。",
+      "family": "design_review_only"
+    }
+  ]
+}

@@ -24,6 +24,11 @@ tools/
 - Installed live skills live under `~/.codex/skills/<skill-name>`.
 - Generated outputs, caches, virtual environments, and local render artifacts do not belong in this repo.
 
+## Included Skills
+
+- `lanshu-animated-architecture-diagram`
+- `deck-ab`
+
 ## Install A Skill Locally
 
 ```bash
