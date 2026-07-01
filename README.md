@@ -1,4 +1,4 @@
-# Isaac Codex Skills
+# iysl-skills
 
 Personal Codex skill source repository.
 
