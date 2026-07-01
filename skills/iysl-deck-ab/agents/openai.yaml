@@ -1,0 +1,4 @@
+interface:
+  display_name: "iysl-deck-ab"
+  short_description: "產生 deck outline、A/B prompts 與 style-anchor workflow"
+  default_prompt: "使用 $iysl-deck-ab 產生 source-faithful deck outline、Mode A/B prompts，或 API-ready style-anchor workflow。"

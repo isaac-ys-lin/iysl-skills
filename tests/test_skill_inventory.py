@@ -8,7 +8,7 @@ SKILLS = ROOT / "skills"
 
 
 class SkillInventoryTest(unittest.TestCase):
-    def test_skill_directories_and_frontmatter_names_are_isaac_prefixed(self):
+    def test_skill_directories_and_frontmatter_names_are_iysl_prefixed(self):
         skill_dirs = sorted(path for path in SKILLS.iterdir() if path.is_dir())
         self.assertTrue(skill_dirs)
 
@@ -19,7 +19,7 @@ class SkillInventoryTest(unittest.TestCase):
             name = match.group(1)
 
             self.assertEqual(skill_dir.name, name)
-            self.assertTrue(name.startswith("isaac-"), name)
+            self.assertTrue(name.startswith("iysl-"), name)
 
 
 if __name__ == "__main__":

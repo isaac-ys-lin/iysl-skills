@@ -1,5 +1,5 @@
 ---
-name: isaac-ani-diagram
+name: iysl-anidiagram
 description: Use when the user asks for animated explanatory diagrams, architecture/process/loop/funnel/timeline visuals, editable Excalidraw diagrams, PNG/GIF output, or visuals from articles, screenshots, systems, or product stories.
 ---
 

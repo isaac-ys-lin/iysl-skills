@@ -1,6 +1,6 @@
-# isaac-deck-ab Core Role Prompt
+# iysl-deck-ab Core Role Prompt
 
-Use this prompt as the role and output contract when dispatching a subagent for `$isaac-deck-ab` deck outline or long-form prompt production work. The orchestrator must append the actual user request, source material, target language, and requested output mode after this prompt.
+Use this prompt as the role and output contract when dispatching a subagent for `$iysl-deck-ab` deck outline or long-form prompt production work. The orchestrator must append the actual user request, source material, target language, and requested output mode after this prompt.
 
 ---
 

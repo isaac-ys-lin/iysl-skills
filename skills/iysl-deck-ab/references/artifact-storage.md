@@ -2,7 +2,7 @@
 
 ## Contract
 
-Use this contract when `$isaac-deck-ab` work needs file-backed artifacts. Keep artifacts in one run folder so chat decisions, outline truth, prompts, anchors, images, and review notes do not drift apart.
+Use this contract when `$iysl-deck-ab` work needs file-backed artifacts. Keep artifacts in one run folder so chat decisions, outline truth, prompts, anchors, images, and review notes do not drift apart.
 
 ## When To Create A Run Folder
 
@@ -24,7 +24,7 @@ Small one-off answers may stay in chat unless the user asks for files.
 Prefer the user-specified deck/project workspace. If none is specified, use the current Codex workspace:
 
 ```text
-work/isaac-deck-ab-runs/YYYYMMDD-HHMMSS-<short-topic-slug>/
+work/iysl-deck-ab-runs/YYYYMMDD-HHMMSS-<short-topic-slug>/
 ```
 
 Before writing, report the planned path. If writing into Google Drive, a repo, or another user folder, create a new folder and do not overwrite existing files. Do not scatter intermediates across Desktop, Downloads, the skill package, `/tmp`, or multiple project folders.

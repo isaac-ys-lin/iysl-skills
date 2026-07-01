@@ -26,19 +26,19 @@ tools/
 
 ## Included Skills
 
-- `isaac-ani-diagram`
-- `isaac-deck-ab`
+- `iysl-anidiagram`
+- `iysl-deck-ab`
 
 ## Install A Skill Locally
 
 ```bash
-tools/install-skill.sh isaac-ani-diagram
+tools/install-skill.sh iysl-anidiagram
 ```
 
 ## Verify A Skill
 
 ```bash
-tools/verify-skill.sh isaac-ani-diagram
+tools/verify-skill.sh iysl-anidiagram
 ```
 
 Verification runs the skill tests, renders representative specs with `--verify --check`, and checks that the skill is prompt-visible to Codex.
