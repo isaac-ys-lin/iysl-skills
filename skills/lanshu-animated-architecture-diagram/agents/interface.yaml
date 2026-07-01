@@ -1,0 +1,21 @@
+interface:
+  display_name: "Principled Animated Diagram"
+  short_description: "Principle-led animated diagrams with PNG, GIF, and editable Excalidraw output"
+  brand_color: "#2459C7"
+  default_prompt: "Use $lanshu-animated-architecture-diagram to understand the content, choose the right diagram shape, render PNG/GIF/Excalidraw outputs, and verify readability."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+  activation:
+    mode: "manual"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "native-codex-skill-with-openai-metadata"

@@ -1,0 +1,55 @@
+{
+  "layout": "circular_loop",
+  "canvas": {
+    "width": 1210,
+    "height": 1138,
+    "frames": 41,
+    "fps": 20
+  },
+  "palette": {
+    "background": "#f3f7fc",
+    "primary": "#2459c7",
+    "muted": "#6b7890",
+    "border": "#b8c8ee",
+    "chip": "#dce8fb",
+    "text": "#182032"
+  },
+  "title": {
+    "main": "转移陷阱",
+    "subtitle": "指标 ↑  体验 ↓"
+  },
+  "animation": {
+    "mode": "orbit",
+    "highlight_steps": true
+  },
+  "steps": [
+    {
+      "label": "用户遇到一个复杂问题",
+      "badge": "入口"
+    },
+    {
+      "label": "被推进自动化流程",
+      "badge": "转移率 ↑"
+    },
+    {
+      "label": "被迫一遍遍重复信息",
+      "badge": "响应数 ↑"
+    },
+    {
+      "label": "用户放弃，不再追问",
+      "badge": "工单关闭 ↑"
+    },
+    {
+      "label": "系统记下一次「高效响应」",
+      "badge": "解决率 ↑"
+    },
+    {
+      "label": "数字好看，公司加码自动化",
+      "badge": "成本 ↓"
+    },
+    {
+      "label": "下一个用户进同样的圈",
+      "badge": "循环"
+    }
+  ]
+}

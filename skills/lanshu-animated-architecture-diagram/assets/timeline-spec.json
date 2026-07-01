@@ -1,0 +1,11 @@
+{
+  "layout": "timeline",
+  "canvas": {"width": 1210, "height": 820, "frames": 41, "fps": 20},
+  "title": {"main": "Launch Plan", "subtitle": "From draft to release"},
+  "steps": [
+    {"label": "Draft", "body": "Shape the core message"},
+    {"label": "Review", "body": "Catch risk and gaps"},
+    {"label": "Package", "body": "Prepare final assets"},
+    {"label": "Ship", "body": "Publish and verify"}
+  ]
+}
