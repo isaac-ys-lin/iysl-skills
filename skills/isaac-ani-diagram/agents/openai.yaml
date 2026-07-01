@@ -1,0 +1,5 @@
+interface:
+  display_name: "ani-diagram"
+  short_description: "Principle-led animated diagrams with PNG, GIF, and editable Excalidraw output"
+  brand_color: "#2459C7"
+  default_prompt: "Use $isaac-ani-diagram to understand the content, choose the right diagram shape, render PNG/GIF/Excalidraw outputs, and verify readability."

@@ -26,19 +26,19 @@ tools/
 
 ## Included Skills
 
-- `lanshu-animated-architecture-diagram`
-- `deck-ab`
+- `isaac-ani-diagram`
+- `isaac-deck-ab`
 
 ## Install A Skill Locally
 
 ```bash
-tools/install-skill.sh lanshu-animated-architecture-diagram
+tools/install-skill.sh isaac-ani-diagram
 ```
 
 ## Verify A Skill
 
 ```bash
-tools/verify-skill.sh lanshu-animated-architecture-diagram
+tools/verify-skill.sh isaac-ani-diagram
 ```
 
 Verification runs the skill tests, renders representative specs with `--verify --check`, and checks that the skill is prompt-visible to Codex.

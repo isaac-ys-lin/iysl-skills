@@ -1,19 +1,19 @@
 ---
-name: lanshu-animated-architecture-diagram
-description: Use when the user asks for animated explanatory diagrams, architecture/process/loop/funnel/timeline visuals, editable Excalidraw diagrams, PNG/GIF output, or visual explanations from articles, screenshots, systems, or product stories.
+name: isaac-ani-diagram
+description: Use when the user asks for animated explanatory diagrams, architecture/process/loop/funnel/timeline visuals, editable Excalidraw diagrams, PNG/GIF output, or visuals from articles, screenshots, systems, or product stories.
 ---
 
-# Principled Animated Diagram
+# ani-diagram
 
-Create animated explanatory diagrams from content, screenshots, articles, or systems. Let the idea choose the shape; render deterministic `.png`, `.gif`, and editable `.excalidraw`.
+Create animated explanatory diagrams from content, screenshots, articles, or systems. Let the idea choose the shape; render deterministic `.png`, `.gif`, and `.excalidraw`.
 
 ## Core Approach
 
-1. Extract the message: actors, stages, loops, metrics, decisions, and takeaway.
+1. Extract actors, stages, loops, metrics, decisions, and takeaway.
 2. Decide the relation before visuals: sequence, cycle, narrowing, tradeoff, layers, contrast, or system map.
 3. Write compact JSON, or Diagram IR first when the source is not already a spec.
 4. Render with the bundled Python/Pillow renderer.
-5. Verify motion, dimensions, editable Excalidraw JSON, and basic readability before delivery.
+5. Verify motion, dimensions, editable Excalidraw, and readability.
 
 ## Layout Primitives
 

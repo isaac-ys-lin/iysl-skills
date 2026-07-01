@@ -2,7 +2,7 @@
   "recommended_threshold": 0.33,
   "should_trigger": [
     {
-      "text": "$deck-ab 把這份講稿轉成可閱讀分享的 deck outline，並保留 SOURCE NEEDED。",
+      "text": "$isaac-deck-ab 把這份講稿轉成可閱讀分享的 deck outline，並保留 SOURCE NEEDED。",
       "family": "explicit_trigger"
     },
     {

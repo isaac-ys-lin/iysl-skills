@@ -1,13 +1,13 @@
 ---
-name: deck-ab
-description: 使用 $deck-ab 將任意內容、講稿、producer notes、slide brief 或 image prompt set 轉成 source-faithful deck outline、slide briefs、Mode A/B prompts 與 reference-image style-anchor workflow。觸發：deck-ab、STYLE_INSTRUCTIONS、SOURCE NEEDED、visible-label whitelist、中文 visible labels、風格不一致、style anchor、A/B 生圖 prompt、API production prompt pack。排除：直接 PPTX/Keynote export、單張圖片生成、純潤稿、純素材搜尋、純設計審查。
+name: isaac-deck-ab
+description: 使用 $isaac-deck-ab 將任意內容、講稿、producer notes、slide brief 或 image prompt set 轉成 source-faithful deck outline、slide briefs、Mode A/B prompts 與 reference-image style-anchor workflow。觸發：isaac-deck-ab、STYLE_INSTRUCTIONS、SOURCE NEEDED、visible-label whitelist、中文 visible labels、風格不一致、style anchor、A/B 生圖 prompt、API production prompt pack。排除：直接 PPTX/Keynote export、單張圖片生成、純潤稿、純素材搜尋、純設計審查。
 ---
 
-# deck-ab
+# isaac-deck-ab
 
 ## Job Boundary
 
-`$deck-ab` produces source-faithful deck outlines, slide briefs, Mode A/B prompts, and style anchors. Use it for:
+`$isaac-deck-ab` produces source-faithful deck outlines, slide briefs, Mode A/B prompts, and style anchors. Use it for:
 
 - source material, talks, producer notes, or briefs -> deck outline / slide briefs
 - existing slide brief or image prompt set -> Mode A/B image-generation prompts
@@ -41,7 +41,7 @@ Use a subagent for long outlines, multi-page prompts, or API packs when availabl
 
 ## Run Folder Trigger Summary
 
-Create a run folder for more than 3 slides, subagent work, Mode A/B, API production, style anchors, image generation, or second-round corrections. Prefer the project workspace; otherwise use `work/deck-ab-runs/`. Never write artifacts into the skill package, `/tmp`, Downloads, or multiple locations.
+Create a run folder for more than 3 slides, subagent work, Mode A/B, API production, style anchors, image generation, or second-round corrections. Prefer the project workspace; otherwise use `work/isaac-deck-ab-runs/`. Never write artifacts into the skill package, `/tmp`, Downloads, or multiple locations.
 
 ## Validation Checklist
 

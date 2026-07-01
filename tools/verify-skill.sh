@@ -38,6 +38,6 @@ if [[ -f scripts/render_animated_diagram.py ]] && compgen -G "assets/*-spec.json
   done
 fi
 
-codex debug prompt-input "\$$skill_name verify prompt visibility" | rg "$skill_name|Principled Animated Diagram|animated explanatory diagrams" >/dev/null
+codex debug prompt-input "\$$skill_name verify prompt visibility" | rg "$skill_name|ani-diagram|animated explanatory diagrams" >/dev/null
 
 echo "verified $skill_name"

@@ -1,7 +1,7 @@
 interface:
-  display_name: "deck-ab"
+  display_name: "isaac-deck-ab"
   short_description: "Create deck outlines, A/B slide prompts, and style-anchor workflows."
-  default_prompt: "Use $deck-ab for a source-faithful deck outline, Mode A/B prompts, or API-ready style-anchor workflow."
+  default_prompt: "Use $isaac-deck-ab for a source-faithful deck outline, Mode A/B prompts, or API-ready style-anchor workflow."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:
