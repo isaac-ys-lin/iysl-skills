@@ -453,6 +453,21 @@ class RenderOutputChecksTest(unittest.TestCase):
                 self.assertIn(text, text_values)
             self.assertTrue(any(item["changed_pixels"] > 0 for item in diff_report["diffs"]), (name, diff_report))
 
+    def test_architecture_element_census_stable(self):
+        # behavior-preservation proxy for the legacy architecture layout:
+        # element counts and the decision diamond position must not drift
+        ex, _ = self.renderer.render_architecture(self.spec)
+        counts = {}
+        for element in ex.elements:
+            counts[element["type"]] = counts.get(element["type"], 0) + 1
+        self.assertEqual(len(ex.elements), 159)
+        self.assertEqual(
+            counts,
+            {"text": 53, "line": 42, "rectangle": 36, "arrow": 14, "ellipse": 13, "diamond": 1},
+        )
+        diamond = next(element for element in ex.elements if element["type"] == "diamond")
+        self.assertEqual((diamond["x"], diamond["y"]), (706, 508))
+
 
 if __name__ == "__main__":
     unittest.main()

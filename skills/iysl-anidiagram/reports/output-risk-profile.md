@@ -19,12 +19,17 @@ This skill owns animated explanatory diagrams that produce `.png`, `.gif`, and e
 
 - `references/spec-format.md` defines layout selection, Diagram IR, and field contracts.
 - The spec separates semantic layout fields from optional `style`, `animation`, and `finish` atoms.
-- `scripts/render_animated_diagram.py --check` verifies dimensions, fps, frame count, motion, Excalidraw IDs, text font family, empty files, PNG dimensions, minimum text size, and text canvas bounds.
-- Tests cover the legacy `architecture`, `circular_loop`, and common light primitives: `timeline`, `funnel`, `matrix`, `stack`, and `before_after`.
+- Spec validation rejects unknown layouts and missing required fields before rendering (CLI exit `2` with per-problem messages, `sections[i]` prefixes for composite); nothing silently falls back to `architecture`.
+- The layout registry (`LAYOUTS`) keeps render, animation, pulse targets, required fields, IR relations, and composite sizing in sync for every layout.
+- `scripts/render_animated_diagram.py --check` verifies dimensions, fps, frame count, motion, Excalidraw IDs, text font family, empty files, PNG dimensions, minimum text size, text canvas bounds, and composite section regions.
+- Tests cover the legacy `architecture` (including an element-census regression), `circular_loop`, the light primitives `timeline`, `funnel`, `matrix`, `stack`, `before_after`, plus `flow`, `composite`, spec validation, and font fallback.
 
 ## Known Limits
 
 - The renderer supports common primitives, not arbitrary freehand layout.
 - New uncommon structures should be added as new primitives with tests.
+- `flow` places two nodes sharing a lane and row with a half-row offset; dense fan-outs can crowd — keep flows to about 8 nodes.
+- `composite` forbids nesting and computes its own page height; large animated pages can reach several MB of GIF — lower `frames` first.
+- `circular_loop` rendering and the light animators intentionally keep `LIGHT_THEME` defaults, so `dark_technical` tone does not recolor them (preserved legacy behavior).
 - Visual taste still needs a PNG review for overlap, hierarchy, and density.
 - Examples are quality anchors, not templates to copy blindly.

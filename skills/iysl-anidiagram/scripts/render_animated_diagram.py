@@ -4,6 +4,7 @@ import json
 import math
 import random
 import sys
+from collections import namedtuple
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
@@ -59,16 +60,6 @@ DARK_TECHNICAL_THEME = {
     "white": THEME["bg"],
 }
 
-LIGHT_LAYOUTS = {
-    "circular_loop",
-    "timeline",
-    "funnel",
-    "matrix",
-    "stack",
-    "before_after",
-}
-
-
 def hex_rgba(value, alpha=255):
     value = value.lstrip("#")
     return tuple(int(value[i : i + 2], 16) for i in (0, 2, 4)) + (alpha,)
@@ -89,6 +80,8 @@ def font_candidates(hand=False, cjk=False, bold=False):
             "/System/Library/Fonts/MarkerFelt.ttc",
             "/System/Library/Fonts/Noteworthy.ttc",
             "/System/Library/Fonts/Supplemental/Bradley Hand Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "C:\\Windows\\Fonts\\comic.ttf",
         ]
     if cjk:
         return [
@@ -96,20 +89,44 @@ def font_candidates(hand=False, cjk=False, bold=False):
             "/System/Library/Fonts/Hiragino Sans GB.ttc",
             "/Library/Fonts/Arial Unicode.ttf",
             "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "C:\\Windows\\Fonts\\msyh.ttc",
         ]
     return [
         "/System/Library/Fonts/Helvetica.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:\\Windows\\Fonts\\arialbd.ttf" if bold else "C:\\Windows\\Fonts\\arial.ttf",
     ]
 
 
+_FONT_PATH_CACHE = {}
+
+
 def load_font(size, hand=False, cjk=False, bold=False):
-    for path in font_candidates(hand=hand, cjk=cjk, bold=bold):
+    key = (hand, cjk, bold)
+    if key not in _FONT_PATH_CACHE:
+        found = None
+        for path in font_candidates(hand=hand, cjk=cjk, bold=bold):
+            try:
+                ImageFont.truetype(path, 12)
+                found = path
+                break
+            except OSError:
+                continue
+        _FONT_PATH_CACHE[key] = found
+    path = _FONT_PATH_CACHE[key]
+    if path is not None:
         try:
             return ImageFont.truetype(path, c(size))
         except OSError:
-            continue
-    return ImageFont.load_default()
+            _FONT_PATH_CACHE[key] = None
+    try:
+        return ImageFont.load_default(c(size))
+    except TypeError:
+        return ImageFont.load_default()
 
 
 def has_cjk(text):
@@ -485,25 +502,151 @@ def pack_row(ex, draw, x, y, card):
     draw_text(ex, draw, card.get("body", ""), x + 80, y + 42, 135, 30, 12, THEME["white"], "center", spacing=3, fit=True, min_size=10)
 
 
+class SpecValidationError(ValueError):
+    def __init__(self, messages):
+        self.messages = list(messages)
+        super().__init__("; ".join(self.messages))
+
+
+ARCHITECTURE_MARKER_KEYS = (
+    "signature",
+    "inputs",
+    "input_title",
+    "core",
+    "decision",
+    "output",
+    "left_panel",
+    "center_panel",
+    "right_panel",
+    "loop_label",
+    "retry_label",
+)
+
+
+def resolve_layout(spec):
+    name = spec.get("layout") or spec.get("type")
+    if name:
+        name = str(name).strip()
+        if name in LAYOUTS:
+            return name
+        raise SpecValidationError([f"unknown layout '{name}'; supported: {', '.join(sorted(LAYOUTS))}"])
+    if any(key in spec for key in ARCHITECTURE_MARKER_KEYS):
+        return "architecture"
+    raise SpecValidationError([f"spec has no 'layout' and is not architecture-shaped; set \"layout\" to one of: {', '.join(sorted(LAYOUTS))}"])
+
+
 def layout_name(spec):
-    return spec.get("layout") or spec.get("type") or "architecture"
+    return resolve_layout(spec)
 
 
-IR_RELATION_LAYOUTS = {
-    "sequence": "timeline",
-    "process": "timeline",
-    "timeline": "timeline",
-    "loop": "circular_loop",
-    "cycle": "circular_loop",
-    "funnel": "funnel",
-    "matrix": "matrix",
-    "tradeoff": "matrix",
-    "stack": "stack",
-    "layers": "stack",
-    "before_after": "before_after",
-    "contrast": "before_after",
-    "architecture": "architecture",
-}
+def validate_single(spec, prefix=""):
+    if not isinstance(spec, dict):
+        return None, [f"{prefix}spec must be a JSON object"]
+    try:
+        layout = resolve_layout(spec)
+    except SpecValidationError as err:
+        return None, [f"{prefix}{message}" for message in err.messages]
+    messages = []
+    entry = LAYOUTS[layout]
+    for group in entry.required:
+        if not any(spec.get(key) for key in group):
+            messages.append(f"{prefix}layout '{layout}' requires one of: {', '.join(group)}")
+    canvas = spec.get("canvas", {})
+    if not isinstance(canvas, dict):
+        messages.append(f"{prefix}canvas must be an object")
+    else:
+        for key in ("width", "height", "frames", "fps"):
+            value = canvas.get(key)
+            if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0):
+                messages.append(f"{prefix}canvas.{key} must be a positive number")
+    for key in ("steps", "stages", "layers", "items", "nodes", "edges", "sections"):
+        value = spec.get(key)
+        if value is not None and not isinstance(value, list):
+            messages.append(f"{prefix}'{key}' must be a list")
+    if layout == "flow":
+        nodes = spec.get("nodes") or []
+        node_ids = [str(node.get("id", "")) for node in nodes if isinstance(node, dict)]
+        if any(not node_id for node_id in node_ids):
+            messages.append(f"{prefix}every flow node needs a non-empty 'id'")
+        if len(node_ids) != len(set(node_ids)):
+            messages.append(f"{prefix}flow node ids must be unique")
+        known = set(node_ids)
+        edges = spec.get("edges")
+        if isinstance(edges, list):
+            for index, edge in enumerate(edges):
+                if not isinstance(edge, dict):
+                    messages.append(f"{prefix}edges[{index}] must be an object")
+                    continue
+                for end in ("from", "to"):
+                    ref = str(edge.get(end, ""))
+                    if ref not in known:
+                        messages.append(f"{prefix}edges[{index}].{end} references unknown node '{ref}'")
+    if layout == "composite":
+        messages.extend(validate_composite_sections(spec, prefix))
+    return layout, messages
+
+
+def validate_composite_sections(spec, prefix=""):
+    messages = []
+    sections = spec.get("sections")
+    if not isinstance(sections, list) or not sections:
+        return messages
+    if isinstance(spec.get("canvas"), dict) and spec["canvas"].get("height") is not None:
+        messages.append(f"{prefix}composite computes its own height; remove canvas.height")
+    geom = composite_geometry(spec)
+    for index, section in enumerate(sections):
+        sec_prefix = f"{prefix}sections[{index}]: "
+        if not isinstance(section, dict):
+            messages.append(f"{sec_prefix}must be an object")
+            continue
+        sec_layout = str(section.get("layout", "") or "")
+        if not sec_layout:
+            messages.append(f"{sec_prefix}missing 'layout'")
+            continue
+        entry = LAYOUTS.get(sec_layout)
+        if entry is None:
+            messages.append(f"{sec_prefix}unknown layout '{sec_layout}'; supported: {', '.join(sorted(name for name, e in LAYOUTS.items() if e.composable))}")
+            continue
+        if not entry.composable:
+            if sec_layout == "composite":
+                messages.append(f"{sec_prefix}nested composite layouts are not supported")
+            else:
+                messages.append(f"{sec_prefix}layout '{sec_layout}' cannot be used inside composite")
+            continue
+        if section.get("span", "full") not in ("full", "half"):
+            messages.append(f"{sec_prefix}span must be 'full' or 'half'")
+        section_height = section.get("height")
+        if section_height is not None and (isinstance(section_height, bool) or not isinstance(section_height, (int, float)) or section_height <= 0):
+            messages.append(f"{sec_prefix}height must be a positive number")
+        region = section_region(geom, index)
+        if region is None:
+            continue
+        rw, rh = region[2], region[3]
+        min_w, min_h = entry.min_region or (0, 0)
+        if rw < min_w or rh < min_h:
+            messages.append(f"{sec_prefix}region {int(rw)}x{int(rh)} below minimum {min_w}x{min_h} for layout '{sec_layout}'")
+            continue
+        sub = section_sub_spec(section, spec, rw, rh)
+        _, sub_messages = validate_single(sub, prefix=f"{prefix}sections[{index}] ({sec_layout}): ")
+        messages.extend(sub_messages)
+    return messages
+
+
+def validate_spec(spec):
+    layout, messages = validate_single(spec)
+    if messages:
+        raise SpecValidationError(messages)
+    return layout
+
+
+def canvas_defaults(spec):
+    try:
+        layout = resolve_layout(spec)
+    except SpecValidationError:
+        layout = None
+    if layout == "composite":
+        return {"width": DEFAULT_W, "height": DEFAULT_H, "frames": COMPOSITE_FRAMES, "fps": COMPOSITE_FPS}
+    return {"width": DEFAULT_W, "height": DEFAULT_H, "frames": DEFAULT_FRAMES, "fps": DEFAULT_FPS}
 
 
 def is_diagram_ir(raw):
@@ -550,6 +693,35 @@ def compile_diagram_ir(ir):
     elif layout == "before_after":
         spec["before"] = ir.get("before", {"title": "Before", "items": []})
         spec["after"] = ir.get("after", {"title": "After", "items": []})
+    elif layout == "flow":
+        flow_nodes = []
+        for n in nodes:
+            item = {"id": str(n.get("id", n.get("label", ""))), "label": n.get("label", n.get("id", ""))}
+            for key in ("body", "kind", "lane"):
+                if n.get(key):
+                    item[key] = n[key]
+            if isinstance(n.get("style"), dict):
+                item["style"] = n["style"]
+            flow_nodes.append(item)
+        spec["nodes"] = flow_nodes
+        if isinstance(ir.get("edges"), list):
+            spec["edges"] = ir["edges"]
+    elif layout == "composite":
+        compiled = []
+        for sub_ir in ir.get("sections", []):
+            if not isinstance(sub_ir, dict):
+                continue
+            if str(sub_ir.get("relation", "")).strip().lower() in ("composite", "story"):
+                compiled.append({"layout": "composite"})  # rejected by validation: no nesting
+                continue
+            sub_spec = compile_diagram_ir(sub_ir)
+            for key in ("span", "height"):
+                if key in sub_ir:
+                    sub_spec[key] = sub_ir[key]
+            compiled.append(sub_spec)
+        spec["sections"] = compiled
+        if isinstance(spec.get("canvas"), dict):
+            spec["canvas"] = {key: value for key, value in spec["canvas"].items() if key != "height"}
     return spec
 
 
@@ -560,7 +732,7 @@ def normalize_render_input(raw):
 
 
 def is_light_layout(spec):
-    return layout_name(spec) in LIGHT_LAYOUTS
+    return LAYOUTS[layout_name(spec)].kind == "light"
 
 
 def style_tone(spec):
@@ -616,6 +788,10 @@ def light_style_colors(palette, item=None, defaults=None):
     }
 
 
+def light_margin(width, height):
+    return max(20, min(width, height) * 0.035)
+
+
 def light_canvas(spec):
     canvas = spec.get("canvas", {})
     width = canvas.get("width", DEFAULT_W)
@@ -624,7 +800,7 @@ def light_canvas(spec):
     img = Image.new("RGBA", (c(width), c(height)), hex_rgba(palette["background"]))
     draw = ImageDraw.Draw(img)
     ex = Excal(width, height, background=palette["background"])
-    margin = max(20, min(width, height) * 0.035)
+    margin = light_margin(width, height)
     draw_rect(ex, draw, margin, margin, width - margin * 2, height - margin * 2, palette["border"], None, 2, 24)
     return ex, img, draw, palette, width, height, margin
 
@@ -712,6 +888,16 @@ def draw_circular_loop_step_row(ex, draw, index, step, x, y, row_w, palette):
     draw_badge(ex, draw, step.get("badge", ""), badge_x, y - 14, palette, step)
 
 
+def circular_legend_geometry(spec, width, height, cy, radius, steps):
+    margin = light_margin(width, height)
+    list_cfg = spec.get("legend", {})
+    list_x = list_cfg.get("x", max(margin + 38, width * 0.07))
+    list_y = list_cfg.get("y", max(cy + radius + 95, height * 0.64))
+    row_gap = list_cfg.get("row_gap", min(49, max(38, (height - list_y - margin - 18) / max(1, len(steps)))))
+    row_w = list_cfg.get("width", width - list_x - margin - 55)
+    return list_x, list_y, row_gap, row_w
+
+
 def render_circular_loop(spec):
     canvas = spec.get("canvas", {})
     width = canvas.get("width", DEFAULT_W)
@@ -721,7 +907,7 @@ def render_circular_loop(spec):
     draw = ImageDraw.Draw(img)
     ex = Excal(width, height, background=palette["background"])
 
-    margin = max(20, min(width, height) * 0.035)
+    margin = light_margin(width, height)
     draw_rect(ex, draw, margin, margin, width - margin * 2, height - margin * 2, palette["border"], None, 2, 24)
 
     geom = circular_geometry(spec, width, height)
@@ -742,52 +928,73 @@ def render_circular_loop(spec):
         draw_ellipse(ex, draw, px - node_r, py - node_r, node_r * 2, node_r * 2, colors["stroke"], colors["fill"], 3)
         draw_text(ex, draw, str(index + 1), px - node_r, py - node_r, node_r * 2, node_r * 2, 22, colors["text"], "center", bold=True, fit=True, min_size=15, wrap=False)
 
-    list_cfg = spec.get("legend", {})
-    list_x = list_cfg.get("x", max(margin + 38, width * 0.07))
-    list_y = list_cfg.get("y", max(cy + radius + 95, height * 0.64))
-    row_gap = list_cfg.get("row_gap", min(49, max(38, (height - list_y - margin - 18) / max(1, len(steps)))))
-    row_w = list_cfg.get("width", width - list_x - margin - 55)
+    list_x, list_y, row_gap, row_w = circular_legend_geometry(spec, width, height, cy, radius, steps)
     for index, step in enumerate(steps):
         draw_circular_loop_step_row(ex, draw, index, step, list_x, list_y + index * row_gap, row_w, palette)
 
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_timeline(spec):
-    ex, img, draw, palette, width, height, margin = light_canvas(spec)
-    draw_light_title(ex, draw, spec, width, margin, palette)
+def timeline_geometry(spec, width, height):
+    margin = light_margin(width, height)
     steps = spec.get("steps", spec.get("items", []))
-    y = height * 0.42
+    # compact regions (composite sections) keep every card below the line so
+    # the up-cards cannot collide with the section title
+    compact = height < 520
+    y = height * (0.36 if compact else 0.42)
     x1 = margin + 95
     x2 = width - margin - 95
-    draw_line(ex, draw, [(x1, y), (x2, y)], palette["border"], 4)
     count = max(1, len(steps))
     gap = (x2 - x1) / max(1, count - 1)
     card_w = min(230, max(150, (x2 - x1) / max(1, count) + 32))
+    return {"steps": steps, "y": y, "x1": x1, "x2": x2, "count": count, "gap": gap, "card_w": card_w, "compact": compact}
+
+
+def render_timeline(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = timeline_geometry(spec, width, height)
+    steps, y, x1, x2 = geom["steps"], geom["y"], geom["x1"], geom["x2"]
+    draw_line(ex, draw, [(x1, y), (x2, y)], palette["border"], 4)
+    gap = geom["gap"]
+    card_w = geom["card_w"]
     for index, step in enumerate(steps):
         x = x1 + gap * index
         colors = light_style_colors(palette, step, {"accent": palette["primary"], "stroke": palette["primary"], "fill": palette["background"], "text": palette["primary"]})
         draw_ellipse(ex, draw, x - 22, y - 22, 44, 44, colors["stroke"], colors["fill"], 3)
         draw_text(ex, draw, str(index + 1), x - 22, y - 22, 44, 44, 20, colors["text"], "center", bold=True, fit=True, min_size=12, wrap=False)
-        card_y = y + 58 if index % 2 == 0 else y - 138
+        card_y = y + 58 if (index % 2 == 0 or geom["compact"]) else y - 138
         light_card(ex, draw, x - card_w / 2, card_y, card_w, 92, palette, step.get("label", ""), step.get("body", ""), index=index + 1, item=step)
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_funnel(spec):
-    ex, img, draw, palette, width, height, margin = light_canvas(spec)
-    draw_light_title(ex, draw, spec, width, margin, palette)
+def funnel_geometry(spec, width, height):
+    margin = light_margin(width, height)
     stages = spec.get("stages", spec.get("steps", []))
     count = max(1, len(stages))
     top_y = margin + 150
     row_h = min(92, max(62, (height - top_y - margin - 54) / count))
     max_w = width - margin * 2 - 160
     min_w = max_w * 0.42
+    return {"stages": stages, "count": count, "top_y": top_y, "row_h": row_h, "max_w": max_w, "min_w": min_w}
+
+
+def funnel_row_box(geom, width, index):
+    t = index / max(1, geom["count"] - 1)
+    w = geom["max_w"] - (geom["max_w"] - geom["min_w"]) * t
+    x = (width - w) / 2
+    y = geom["top_y"] + index * geom["row_h"]
+    return x, y, w
+
+
+def render_funnel(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = funnel_geometry(spec, width, height)
+    stages = geom["stages"]
+    row_h = geom["row_h"]
     for index, stage in enumerate(stages):
-        t = index / max(1, count - 1)
-        w = max_w - (max_w - min_w) * t
-        x = (width - w) / 2
-        y = top_y + index * row_h
+        x, y, w = funnel_row_box(geom, width, index)
         fill = palette["primary_soft"] if index % 2 == 0 else palette["card"]
         colors = light_style_colors(palette, stage, {"accent": palette["primary"], "stroke": palette["primary"], "fill": fill, "value": palette["primary"]})
         draw_rect(ex, draw, x, y, w, row_h - 12, colors["stroke"], colors["fill"], 2, 16)
@@ -798,36 +1005,56 @@ def render_funnel(spec):
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_matrix(spec):
-    ex, img, draw, palette, width, height, margin = light_canvas(spec)
-    draw_light_title(ex, draw, spec, width, margin, palette)
+def matrix_geometry(spec, width, height):
+    margin = light_margin(width, height)
     left = margin + 120
     top = margin + 150
     chart_w = width - left - margin - 75
     chart_h = height - top - margin - 85
+    return {"left": left, "top": top, "chart_w": chart_w, "chart_h": chart_h}
+
+
+def matrix_item_point(geom, item):
+    x = geom["left"] + geom["chart_w"] * max(0, min(1, item.get("x", 0.5)))
+    y = geom["top"] + geom["chart_h"] * (1 - max(0, min(1, item.get("y", 0.5))))
+    return x, y
+
+
+def render_matrix(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = matrix_geometry(spec, width, height)
+    left, top, chart_w, chart_h = geom["left"], geom["top"], geom["chart_w"], geom["chart_h"]
     draw_rect(ex, draw, left, top, chart_w, chart_h, palette["border"], palette["card"], 2, 14)
     draw_line(ex, draw, [(left + chart_w / 2, top), (left + chart_w / 2, top + chart_h)], palette["border"], 2, "dashed")
     draw_line(ex, draw, [(left, top + chart_h / 2), (left + chart_w, top + chart_h / 2)], palette["border"], 2, "dashed")
     draw_text(ex, draw, spec.get("x_axis", "Effort"), left + chart_w / 2 - 80, top + chart_h + 28, 160, 28, 16, palette["muted"], "center", fit=True, min_size=10)
     draw_text(ex, draw, spec.get("y_axis", "Impact"), left - 95, top + chart_h / 2 - 18, 80, 36, 16, palette["muted"], "center", fit=True, min_size=10)
     for item in spec.get("items", []):
-        x = left + chart_w * max(0, min(1, item.get("x", 0.5)))
-        y = top + chart_h * (1 - max(0, min(1, item.get("y", 0.5))))
+        x, y = matrix_item_point(geom, item)
         colors = light_style_colors(palette, item, {"accent": palette["primary"], "stroke": palette["primary"], "fill": palette["primary"]})
         draw_ellipse(ex, draw, x - 11, y - 11, 22, 22, colors["stroke"], colors["fill"], 2)
         draw_text(ex, draw, item.get("label", ""), x + 16, y - 18, 150, 34, 15, colors["text"], "left", fit=True, min_size=10)
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_stack(spec):
-    ex, img, draw, palette, width, height, margin = light_canvas(spec)
-    draw_light_title(ex, draw, spec, width, margin, palette)
+def stack_geometry(spec, width, height):
+    margin = light_margin(width, height)
     layers = spec.get("layers", spec.get("steps", []))
     count = max(1, len(layers))
     stack_w = width - margin * 2 - 180
     stack_x = (width - stack_w) / 2
     row_h = min(86, max(58, (height - margin - 170) / count))
     start_y = margin + 145
+    return {"layers": layers, "count": count, "stack_w": stack_w, "stack_x": stack_x, "row_h": row_h, "start_y": start_y}
+
+
+def render_stack(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = stack_geometry(spec, width, height)
+    layers, count = geom["layers"], geom["count"]
+    stack_w, stack_x, row_h, start_y = geom["stack_w"], geom["stack_x"], geom["row_h"], geom["start_y"]
     for index, layer in enumerate(layers):
         y = start_y + index * row_h
         inset = index * 18
@@ -838,17 +1065,25 @@ def render_stack(spec):
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_before_after(spec):
-    ex, img, draw, palette, width, height, margin = light_canvas(spec)
-    draw_light_title(ex, draw, spec, width, margin, palette)
-    before = spec.get("before", {})
-    after = spec.get("after", {})
+def before_after_geometry(spec, width, height):
+    margin = light_margin(width, height)
     col_gap = 82
     col_w = (width - margin * 2 - 120 - col_gap) / 2
     top = margin + 150
     h = height - top - margin - 46
     left_x = margin + 60
     right_x = left_x + col_w + col_gap
+    return {"col_gap": col_gap, "col_w": col_w, "top": top, "h": h, "left_x": left_x, "right_x": right_x}
+
+
+def render_before_after(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    before = spec.get("before", {})
+    after = spec.get("after", {})
+    geom = before_after_geometry(spec, width, height)
+    col_w, top, h = geom["col_w"], geom["top"], geom["h"]
+    left_x, right_x = geom["left_x"], geom["right_x"]
     for x, block, accent in [(left_x, before, palette["muted"]), (right_x, after, palette["primary"])]:
         colors = light_style_colors(palette, block, {"accent": accent, "stroke": accent, "fill": palette["card"]})
         draw_rect(ex, draw, x, top, col_w, h, colors["stroke"], colors["fill"], 2, 18)
@@ -862,21 +1097,7 @@ def render_before_after(spec):
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
-def render_static(spec):
-    layout = layout_name(spec)
-    if layout == "circular_loop":
-        return render_circular_loop(spec)
-    if layout == "timeline":
-        return render_timeline(spec)
-    if layout == "funnel":
-        return render_funnel(spec)
-    if layout == "matrix":
-        return render_matrix(spec)
-    if layout == "stack":
-        return render_stack(spec)
-    if layout == "before_after":
-        return render_before_after(spec)
-
+def render_architecture(spec):
     width = spec.get("canvas", {}).get("width", DEFAULT_W)
     height = spec.get("canvas", {}).get("height", DEFAULT_H)
     ex = Excal(width, height)
@@ -975,6 +1196,10 @@ def render_static(spec):
         draw_line(ex, draw, [(x, y - 8), (x, y + 8)], color, 2)
 
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
+
+
+def render_static(spec):
+    return LAYOUTS[layout_name(spec)].render(spec)
 
 
 def finish_options(spec):
@@ -1134,12 +1359,7 @@ def animate_circular_loop_frame(base, spec, idx, total):
     if steps:
         node_x, node_y, _ = geom["positions"][active]
         pulse_rect(draw, (node_x - geom["node_radius"], node_y - geom["node_radius"], node_x + geom["node_radius"], node_y + geom["node_radius"]), palette["primary"], progress * math.tau * 3, radius=int(geom["node_radius"]))
-        margin = max(20, min(width, height) * 0.035)
-        list_cfg = spec.get("legend", {})
-        list_x = list_cfg.get("x", max(margin + 38, width * 0.07))
-        list_y = list_cfg.get("y", max(geom["cy"] + geom["radius"] + 95, height * 0.64))
-        row_gap = list_cfg.get("row_gap", min(49, max(38, (height - list_y - margin - 18) / max(1, len(steps)))))
-        row_w = list_cfg.get("width", width - list_x - margin - 55)
+        list_x, list_y, row_gap, row_w = circular_legend_geometry(spec, width, height, geom["cy"], geom["radius"], steps)
         row_y = list_y + active * row_gap
         draw.rounded_rectangle(
             (list_x - 12, row_y - 23, list_x + row_w, row_y + 22),
@@ -1153,61 +1373,46 @@ def animate_circular_loop_frame(base, spec, idx, total):
     return frame.convert("RGB")
 
 
+def timeline_pulse_targets(spec, width, height):
+    geom = timeline_geometry(spec, width, height)
+    y, x1, gap = geom["y"], geom["x1"], geom["gap"]
+    return [(x1 + gap * i - 28, y - 28, x1 + gap * i + 28, y + 28) for i in range(geom["count"])]
+
+
+def funnel_pulse_targets(spec, width, height):
+    geom = funnel_geometry(spec, width, height)
+    targets = []
+    for i in range(geom["count"]):
+        x, y, w = funnel_row_box(geom, width, i)
+        targets.append((x, y, x + w, y + geom["row_h"] - 12))
+    return targets
+
+
+def matrix_pulse_targets(spec, width, height):
+    geom = matrix_geometry(spec, width, height)
+    targets = []
+    for item in spec.get("items", []):
+        x, y = matrix_item_point(geom, item)
+        targets.append((x - 22, y - 22, x + 22, y + 22))
+    return targets
+
+
+def stack_pulse_targets(spec, width, height):
+    geom = stack_geometry(spec, width, height)
+    stack_x, stack_w = geom["stack_x"], geom["stack_w"]
+    start_y, row_h = geom["start_y"], geom["row_h"]
+    return [(stack_x + i * 18, start_y + i * row_h, stack_x + stack_w - i * 18, start_y + i * row_h + row_h - 12) for i in range(geom["count"])]
+
+
+def before_after_pulse_targets(spec, width, height):
+    geom = before_after_geometry(spec, width, height)
+    col_w, top, h = geom["col_w"], geom["top"], geom["h"]
+    return [(geom["left_x"], top, geom["left_x"] + col_w, top + h), (geom["right_x"], top, geom["right_x"] + col_w, top + h)]
+
+
 def light_pulse_targets(spec, width, height):
-    layout = layout_name(spec)
-    margin = max(20, min(width, height) * 0.035)
-    if layout == "timeline":
-        steps = spec.get("steps", spec.get("items", []))
-        y = height * 0.42
-        x1 = margin + 95
-        x2 = width - margin - 95
-        count = max(1, len(steps))
-        gap = (x2 - x1) / max(1, count - 1)
-        return [(x1 + gap * i - 28, y - 28, x1 + gap * i + 28, y + 28) for i in range(count)]
-    if layout == "funnel":
-        stages = spec.get("stages", spec.get("steps", []))
-        count = max(1, len(stages))
-        top_y = margin + 150
-        row_h = min(92, max(62, (height - top_y - margin - 54) / count))
-        max_w = width - margin * 2 - 160
-        min_w = max_w * 0.42
-        targets = []
-        for i in range(count):
-            t = i / max(1, count - 1)
-            w = max_w - (max_w - min_w) * t
-            x = (width - w) / 2
-            y = top_y + i * row_h
-            targets.append((x, y, x + w, y + row_h - 12))
-        return targets
-    if layout == "matrix":
-        items = spec.get("items", [])
-        left = margin + 120
-        top = margin + 150
-        chart_w = width - left - margin - 75
-        chart_h = height - top - margin - 85
-        targets = []
-        for item in items:
-            x = left + chart_w * max(0, min(1, item.get("x", 0.5)))
-            y = top + chart_h * (1 - max(0, min(1, item.get("y", 0.5))))
-            targets.append((x - 22, y - 22, x + 22, y + 22))
-        return targets
-    if layout == "stack":
-        layers = spec.get("layers", spec.get("steps", []))
-        count = max(1, len(layers))
-        stack_w = width - margin * 2 - 180
-        stack_x = (width - stack_w) / 2
-        row_h = min(86, max(58, (height - margin - 170) / count))
-        start_y = margin + 145
-        return [(stack_x + i * 18, start_y + i * row_h, stack_x + stack_w - i * 18, start_y + i * row_h + row_h - 12) for i in range(count)]
-    if layout == "before_after":
-        col_gap = 82
-        col_w = (width - margin * 2 - 120 - col_gap) / 2
-        top = margin + 150
-        h = height - top - margin - 46
-        left_x = margin + 60
-        right_x = left_x + col_w + col_gap
-        return [(left_x, top, left_x + col_w, top + h), (right_x, top, right_x + col_w, top + h)]
-    return []
+    fn = LAYOUTS[layout_name(spec)].pulse_targets
+    return fn(spec, width, height) if fn else []
 
 
 def animate_light_layout_frame(base, spec, idx, total):
@@ -1217,8 +1422,8 @@ def animate_light_layout_frame(base, spec, idx, total):
     width, height = frame.size
     palette = merged_palette(spec, LIGHT_THEME)
     progress = idx / total
-    margin = max(20, min(width, height) * 0.035)
-    path_y = height * 0.42 if layout_name(spec) == "timeline" else height * 0.5
+    margin = light_margin(width, height)
+    path_y = timeline_geometry(spec, width, height)["y"] if layout_name(spec) == "timeline" else height * 0.5
     path = [(margin + 70, path_y), (width - margin - 70, path_y)]
     animation = spec.get("animation", {})
     marker = animation.get("marker", "dot")
@@ -1236,12 +1441,7 @@ def animate_light_layout_frame(base, spec, idx, total):
     return frame.convert("RGB")
 
 
-def animate_frame(base, idx, total, spec=None):
-    if spec and layout_name(spec) == "circular_loop":
-        return animate_circular_loop_frame(base, spec, idx, total)
-    if spec and is_light_layout(spec):
-        return animate_light_layout_frame(base, spec, idx, total)
-
+def animate_architecture_frame(base, spec, idx, total):
     frame = base.convert("RGBA")
     overlay = Image.new("RGBA", frame.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
@@ -1280,7 +1480,361 @@ def animate_frame(base, idx, total, spec=None):
     return frame.convert("RGB")
 
 
+def flow_lane_x(width, lane):
+    centers = {"main": 0.5, "left": 0.25, "right": 0.75}
+    return width * centers.get(lane, 0.5)
+
+
+def flow_default_edges(nodes):
+    ids = [str(node.get("id", "")) for node in nodes]
+    return [{"from": ids[i], "to": ids[i + 1]} for i in range(len(ids) - 1)]
+
+
+def flow_geometry(spec, width, height):
+    margin = light_margin(width, height)
+    nodes = spec.get("nodes", [])
+    edges = spec.get("edges")
+    if edges is None:
+        edges = flow_default_edges(nodes)
+    forward = [edge for edge in edges if edge.get("kind") != "retry"]
+    ids = [str(node.get("id", "")) for node in nodes]
+    depth = {node_id: 0 for node_id in ids}
+    # longest path over non-retry edges; retry edges are excluded so cycles
+    # through them cannot loop this relaxation forever
+    for _ in range(max(1, len(nodes))):
+        changed = False
+        for edge in forward:
+            a, b = str(edge.get("from")), str(edge.get("to"))
+            if a in depth and b in depth and depth[b] < depth[a] + 1:
+                depth[b] = depth[a] + 1
+                changed = True
+        if not changed:
+            break
+    rows = max(depth.values(), default=0) + 1
+    top = margin + 140
+    row_h = min(200, max(96, (height - top - margin - 40) / max(1, rows)))
+    lane_order = {"main": 0, "left": 1, "right": 2}
+    main_w = min(300, width * 0.26)
+    branch_w = min(280, width * 0.24)
+    placed = {}
+    seen = {}
+    for node in nodes:
+        node_id = str(node.get("id", ""))
+        lane = node.get("lane", "main")
+        if lane not in lane_order:
+            lane = "main"
+        row = depth.get(node_id, 0)
+        bump = seen.get((lane, row), 0)
+        seen[(lane, row)] = bump + 1
+        kind = node.get("kind", "step")
+        if kind == "decision":
+            w = h = 120
+        elif kind in ("start", "end"):
+            w = (main_w if lane == "main" else branch_w) * 0.72
+            h = 56
+        else:
+            w = main_w if lane == "main" else branch_w
+            h = 88 if node.get("body") else 64
+        cx = flow_lane_x(width, lane)
+        cy = top + row_h * row + row_h / 2 + bump * row_h * 0.5
+        placed[node_id] = {
+            "box": (cx - w / 2, cy - h / 2, w, h),
+            "kind": kind,
+            "lane": lane,
+            "row": row,
+            "center": (cx, cy),
+        }
+    order = sorted(ids, key=lambda node_id: (placed[node_id]["row"], lane_order[placed[node_id]["lane"]]))
+    spine = [placed[node_id]["center"] for node_id in order]
+    edge_geoms = []
+    for edge in edges:
+        a, b = str(edge.get("from")), str(edge.get("to"))
+        if a not in placed or b not in placed:
+            continue
+        src, dst = placed[a], placed[b]
+        sx, sy = src["center"]
+        tx, ty = dst["center"]
+        sw, sh = src["box"][2], src["box"][3]
+        tw = dst["box"][2]
+        target_top = dst["box"][1]
+        if edge.get("kind") == "retry":
+            side = 1 if src["lane"] == "right" else -1
+            gutter = width - margin - 26 if side == 1 else margin + 26
+            points = [(sx + side * sw / 2, sy), (gutter, sy), (gutter, ty), (tx + side * tw / 2, ty)]
+        elif src["lane"] == dst["lane"]:
+            points = [(sx, sy + sh / 2), (tx, target_top)]
+        else:
+            mid_y = (sy + sh / 2 + target_top) / 2
+            points = [(sx, sy + sh / 2), (sx, mid_y), (tx, mid_y), (tx, target_top)]
+        edge_geoms.append({
+            "points": points,
+            "label": edge.get("label", ""),
+            "kind": edge.get("kind", "flow"),
+            "from": a,
+            "to": b,
+            "mid": point_at_fraction(points, 0.5),
+            "style": edge.get("style") if isinstance(edge.get("style"), dict) else None,
+        })
+    return {"nodes": placed, "order": order, "spine": spine, "edges": edge_geoms}
+
+
+def render_flow(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = flow_geometry(spec, width, height)
+    for edge in geom["edges"]:
+        retry = edge["kind"] == "retry"
+        color = palette["muted"] if retry else palette["primary"]
+        draw_line(ex, draw, edge["points"], color, 2, "dashed" if retry else "solid", True)
+    for node in spec.get("nodes", []):
+        info = geom["nodes"].get(str(node.get("id", "")))
+        if info is None:
+            continue
+        x, y, w, h = info["box"]
+        label = node.get("label", "")
+        if info["kind"] == "decision":
+            colors = light_style_colors(palette, node, {"accent": palette["primary"], "stroke": palette["primary"], "fill": palette["primary_soft"]})
+            draw_diamond(ex, draw, x, y, w, h, colors["stroke"], colors["fill"], 2)
+            draw_text(ex, draw, label, x + w * 0.16, y + h / 2 - 17, w * 0.68, 34, 16, colors["text"], "center", bold=True, fit=True, min_size=10)
+        elif info["kind"] in ("start", "end"):
+            colors = light_style_colors(palette, node, {"accent": palette["primary"], "stroke": palette["primary"], "fill": palette["primary_soft"], "text": palette["primary"]})
+            draw_rect(ex, draw, x, y, w, h, colors["stroke"], colors["fill"], 2, h / 2)
+            draw_text(ex, draw, label, x + 14, y + h / 2 - 14, w - 28, 28, 17, colors["text"], "center", bold=True, fit=True, min_size=11)
+        else:
+            light_card(ex, draw, x, y, w, h, palette, label, node.get("body", ""), item=node)
+    for edge in geom["edges"]:
+        if edge["label"]:
+            mx, my = edge["mid"]
+            draw_badge(ex, draw, edge["label"], mx - 23, my - 14, palette, edge)
+    return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
+
+
+def flow_pulse_targets(spec, width, height):
+    geom = flow_geometry(spec, width, height)
+    targets = []
+    for node_id in geom["order"]:
+        x, y, w, h = geom["nodes"][node_id]["box"]
+        targets.append((x, y, x + w, y + h))
+    return targets
+
+
+def animate_flow_frame(base, spec, idx, total):
+    frame = base.convert("RGBA")
+    overlay = Image.new("RGBA", frame.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    width, height = frame.size
+    palette = merged_palette(spec, light_theme_defaults(spec))
+    geom = flow_geometry(spec, width, height)
+    progress = idx / total
+    marker = spec.get("animation", {}).get("marker", "dot")
+    spine = geom["spine"]
+    if len(spine) >= 2:
+        for trail, strength in [(0, 1.0), (-0.045, 0.60), (-0.09, 0.32)]:
+            x, y = point_at_fraction(spine, progress + trail)
+            if marker == "arrow":
+                draw_light_arrow_marker(draw, x, y, palette["primary"], strength)
+            else:
+                draw_light_glow_dot(draw, x, y, palette["primary"], strength)
+    retry_edges = [edge for edge in geom["edges"] if edge["kind"] == "retry"]
+    for offset_index, edge in enumerate(retry_edges):
+        x, y = point_at_fraction(edge["points"], progress + 0.37 + offset_index * 0.21)
+        draw_light_glow_dot(draw, x, y, palette["muted"], 0.7)
+    targets = flow_pulse_targets(spec, width, height)
+    if targets:
+        active = int(progress * len(targets)) % len(targets)
+        kind = geom["nodes"][geom["order"][active]]["kind"]
+        speed = 6 if kind == "decision" else 3
+        pulse_rect(draw, targets[active], palette["primary"], progress * math.tau * speed, radius=16)
+    frame.alpha_composite(overlay)
+    return frame.convert("RGB")
+
+
+COMPOSITE_MARGIN = 36
+COMPOSITE_GUTTER = 28
+COMPOSITE_TITLE_H = 118
+COMPOSITE_FRAMES = 36
+COMPOSITE_FPS = 10  # 1000/fps must stay a multiple of 10 or the GIF round-trip check fails
+
+
+def composite_sections(spec):
+    return [section for section in spec.get("sections", []) if isinstance(section, dict)]
+
+
+def composite_geometry(spec):
+    width = spec.get("canvas", {}).get("width", DEFAULT_W)
+    margin = COMPOSITE_MARGIN
+    gutter = COMPOSITE_GUTTER
+    sections = composite_sections(spec)
+    packed = []
+    index = 0
+    while index < len(sections):
+        span = sections[index].get("span", "full")
+        if span == "half" and index + 1 < len(sections) and sections[index + 1].get("span", "full") == "half":
+            packed.append([index, index + 1])
+            index += 2
+        else:
+            packed.append([index])
+            index += 1
+    content_w = width - margin * 2
+    half_w = int((content_w - gutter) / 2)
+    y = margin + COMPOSITE_TITLE_H
+    rows = []
+    for row in packed:
+        heights = []
+        for si in row:
+            section = sections[si]
+            entry = LAYOUTS.get(str(section.get("layout", "")))
+            default_h = entry.section_height if entry and entry.section_height else 420
+            heights.append(section.get("height", default_h))
+        row_h = int(max(heights))
+        cells = []
+        if len(row) == 2:
+            cells.append({"x": margin, "w": half_w, "si": row[0]})
+            cells.append({"x": margin + half_w + gutter, "w": half_w, "si": row[1]})
+        else:
+            cells.append({"x": margin, "w": content_w, "si": row[0]})
+        rows.append({"y": y, "h": row_h, "cells": cells})
+        y += row_h + gutter
+    height = (y - gutter + margin) if rows else (margin * 2 + COMPOSITE_TITLE_H)
+    return {"width": width, "height": height, "margin": margin, "rows": rows}
+
+
+def section_region(geom, si):
+    for row in geom["rows"]:
+        for cell in row["cells"]:
+            if cell["si"] == si:
+                return (cell["x"], row["y"], cell["w"], row["h"])
+    return None
+
+
+def section_sub_spec(section, spec, rw, rh):
+    sub = {key: value for key, value in section.items() if key not in ("span", "height", "title", "subtitle", "finish")}
+    if isinstance(section.get("title"), dict):
+        sub["title"] = section["title"]
+    else:
+        # section heading IS the sub-diagram's own title; a space avoids the
+        # "Animated Diagram" placeholder when a section is deliberately untitled
+        sub["title"] = {"main": section.get("title") or " ", "subtitle": section.get("subtitle") or ""}
+    sub["canvas"] = {"width": int(round(rw)), "height": int(round(rh))}
+    for key in ("style", "palette", "animation"):
+        if key not in sub and key in spec:
+            sub[key] = spec[key]
+    return sub
+
+
+def resolve_composite_canvas(spec):
+    geom = composite_geometry(spec)
+    canvas = spec.setdefault("canvas", {})
+    canvas["width"] = geom["width"]
+    canvas["height"] = geom["height"]
+    return geom
+
+
+def render_composite(spec):
+    geom = composite_geometry(spec)
+    width, height = geom["width"], geom["height"]
+    margin = geom["margin"]
+    palette = merged_palette(spec, light_theme_defaults(spec))
+    img = Image.new("RGBA", (c(width), c(height)), hex_rgba(palette["background"]))
+    draw = ImageDraw.Draw(img)
+    ex = Excal(width, height, background=palette["background"])
+    # no page border: sections cover it and would leave dashes in the gutters;
+    # the section cards' own frames carry the page structure
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    page = img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
+    for si, section in enumerate(composite_sections(spec)):
+        rx, ry, rw, rh = [int(round(value)) for value in section_region(geom, si)]
+        sub = section_sub_spec(section, spec, rw, rh)
+        sub_ex, sub_img = LAYOUTS[str(sub.get("layout"))].render(sub)
+        page.paste(sub_img, (rx, ry))
+        for element in sub_ex.elements:
+            element["x"] = round(element["x"] + rx, 2)
+            element["y"] = round(element["y"] + ry, 2)
+            element["id"] = f"s{si + 1}-{element['id']}"
+            ex.elements.append(element)
+    for position, element in enumerate(ex.elements, start=1):
+        element["index"] = f"a{position:04d}"
+    return ex, page
+
+
+def composite_time_slices(section_count, total):
+    if section_count <= 0:
+        return []
+    base_len = max(1, total // section_count)
+    slices = []
+    start = 0
+    for index in range(section_count):
+        length = base_len if index < section_count - 1 else max(1, total - start)
+        slices.append((start, length))
+        start += length
+    return slices
+
+
+def animate_composite_frame(base, spec, idx, total):
+    geom = composite_geometry(spec)
+    sections = composite_sections(spec)
+    frame = base.convert("RGB")
+    slices = composite_time_slices(len(sections), total)
+    if not slices:
+        return frame
+    active = len(slices) - 1
+    for index, (start, length) in enumerate(slices):
+        if start <= idx < start + length:
+            active = index
+            break
+    rx, ry, rw, rh = [int(round(value)) for value in section_region(geom, active)]
+    sub = section_sub_spec(sections[active], spec, rw, rh)
+    entry = LAYOUTS[str(sub.get("layout"))]
+    start, length = slices[active]
+    region_img = frame.crop((rx, ry, rx + rw, ry + rh))
+    animator = entry.animate or animate_light_layout_frame
+    frame.paste(animator(region_img, sub, min(idx - start, length - 1), max(1, length)), (rx, ry))
+    overlay_frame = frame.convert("RGBA")
+    overlay = Image.new("RGBA", overlay_frame.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    palette = merged_palette(spec, light_theme_defaults(spec))
+    pulse_rect(draw, (rx + 3, ry + 3, rx + rw - 3, ry + rh - 3), palette["primary"], (idx / total) * math.tau * 3, radius=18)
+    overlay_frame.alpha_composite(overlay)
+    return overlay_frame.convert("RGB")
+
+
+# Layout registry: single source of truth for dispatch, validation, IR mapping,
+# and composite sizing. `animate=None` means the generic light animator;
+# `required` is a tuple of any-of key groups checked by validate_spec.
+LayoutDef = namedtuple(
+    "LayoutDef",
+    "render animate pulse_targets required kind ir_relations composable section_height min_region",
+)
+
+LAYOUTS = {
+    "circular_loop": LayoutDef(render_circular_loop, animate_circular_loop_frame, None, (("steps",),), "light", ("loop", "cycle"), True, 560, (420, 420)),
+    "timeline": LayoutDef(render_timeline, None, timeline_pulse_targets, (("steps", "items"),), "light", ("sequence", "process", "timeline"), True, 400, (360, 260)),
+    "funnel": LayoutDef(render_funnel, None, funnel_pulse_targets, (("stages", "steps"),), "light", ("funnel",), True, 420, (360, 260)),
+    "matrix": LayoutDef(render_matrix, None, matrix_pulse_targets, (("items",),), "light", ("matrix", "tradeoff"), True, 460, (360, 260)),
+    "stack": LayoutDef(render_stack, None, stack_pulse_targets, (("layers", "steps"),), "light", ("stack", "layers"), True, 420, (360, 260)),
+    "before_after": LayoutDef(render_before_after, None, before_after_pulse_targets, (("before",), ("after",)), "light", ("before_after", "contrast"), True, 500, (360, 300)),
+    "flow": LayoutDef(render_flow, animate_flow_frame, flow_pulse_targets, (("nodes",),), "light", ("flow", "branch", "decision"), True, 480, (360, 260)),
+    "composite": LayoutDef(render_composite, animate_composite_frame, None, (("sections",),), "light", ("composite", "story"), False, None, None),
+    "architecture": LayoutDef(render_architecture, animate_architecture_frame, None, (), "dark", ("architecture",), False, None, None),
+}
+
+IR_RELATION_LAYOUTS = {relation: name for name, entry in LAYOUTS.items() for relation in entry.ir_relations}
+
+
+def animate_frame(base, idx, total, spec=None):
+    if spec is None:
+        return animate_architecture_frame(base, spec, idx, total)
+    entry = LAYOUTS[layout_name(spec)]
+    if entry.animate is not None:
+        return entry.animate(base, spec, idx, total)
+    return animate_light_layout_frame(base, spec, idx, total)
+
+
 def write_outputs(spec, outdir, basename):
+    layout = validate_spec(spec)
+    if layout == "composite":
+        resolve_composite_canvas(spec)
+    defaults = canvas_defaults(spec)
     outdir.mkdir(parents=True, exist_ok=True)
     ex, static = render_static(spec)
     final = finish_static(spec, static)
@@ -1288,8 +1842,9 @@ def write_outputs(spec, outdir, basename):
     gif_path = outdir / f"{basename}.gif"
     excalidraw_path = outdir / f"{basename}.excalidraw"
     final.save(png_path, "PNG")
-    frames = [animate_frame(final, i, spec.get("canvas", {}).get("frames", DEFAULT_FRAMES), spec) for i in range(spec.get("canvas", {}).get("frames", DEFAULT_FRAMES))]
-    duration = int(1000 / spec.get("canvas", {}).get("fps", DEFAULT_FPS))
+    frame_count = spec.get("canvas", {}).get("frames", defaults["frames"])
+    frames = [animate_frame(final, i, frame_count, spec) for i in range(frame_count)]
+    duration = int(1000 / spec.get("canvas", {}).get("fps", defaults["fps"]))
     frames[0].save(gif_path, save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=False)
     ex.write(excalidraw_path)
     return {"png": str(png_path), "gif": str(gif_path), "excalidraw": str(excalidraw_path), "elements": len(ex.elements)}
@@ -1347,10 +1902,11 @@ def readability_checks(excalidraw, spec, expected_width, expected_height):
 
 def check_outputs(result, spec):
     canvas = spec.get("canvas", {})
-    expected_width = canvas.get("width", DEFAULT_W)
-    expected_height = canvas.get("height", DEFAULT_H)
-    expected_frames = canvas.get("frames", DEFAULT_FRAMES)
-    expected_fps = canvas.get("fps", DEFAULT_FPS)
+    defaults = canvas_defaults(spec)
+    expected_width = canvas.get("width", defaults["width"])
+    expected_height = canvas.get("height", defaults["height"])
+    expected_frames = canvas.get("frames", defaults["frames"])
+    expected_fps = canvas.get("fps", defaults["fps"])
 
     checks = []
 
@@ -1395,6 +1951,29 @@ def check_outputs(result, spec):
     )
     checks.extend(readability_checks(excalidraw, spec, expected_width, expected_height))
 
+    if layout_name(spec) == "composite":
+        geom = composite_geometry(spec)
+        tolerance = 2
+        regions_ok = True
+        sizes_ok = True
+        for si, section in enumerate(composite_sections(spec)):
+            region = section_region(geom, si)
+            if region is None:
+                continue
+            rx, ry, rw, rh = [int(round(value)) for value in region]
+            entry = LAYOUTS.get(str(section.get("layout", "")))
+            if entry and entry.min_region and (rw < entry.min_region[0] or rh < entry.min_region[1]):
+                sizes_ok = False
+            prefix = f"s{si + 1}-"
+            for element in elements:
+                if not str(element.get("id", "")).startswith(prefix):
+                    continue
+                box = element_bbox(element)
+                if box[0] < rx - tolerance or box[1] < ry - tolerance or box[2] > rx + rw + tolerance or box[3] > ry + rh + tolerance:
+                    regions_ok = False
+        checks.append({"name": "composite_elements_within_region", "ok": regions_ok})
+        checks.append({"name": "composite_min_region_size", "ok": sizes_ok})
+
     png_path = Path(result["png"])
     with Image.open(png_path) as png:
         png_width = png.width
@@ -1421,7 +2000,11 @@ def main():
 
     raw_spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
     spec = normalize_render_input(raw_spec)
-    result = write_outputs(spec, Path(args.outdir), args.basename)
+    try:
+        result = write_outputs(spec, Path(args.outdir), args.basename)
+    except SpecValidationError as err:
+        print(json.dumps({"ok": False, "error": "spec_validation_failed", "messages": err.messages}, ensure_ascii=False, indent=2))
+        sys.exit(2)
     if args.verify:
         result["verification"] = frame_diff_report(result["gif"])
     if args.check:

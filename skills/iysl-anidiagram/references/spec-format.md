@@ -16,14 +16,18 @@ Use this reference when creating or editing specs for `scripts/render_animated_d
 }
 ```
 
-- `layout`: choose the visual primitive. Supported: `circular_loop`, `timeline`, `funnel`, `matrix`, `stack`, `before_after`, `architecture`.
+- `layout`: choose the visual primitive. Supported: `circular_loop`, `timeline`, `funnel`, `matrix`, `stack`, `before_after`, `flow`, `composite`, `architecture`.
 - `canvas`: output dimensions and GIF timing.
-- `palette`: optional override. Light layouts use `background`, `primary`, `muted`, `border`, `chip`, `text`.
+- `palette`: optional override for both tones. Keys: `background`, `primary`, `muted`, `border`, `chip`, `text`. Under `dark_technical` the defaults come from the dark theme; `chip` also feeds `primary_soft` unless `primary_soft` is set explicitly.
 - Block-level `style`: optional override for a specific step, card, point, stage, or contrast block.
 - `animation.marker`: optional for light layouts; use `arrow` when motion should imply forward handoff instead of moving dots.
 - `style.tone`: optional; use `light_editorial` by default, or `dark_technical` when the source calls for Lanshu/DailyDoseOfDS-style black technical sketches.
 - `finish`: optional visual finish atoms. Supported keys: `grain`, `vignette`, `soft_glow`.
 - Keep labels short. Text fitting is a safety net, not a substitute for editing.
+
+### Validation
+
+The renderer validates every spec before drawing. An unknown `layout` is an error (CLI exits `2` with a `messages` list); it never silently falls back. A spec with no `layout` is accepted only when it is architecture-shaped, meaning it has at least one of: `signature`, `inputs`, `input_title`, `core`, `decision`, `output`, `left_panel`, `center_panel`, `right_panel`, `loop_label`, `retry_label`. Each layout also requires its content field (for example `funnel` requires `stages` or `steps`); missing fields are reported per layout, and composite errors name the section, like `sections[1] (funnel): ...`.
 
 ## Design Atoms
 
@@ -78,14 +82,7 @@ Example:
 ## Principle-Led Workflow
 
 1. Understand the source: claim, actors, stages, metrics, decisions, loops, and contrast.
-2. Decide the relation:
-   - process or sequence -> `timeline`, or `flow` only when branching is needed
-   - repeated cycle -> `circular_loop`
-   - narrowing/drop-off -> `funnel`
-   - tradeoff/positioning -> `matrix`
-   - layers/dependencies -> `stack`
-   - transformation/contrast -> `before_after`
-   - system with sources/pipeline/output -> `architecture`
+2. Pick the layout per the Layout Selection section below.
 3. Create a concise spec or Diagram IR.
 4. Render and verify.
 
@@ -122,7 +119,11 @@ Relation mapping:
 - `matrix`, `tradeoff` -> `matrix`
 - `stack`, `layers` -> `stack`
 - `before_after`, `contrast` -> `before_after`
+- `flow`, `branch`, `decision` -> `flow`
+- `composite`, `story` -> `composite`
 - `architecture` -> `architecture`
+
+For `flow`, the IR accepts an optional `edges` array (same shape as the spec's) next to `nodes`; without it the nodes compile to a sequential chain. For `composite`, the IR carries a `sections` array of sub-IRs, each with its own `relation` and `nodes` plus optional `span`/`height`; nested composite sections are rejected.
 
 ## Layout Selection
 
@@ -132,6 +133,8 @@ Relation mapping:
 - Use `matrix` for prioritization, positioning, tradeoff maps, and impact-effort comparisons.
 - Use `stack` for layers, capability stacks, dependencies, and mental models.
 - Use `before_after` for transformation, contrast, migration, and manual-to-automated shifts.
+- Use `flow` for branching decisions, retry/loop-back, escalation, and merge paths; prefer `timeline` when the path is linear.
+- Use `composite` when the source tells a multi-part story that needs several primitives on one page (for example timeline + funnel + loop).
 - Use `architecture` for system maps with sources, core processing, decision gates, and packaged outputs.
 
 If none fits, add a new primitive. Do not bend an unrelated primitive just to avoid code.
@@ -230,6 +233,65 @@ Recommended: 3 to 7 layers. Order top-to-bottom in reading order.
 
 Use for contrast where the transformation is the main point. Keep each side to 2 to 5 items.
 
+## `flow`
+
+```json
+{
+  "layout": "flow",
+  "title": {"main": "Refund Review Flow", "subtitle": "Gate on policy, retry with evidence"},
+  "nodes": [
+    {"id": "submit", "label": "Submit request", "kind": "start"},
+    {"id": "triage", "label": "Auto triage", "body": "Dedupe, attach history"},
+    {"id": "gate", "label": "Passes policy?", "kind": "decision"},
+    {"id": "fix", "label": "Request evidence", "lane": "right"},
+    {"id": "ship", "label": "Refund issued", "kind": "end"}
+  ],
+  "edges": [
+    {"from": "submit", "to": "triage"},
+    {"from": "triage", "to": "gate"},
+    {"from": "gate", "to": "ship", "label": "yes"},
+    {"from": "gate", "to": "fix", "label": "no"},
+    {"from": "fix", "to": "triage", "kind": "retry", "label": "resubmit"}
+  ]
+}
+```
+
+- `nodes[].id`: required and unique; edges reference it.
+- `nodes[].kind`: `step` (default card), `decision` (diamond), `start`/`end` (accent pill).
+- `nodes[].lane`: `main` (default), `left`, or `right` for branch targets.
+- `edges` are optional; omitting them chains the nodes in order (prefer `timeline` then). `kind: "retry"` renders dashed through the outer gutter; `label` becomes a badge on the edge.
+- Rows come from the longest forward path (retry edges excluded, so loop-backs are safe). Two nodes on the same lane and row offset by half a row — keep it to 8 nodes or fewer and prefer full-width regions.
+
+Animation: the marker travels the main spine, retry edges get dimmer offset dots, and the active node pulses — faster when it is a decision.
+
+## `composite`
+
+One infographic page that stacks several primitives as sections. Use it for multi-part stories; every section keeps one claim and the page title carries the umbrella story.
+
+```json
+{
+  "layout": "composite",
+  "title": {"main": "Atlas 2.0 Launch, One Page", "subtitle": "Plan, adoption, retention"},
+  "canvas": {"width": 1210},
+  "sections": [
+    {"span": "full", "height": 400, "layout": "timeline", "title": "Rollout path",
+     "steps": [{"label": "Beta"}, {"label": "GA"}]},
+    {"span": "half", "height": 560, "layout": "funnel", "title": "Launch funnel",
+     "stages": [{"label": "Visits", "value": "48k"}]},
+    {"span": "half", "height": 560, "layout": "circular_loop", "title": "Retention loop",
+     "steps": [{"label": "Build"}, {"label": "Share"}]}
+  ]
+}
+```
+
+- A section is any composable layout's spec fields inlined, plus `span`, `height`, and string `title`/`subtitle` (which become the sub-diagram's own title — there is no separate heading element).
+- Composable layouts: `circular_loop`, `timeline`, `funnel`, `matrix`, `stack`, `before_after`, `flow`. Nested `composite` and `architecture` sections are rejected.
+- Arrangement: sections stack in order; a `half` pairs with the immediately following `half`, an orphan `half` is promoted to full width, and a row is as tall as its tallest cell. Margins/gutters are fixed (36/28) with a 118px page title block.
+- Page height is computed from the rows — setting `canvas.height` on a composite is a validation error. Width defaults to 1210.
+- `style`, `palette`, and `animation` inherit page -> section; a section key wins wholesale. `finish` applies once at page level only.
+- Each section must meet its layout's minimum region (generally 360x260; `circular_loop` needs 420x420) or validation fails. Keep pages to about 5 sections; half columns are ~560px wide.
+- Animation defaults for composite are `frames: 36, fps: 10` (sections activate sequentially, each playing its own animation during its slice, with a pulsing outline on the active section). Keep `1000/fps` a multiple of 10 or the GIF fps check fails; drop `frames` to 24 first if file size matters.
+
 ## `architecture`
 
 Legacy dark architecture/process layout. Use when the content is a system map with sources, core processing, a decision gate, and packaged outputs.
@@ -270,13 +332,9 @@ python scripts/render_animated_diagram.py \
   --check
 ```
 
-Quality bar:
+Everything mechanical (files exist, dimensions/fps/frames match, motion is nonzero, Excalidraw ids unique, fonts, text bounds, composite regions) is enforced by `--check` — read its JSON output for the full list. Exit codes: `0` ok, `1` a check failed, `2` invalid spec.
 
-- `.png`, `.gif`, and `.excalidraw` exist.
-- GIF dimensions, fps, and frame count match `canvas`.
-- Frame diff shows real motion.
-- Excalidraw IDs are unique.
-- Text elements use `fontFamily: 5`.
-- `files` is empty unless embedded images were explicitly requested.
-- Text stays inside the canvas and does not shrink below the minimum readability floor.
-- Static PNG should be understandable before relying on GIF motion.
+What `--check` cannot verify, review by eye on the PNG:
+
+- The static PNG is understandable before relying on GIF motion.
+- No text overlap, cramped badges, or misleading hierarchy.
