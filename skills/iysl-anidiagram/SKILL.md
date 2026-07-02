@@ -45,7 +45,7 @@ Schemas live only in `references/spec-format.md` (with Diagram IR and extension 
 ## Render
 
 ```bash
-python /path/to/skill/scripts/render_animated_diagram.py \
+python3 /path/to/skill/scripts/render_animated_diagram.py \
   --spec /path/to/spec.json \
   --outdir /path/to/output-dir \
   --basename descriptive-name \

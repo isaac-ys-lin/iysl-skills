@@ -119,6 +119,18 @@ class FlowLayoutTest(unittest.TestCase):
             self.renderer.validate_spec(spec)
         self.assertIn("ghost", " ".join(ctx.exception.messages))
 
+    def test_forward_cycle_must_be_marked_retry(self):
+        spec = {
+            "layout": "flow",
+            "nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+            "edges": [{"from": "a", "to": "b"}, {"from": "b", "to": "a"}],
+        }
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec(spec)
+        joined = " ".join(ctx.exception.messages)
+        self.assertIn("forward flow edges contain a cycle", joined)
+        self.assertIn("kind: retry", joined)
+
     def test_flow_asset_spec_renders(self):
         spec = json.loads((ROOT / "assets" / "flow-spec.json").read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as tmp:

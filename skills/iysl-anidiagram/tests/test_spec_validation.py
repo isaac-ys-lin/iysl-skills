@@ -87,6 +87,25 @@ class SpecValidationTest(unittest.TestCase):
         self.assertEqual(payload["error"], "spec_validation_failed")
         self.assertTrue(payload["messages"])
 
+    def test_flow_node_items_must_be_objects(self):
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec({"layout": "flow", "nodes": ["bad-node"]})
+        self.assertIn("nodes[0] must be an object", " ".join(ctx.exception.messages))
+
+    def test_cli_exits_2_for_invalid_flow_node_shape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "bad-flow.json"
+            bad.write_text(json.dumps({"layout": "flow", "nodes": ["bad-node"]}), encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(MODULE_PATH), "--spec", str(bad), "--outdir", tmp],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["error"], "spec_validation_failed")
+        self.assertIn("nodes[0] must be an object", " ".join(payload["messages"]))
+
 
 if __name__ == "__main__":
     unittest.main()

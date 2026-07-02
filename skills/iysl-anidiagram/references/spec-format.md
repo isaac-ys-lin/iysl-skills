@@ -259,7 +259,7 @@ Use for contrast where the transformation is the main point. Keep each side to 2
 - `nodes[].id`: required and unique; edges reference it.
 - `nodes[].kind`: `step` (default card), `decision` (diamond), `start`/`end` (accent pill).
 - `nodes[].lane`: `main` (default), `left`, or `right` for branch targets.
-- `edges` are optional; omitting them chains the nodes in order (prefer `timeline` then). `kind: "retry"` renders dashed through the outer gutter; `label` becomes a badge on the edge.
+- `edges` are optional; omitting them chains the nodes in order (prefer `timeline` then). `kind: "retry"` renders dashed through the outer gutter; `label` becomes a badge on the edge. Forward edges must be acyclic; mark loop-backs as `kind: "retry"`.
 - Rows come from the longest forward path (retry edges excluded, so loop-backs are safe). Two nodes on the same lane and row offset by half a row — keep it to 8 nodes or fewer and prefer full-width regions.
 
 Animation: the marker travels the main spine, retry edges get dimmer offset dots, and the active node pulses — faster when it is a decision.

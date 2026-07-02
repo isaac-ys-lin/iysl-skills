@@ -565,6 +565,9 @@ def validate_single(spec, prefix=""):
             messages.append(f"{prefix}'{key}' must be a list")
     if layout == "flow":
         nodes = spec.get("nodes") or []
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                messages.append(f"{prefix}nodes[{index}] must be an object")
         node_ids = [str(node.get("id", "")) for node in nodes if isinstance(node, dict)]
         if any(not node_id for node_id in node_ids):
             messages.append(f"{prefix}every flow node needs a non-empty 'id'")
@@ -573,6 +576,7 @@ def validate_single(spec, prefix=""):
         known = set(node_ids)
         edges = spec.get("edges")
         if isinstance(edges, list):
+            forward_edges = []
             for index, edge in enumerate(edges):
                 if not isinstance(edge, dict):
                     messages.append(f"{prefix}edges[{index}] must be an object")
@@ -581,9 +585,37 @@ def validate_single(spec, prefix=""):
                     ref = str(edge.get(end, ""))
                     if ref not in known:
                         messages.append(f"{prefix}edges[{index}].{end} references unknown node '{ref}'")
+                if edge.get("kind") != "retry":
+                    forward_edges.append((str(edge.get("from", "")), str(edge.get("to", ""))))
+            if not messages and flow_forward_edges_have_cycle(forward_edges, known):
+                messages.append(f"{prefix}forward flow edges contain a cycle; mark loop-back edges with kind: retry")
     if layout == "composite":
         messages.extend(validate_composite_sections(spec, prefix))
     return layout, messages
+
+
+def flow_forward_edges_have_cycle(edges, node_ids):
+    graph = {node_id: [] for node_id in node_ids}
+    for source, target in edges:
+        if source in graph and target in graph:
+            graph[source].append(target)
+    visiting = set()
+    visited = set()
+
+    def visit(node_id):
+        if node_id in visiting:
+            return True
+        if node_id in visited:
+            return False
+        visiting.add(node_id)
+        for target in graph[node_id]:
+            if visit(target):
+                return True
+        visiting.remove(node_id)
+        visited.add(node_id)
+        return False
+
+    return any(visit(node_id) for node_id in graph)
 
 
 def validate_composite_sections(spec, prefix=""):
