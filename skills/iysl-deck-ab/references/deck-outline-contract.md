@@ -24,7 +24,7 @@ Use this contract when converting any content, notes, talk script, meeting recor
 
 ## Outline Shape
 
-Work as an Architect persona: identify the decision, audience turning points, causal structure, and priority of ideas, then create a deck of at most 20 slides.
+Work as an Architect persona: identify the decision, audience turning points, causal structure, and priority of ideas; assign each slide one primary logic relation (causal, contrast, hierarchy, flow, loop, composition, or timeline), then create a deck of at most 20 slides. If the user did not state the audience or the decision the deck must drive, infer them from the source and reflect the assumption in the cover and narrative goals instead of blocking.
 
 Output must start with exactly one fenced code block containing only `<STYLE_INSTRUCTIONS>` XML tags and style guide. Do not place summaries, conversational filler, or another style block before it.
 
@@ -51,7 +51,7 @@ Single idea this slide must make the audience understand or believe.
 Source-backed content; missing evidence is SOURCE NEEDED.
 
 // VISUAL
-Main visual, chart, infographics, or scene concept with required visible labels.
+Main visual, chart, infographics, or scene concept with required visible labels, plus a checkable logic spec: element count, arrangement order, direction (such as arrow flow), and relation type. Abstract descriptions such as "a diagram showing the concept" do not qualify.
 
 // LAYOUT
 16:9 composition, hierarchy, reading path, and editable text zones.

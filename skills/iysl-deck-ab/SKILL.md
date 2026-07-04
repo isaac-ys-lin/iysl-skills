@@ -22,14 +22,15 @@ Exclude PPTX/Keynote export, one-off image generation, writing polish, asset sea
 ## Core Flow
 
 1. Classify input: raw source, transcript, brief, slide brief, prompt set, or critique.
-2. For raw source/deck needs, load `references/deck-outline-contract.md` and outline first.
-3. For A/B prompts, style anchors, API packs, or slide briefs, load `references/image-prompt-workflow.md`.
-4. Before saving artifacts, load `references/artifact-storage.md`.
-5. Keep outline as story truth; prompts are visual-generation instructions.
+2. Load `references/core-role.md` and adopt it as the working role and output contract for all outline and prompt production, whether working inline or via subagent.
+3. For raw source/deck needs, load `references/deck-outline-contract.md` and outline first.
+4. For A/B prompts, style anchors, API packs, or slide briefs, load `references/image-prompt-workflow.md`.
+5. Before saving artifacts, load `references/artifact-storage.md`.
+6. Keep outline as story truth; prompts are visual-generation instructions.
 
 ## Reference Loading Map
 
-- `references/core-role.md`: subagent role prompt.
+- `references/core-role.md`: role and output contract for inline or subagent work.
 - `references/deck-outline-contract.md`: STYLE_INSTRUCTIONS, Slide 1..N, source fidelity, cover/back-cover, Chinese labels.
 - `references/image-prompt-workflow.md`: Mode A/B, whitelist, assembly, API/reference anchor, checks, correction suffix.
 - `references/artifact-storage.md`: run folder, manifest, staged folders, versioning, secrets ban.
@@ -37,7 +38,7 @@ Exclude PPTX/Keynote export, one-off image generation, writing polish, asset sea
 
 ## Subagent Rule
 
-Use a subagent for long outlines, multi-page prompts, or API packs when available. Before dispatch, read `references/core-role.md` and prepend it with source material, target language, label policy, output mode, slide count, and anchor needs. Main agent validates.
+Use a subagent for long outlines, multi-page prompts, or API packs when available. Before dispatch, read `references/core-role.md` and prepend it with source material, target language, label policy, output mode, slide count, anchor needs, and — when known — the audience and the decision the deck must drive. If the user did not specify audience or purpose, infer them from the source and mark the assumption instead of blocking. Main agent validates.
 
 ## Run Folder Trigger Summary
 
@@ -48,6 +49,7 @@ Create a run folder for more than 3 slides, subagent work, Mode A/B, API product
 - One `STYLE_INSTRUCTIONS` block before Slide 1.
 - Slide 1 is cover; final slide is back cover; `N <= 20`.
 - Every slide has exactly `// NARRATIVE GOAL`, `// KEY CONTENT`, `// VISUAL`, `// LAYOUT`.
+- Every `// VISUAL` states a checkable logic spec: element count, order, direction, and relation type.
 - Unsupported facts are marked `SOURCE NEEDED`.
 - Chinese visible labels stay in Traditional Chinese unless source says otherwise.
 - Mode B includes a visible-label whitelist and no extra in-image text.

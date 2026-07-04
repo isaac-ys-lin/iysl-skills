@@ -109,6 +109,7 @@ Check in order:
 4. Text behavior: Mode A has limited clean key text; Mode B obeys the whitelist.
 5. Label correctness: Chinese characters and acronyms are exact.
 6. Editability: final text can be added later in a clear area.
+7. Logic fidelity: element count, ordering, direction, and relation type in the image match the slide brief's logic spec.
 
 When a result fails, report the smallest useful correction suffix, for example:
 
@@ -116,3 +117,4 @@ When a result fails, report the smallest useful correction suffix, for example:
 - `補充：白名單外文字全部移除，使用無字圖例符號表示層級。`
 - `補充：四字以上標籤改由後製疊字，圖中只保留無字圖例。`
 - `補充：此頁成效數字標 SOURCE NEEDED，不以推測數字代替。`
+- `補充：流程必須是四個節點由左至右，第二到第三節點之間改為虛線，表示待確認；不要增減節點。`
