@@ -1,0 +1,12 @@
+{
+  "layout": "ranking",
+  "canvas": {"width": 1210, "height": 700, "frames": 24, "fps": 10},
+  "title": {"main": "Monthly Cloud Spend by Service", "subtitle": "Independent line items — start cost talks at the top"},
+  "items": [
+    {"label": "Compute clusters", "value": 42, "display": "42k"},
+    {"label": "Object storage", "value": 18, "display": "18k"},
+    {"label": "Network egress", "value": 9, "display": "9k"},
+    {"label": "Observability stack", "value": 6, "display": "6k"},
+    {"label": "Build runners", "value": 4, "display": "4k"}
+  ]
+}

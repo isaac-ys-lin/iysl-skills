@@ -227,6 +227,7 @@ class Excal:
         self.height = height
         self.background = background or THEME["bg"]
         self.elements = []
+        self.painted_texts = []
         self.count = 0
         self.rng = random.Random(2069769416930414980)
 
@@ -343,6 +344,18 @@ def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand
     elif align == "right":
         tx = c(x + w) - tw
     ty = c(y) + (c(h) - th) / 2
+    if tw > 0 and th > 0:
+        # the true painted box, unlike the estimated Excalidraw element width;
+        # readability checks in check_outputs consume this
+        ex.painted_texts.append(
+            {
+                "text": str(text),
+                "x": round(tx / SCALE, 2),
+                "y": round(ty / SCALE, 2),
+                "w": round(tw / SCALE, 2),
+                "h": round(th / SCALE, 2),
+            }
+        )
     draw.multiline_text((tx, ty), text, font=font, fill=hex_rgba(color), spacing=c(spacing), align=align)
 
 
@@ -563,6 +576,14 @@ def validate_single(spec, prefix=""):
         value = spec.get(key)
         if value is not None and not isinstance(value, list):
             messages.append(f"{prefix}'{key}' must be a list")
+    quality = spec.get("quality")
+    if quality is not None and not isinstance(quality, dict):
+        messages.append(f"{prefix}quality must be an object")
+    elif isinstance(quality, dict):
+        for key in ("margin", "collision_tolerance", "min_font_size"):
+            value = quality.get(key)
+            if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0):
+                messages.append(f"{prefix}quality.{key} must be a non-negative number")
     if layout == "flow":
         nodes = spec.get("nodes") or []
         for index, node in enumerate(nodes):
@@ -589,6 +610,22 @@ def validate_single(spec, prefix=""):
                     forward_edges.append((str(edge.get("from", "")), str(edge.get("to", ""))))
             if not messages and flow_forward_edges_have_cycle(forward_edges, known):
                 messages.append(f"{prefix}forward flow edges contain a cycle; mark loop-back edges with kind: retry")
+    if layout == "ranking":
+        items = spec.get("items") or []
+        values = []
+        for index, item in enumerate(items):
+            if not isinstance(item, dict):
+                messages.append(f"{prefix}items[{index}] must be an object")
+                continue
+            if not str(item.get("label", "")).strip():
+                messages.append(f"{prefix}items[{index}] needs a non-empty 'label'")
+            value = item.get("value")
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+                messages.append(f"{prefix}items[{index}].value must be a non-negative number")
+            else:
+                values.append(value)
+        if items and values and not any(value > 0 for value in values):
+            messages.append(f"{prefix}ranking needs at least one item with value > 0")
     if layout == "composite":
         messages.extend(validate_composite_sections(spec, prefix))
     return layout, messages
@@ -716,6 +753,8 @@ def compile_diagram_ir(ir):
         spec["steps"] = [node_base(n, "label", "badge") for n in nodes]
     elif layout == "funnel":
         spec["stages"] = [node_base(n, "label", "value") for n in nodes]
+    elif layout == "ranking":
+        spec["items"] = [node_base(n, "label", "display", defaults=lambda node: {"value": node.get("value", 0)}) for n in nodes]
     elif layout == "stack":
         spec["layers"] = [node_base(n, "label", "body") for n in nodes]
     elif layout == "matrix":
@@ -996,7 +1035,10 @@ def render_timeline(spec):
         draw_ellipse(ex, draw, x - 22, y - 22, 44, 44, colors["stroke"], colors["fill"], 3)
         draw_text(ex, draw, str(index + 1), x - 22, y - 22, 44, 44, 20, colors["text"], "center", bold=True, fit=True, min_size=12, wrap=False)
         card_y = y + 58 if (index % 2 == 0 or geom["compact"]) else y - 138
-        light_card(ex, draw, x - card_w / 2, card_y, card_w, 92, palette, step.get("label", ""), step.get("body", ""), index=index + 1, item=step)
+        # end cards are node-centered and can poke past the canvas edge on
+        # narrow canvases with few steps; keep them inside the margin gate
+        card_x = max(10, min(x - card_w / 2, width - 10 - card_w))
+        light_card(ex, draw, card_x, card_y, card_w, 92, palette, step.get("label", ""), step.get("body", ""), index=index + 1, item=step)
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
@@ -1034,6 +1076,88 @@ def render_funnel(spec):
         value = stage.get("value", "")
         draw_text(ex, draw, label, x + 26, y + 15, w * 0.55, row_h - 42, 22, colors["text"], "left", bold=True, fit=True, min_size=13)
         draw_text(ex, draw, value, x + w * 0.62, y + 15, w * 0.30, row_h - 42, 24, colors["value"], "right", bold=True, fit=True, min_size=13, wrap=False)
+    return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
+
+
+def ranking_items(spec):
+    items = [item for item in spec.get("items", []) if isinstance(item, dict)]
+    if str(spec.get("sort", "desc")) == "none":
+        return items
+    return sorted(items, key=lambda item: item.get("value", 0) or 0, reverse=True)
+
+
+def ranking_geometry(spec, width, height):
+    margin = light_margin(width, height)
+    items = ranking_items(spec)
+    count = max(1, len(items))
+    top_y = margin + 150
+    row_h = min(88, max(56, (height - top_y - margin - 40) / count))
+    label_w = min(240, (width - margin * 2) * 0.24)
+    value_w = 104
+    bar_x = margin + 36 + label_w + 18
+    bar_max_w = width - bar_x - (margin + 36 + value_w + 16)
+    return {
+        "items": items,
+        "count": count,
+        "top_y": top_y,
+        "row_h": row_h,
+        "label_w": label_w,
+        "value_w": value_w,
+        "bar_x": bar_x,
+        "bar_max_w": bar_max_w,
+    }
+
+
+def ranking_max_value(items):
+    return max((item.get("value", 0) or 0 for item in items), default=0) or 1
+
+
+def ranking_bar_width(geom, item, max_value):
+    return max(10, geom["bar_max_w"] * (item.get("value", 0) or 0) / max_value)
+
+
+def format_ranking_value(item):
+    display = item.get("display")
+    if display not in (None, ""):
+        return str(display)
+    value = item.get("value", 0)
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return str(value)
+
+
+def render_ranking(spec):
+    ex, img, draw, palette, width, height, margin = light_canvas(spec)
+    draw_light_title(ex, draw, spec, width, margin, palette)
+    geom = ranking_geometry(spec, width, height)
+    max_value = ranking_max_value(geom["items"])
+    bar_h = geom["row_h"] - 26
+    for index, item in enumerate(geom["items"]):
+        y = geom["top_y"] + index * geom["row_h"] + 6
+        colors = light_style_colors(
+            palette,
+            item,
+            {"accent": palette["primary"], "stroke": palette["primary"], "fill": palette["primary_soft"], "value": palette["primary"]},
+        )
+        draw_text(ex, draw, item.get("label", ""), margin + 36, y, geom["label_w"], bar_h, 20, colors["text"], "right", bold=True, fit=True, min_size=12)
+        bar_w = ranking_bar_width(geom, item, max_value)
+        draw_rect(ex, draw, geom["bar_x"], y, bar_w, bar_h, colors["stroke"], colors["fill"], 2, 10)
+        draw_text(
+            ex,
+            draw,
+            format_ranking_value(item),
+            width - margin - 36 - geom["value_w"],
+            y,
+            geom["value_w"],
+            bar_h,
+            22,
+            colors["value"],
+            "right",
+            bold=True,
+            fit=True,
+            min_size=12,
+            wrap=False,
+        )
     return ex, img.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
 
 
@@ -1420,6 +1544,18 @@ def funnel_pulse_targets(spec, width, height):
     return targets
 
 
+def ranking_pulse_targets(spec, width, height):
+    geom = ranking_geometry(spec, width, height)
+    max_value = ranking_max_value(geom["items"])
+    bar_h = geom["row_h"] - 26
+    targets = []
+    for index, item in enumerate(geom["items"]):
+        y = geom["top_y"] + index * geom["row_h"] + 6
+        bar_w = ranking_bar_width(geom, item, max_value)
+        targets.append((geom["bar_x"], y, geom["bar_x"] + bar_w, y + bar_h))
+    return targets
+
+
 def matrix_pulse_targets(spec, width, height):
     geom = matrix_geometry(spec, width, height)
     targets = []
@@ -1784,6 +1920,10 @@ def render_composite(spec):
             element["y"] = round(element["y"] + ry, 2)
             element["id"] = f"s{si + 1}-{element['id']}"
             ex.elements.append(element)
+        for painted in sub_ex.painted_texts:
+            ex.painted_texts.append(
+                {**painted, "x": round(painted["x"] + rx, 2), "y": round(painted["y"] + ry, 2)}
+            )
     for position, element in enumerate(ex.elements, start=1):
         element["index"] = f"a{position:04d}"
     return ex, page
@@ -1842,6 +1982,7 @@ LAYOUTS = {
     "circular_loop": LayoutDef(render_circular_loop, animate_circular_loop_frame, None, (("steps",),), "light", ("loop", "cycle"), True, 560, (420, 420)),
     "timeline": LayoutDef(render_timeline, None, timeline_pulse_targets, (("steps", "items"),), "light", ("sequence", "process", "timeline"), True, 400, (360, 260)),
     "funnel": LayoutDef(render_funnel, None, funnel_pulse_targets, (("stages", "steps"),), "light", ("funnel",), True, 420, (360, 260)),
+    "ranking": LayoutDef(render_ranking, None, ranking_pulse_targets, (("items",),), "light", ("ranking", "magnitude"), True, 420, (360, 260)),
     "matrix": LayoutDef(render_matrix, None, matrix_pulse_targets, (("items",),), "light", ("matrix", "tradeoff"), True, 460, (360, 260)),
     "stack": LayoutDef(render_stack, None, stack_pulse_targets, (("layers", "steps"),), "light", ("stack", "layers"), True, 420, (360, 260)),
     "before_after": LayoutDef(render_before_after, None, before_after_pulse_targets, (("before",), ("after",)), "light", ("before_after", "contrast"), True, 500, (360, 300)),
@@ -1879,7 +2020,13 @@ def write_outputs(spec, outdir, basename):
     duration = int(1000 / spec.get("canvas", {}).get("fps", defaults["fps"]))
     frames[0].save(gif_path, save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=False)
     ex.write(excalidraw_path)
-    return {"png": str(png_path), "gif": str(gif_path), "excalidraw": str(excalidraw_path), "elements": len(ex.elements)}
+    return {
+        "png": str(png_path),
+        "gif": str(gif_path),
+        "excalidraw": str(excalidraw_path),
+        "elements": len(ex.elements),
+        "painted_texts": ex.painted_texts,
+    }
 
 
 def frame_diff_report(gif_path):
@@ -1914,9 +2061,57 @@ def element_bbox(element):
     )
 
 
+def quality_settings(spec):
+    quality = spec.get("quality")
+    return quality if isinstance(quality, dict) else {}
+
+
+def paint_quality_checks(painted_texts, elements, spec, expected_width, expected_height):
+    quality = quality_settings(spec)
+    tolerance = quality.get("collision_tolerance", 2)
+    margin = quality.get("margin", 8)
+    boxes = [
+        (item["x"], item["y"], item["x"] + item["w"], item["y"] + item["h"], item["text"])
+        for item in painted_texts or []
+    ]
+
+    collisions = []
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1 :]:
+            overlap_w = min(a[2], b[2]) - max(a[0], b[0])
+            overlap_h = min(a[3], b[3]) - max(a[1], b[1])
+            if overlap_w > tolerance and overlap_h > tolerance:
+                collisions.append({"a": a[4], "b": b[4], "overlap": [round(overlap_w, 1), round(overlap_h, 1)]})
+
+    text_outside = [
+        box[4]
+        for box in boxes
+        if box[0] < margin or box[1] < margin or box[2] > expected_width - margin or box[3] > expected_height - margin
+    ]
+    shape_outside = []
+    for element in elements or []:
+        if element.get("type") == "text":
+            continue
+        box = element_bbox(element)
+        if box[0] < margin or box[1] < margin or box[2] > expected_width - margin or box[3] > expected_height - margin:
+            shape_outside.append(element.get("id"))
+
+    return [
+        {"name": "readability_painted_text_present", "ok": bool(boxes)},
+        {"name": "readability_text_collision", "ok": not collisions, "tolerance": tolerance, "collisions": collisions[:8]},
+        {
+            "name": "readability_canvas_margin",
+            "ok": not text_outside and not shape_outside,
+            "margin": margin,
+            "text_outside": text_outside[:8],
+            "shape_outside": shape_outside[:8],
+        },
+    ]
+
+
 def readability_checks(excalidraw, spec, expected_width, expected_height):
     layout = layout_name(spec)
-    min_font = 8 if layout == "architecture" else spec.get("quality", {}).get("min_font_size", 8)
+    min_font = 8 if layout == "architecture" else quality_settings(spec).get("min_font_size", 8)
     text_elements = [element for element in excalidraw.get("elements", []) if element.get("type") == "text"]
     boxes = [element_bbox(element) for element in text_elements]
     return [
@@ -1982,6 +2177,7 @@ def check_outputs(result, spec):
         ]
     )
     checks.extend(readability_checks(excalidraw, spec, expected_width, expected_height))
+    checks.extend(paint_quality_checks(result.get("painted_texts"), elements, spec, expected_width, expected_height))
 
     if layout_name(spec) == "composite":
         geom = composite_geometry(spec)
@@ -2041,6 +2237,7 @@ def main():
         result["verification"] = frame_diff_report(result["gif"])
     if args.check:
         result["checks"] = check_outputs(result, spec)
+    result.pop("painted_texts", None)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if args.check and not result["checks"]["ok"]:
         sys.exit(1)

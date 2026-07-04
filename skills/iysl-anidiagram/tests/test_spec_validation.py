@@ -54,6 +54,7 @@ class SpecValidationTest(unittest.TestCase):
             "circular_loop",
             "timeline",
             "funnel",
+            "ranking",
             "matrix",
             "stack",
             "before_after",
@@ -71,6 +72,48 @@ class SpecValidationTest(unittest.TestCase):
         self.assertEqual(self.renderer.IR_RELATION_LAYOUTS["loop"], "circular_loop")
         self.assertEqual(self.renderer.IR_RELATION_LAYOUTS["branch"], "flow")
         self.assertEqual(self.renderer.IR_RELATION_LAYOUTS["story"], "composite")
+        self.assertEqual(self.renderer.IR_RELATION_LAYOUTS["ranking"], "ranking")
+        self.assertEqual(self.renderer.IR_RELATION_LAYOUTS["magnitude"], "ranking")
+
+    def test_ranking_requires_labels_and_nonnegative_numeric_values(self):
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec(
+                {
+                    "layout": "ranking",
+                    "items": [
+                        {"label": "", "value": 10},
+                        {"label": "ok", "value": -3},
+                        {"label": "also ok", "value": "many"},
+                    ],
+                }
+            )
+        joined = " ".join(ctx.exception.messages)
+        self.assertIn("items[0] needs a non-empty 'label'", joined)
+        self.assertIn("items[1].value must be a non-negative number", joined)
+        self.assertIn("items[2].value must be a non-negative number", joined)
+
+    def test_ranking_requires_one_positive_value(self):
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec(
+                {"layout": "ranking", "items": [{"label": "a", "value": 0}, {"label": "b", "value": 0}]}
+            )
+        self.assertIn("at least one item with value > 0", " ".join(ctx.exception.messages))
+
+    def test_quality_must_be_an_object_with_nonnegative_numeric_knobs(self):
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec({"layout": "funnel", "stages": [{"label": "a"}], "quality": "loose"})
+        self.assertIn("quality must be an object", " ".join(ctx.exception.messages))
+        with self.assertRaises(self.renderer.SpecValidationError) as ctx:
+            self.renderer.validate_spec(
+                {"layout": "funnel", "stages": [{"label": "a"}], "quality": {"margin": -4}}
+            )
+        self.assertIn("quality.margin must be a non-negative number", " ".join(ctx.exception.messages))
+
+    def test_ranking_sorts_descending_by_default_and_respects_sort_none(self):
+        spec = {"items": [{"label": "small", "value": 1}, {"label": "big", "value": 9}]}
+        self.assertEqual([item["label"] for item in self.renderer.ranking_items(spec)], ["big", "small"])
+        spec["sort"] = "none"
+        self.assertEqual([item["label"] for item in self.renderer.ranking_items(spec)], ["small", "big"])
 
     def test_cli_exits_2_on_invalid_spec(self):
         with tempfile.TemporaryDirectory() as tmp:

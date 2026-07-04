@@ -1,0 +1,12 @@
+{
+  "layout": "ranking",
+  "canvas": {"width": 1210, "height": 760, "frames": 30, "fps": 10},
+  "title": {"main": "Support Load by Channel", "subtitle": "Tickets per week, sorted by volume"},
+  "items": [
+    {"label": "Email", "value": 480, "display": "480"},
+    {"label": "Live chat", "value": 310},
+    {"label": "Community forum", "value": 150},
+    {"label": "Phone", "value": 90},
+    {"label": "Social", "value": 45}
+  ]
+}

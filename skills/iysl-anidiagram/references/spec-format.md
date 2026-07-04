@@ -29,6 +29,12 @@ Use this reference when creating or editing specs for `scripts/render_animated_d
 
 The renderer validates every spec before drawing. An unknown `layout` is an error (CLI exits `2` with a `messages` list); it never silently falls back. A spec with no `layout` is accepted only when it is architecture-shaped, meaning it has at least one of: `signature`, `inputs`, `input_title`, `core`, `decision`, `output`, `left_panel`, `center_panel`, `right_panel`, `loop_label`, `retry_label`. Each layout also requires its content field (for example `funnel` requires `stages` or `steps`); missing fields are reported per layout, and composite errors name the section, like `sections[1] (funnel): ...`.
 
+## Assets Versus Gallery
+
+- `assets/*-spec.json` are compact renderer contract samples. Use them to confirm field names, supported layout structures, and output checks.
+- `examples/gallery/` contains decision examples. Use these to understand how a source brief, claim, relation, rejected alternatives, and style choices lead to a spec.
+- Do not copy a gallery spec as a template before stating the claim and relation. The gallery demonstrates judgment; the renderer validates contracts.
+
 ## Design Atoms
 
 Use design atoms to tune presentation without replacing semantic layout judgment:
@@ -86,6 +92,14 @@ Example:
 3. Create a concise spec or Diagram IR.
 4. Render and verify.
 
+Decision ladder:
+
+1. Claim: what should the reader understand first? If the source yields no claim, stop and say a diagram is not warranted instead of inventing one (see `examples/gallery/09-no-claim-refusal/`).
+2. Relation: sequence, loop, narrowing, ranking, tradeoff, layers, contrast, branching, system map, or multi-part story.
+3. Layout: choose the primitive that makes that relation easiest to scan.
+4. Emphasis: choose density, grouping, tone, motion marker, and block styles.
+5. Validation: render, run `--check`, and review the PNG by eye.
+
 The LLM may adapt visual emphasis, labels, palette, and animation intent when it improves explanation. The renderer should not hard-code semantic judgment beyond validating structure and output.
 
 ## Diagram IR
@@ -116,6 +130,7 @@ Relation mapping:
 - `sequence`, `process`, `timeline` -> `timeline`
 - `loop`, `cycle` -> `circular_loop`
 - `funnel` -> `funnel`
+- `ranking`, `magnitude` -> `ranking`
 - `matrix`, `tradeoff` -> `matrix`
 - `stack`, `layers` -> `stack`
 - `before_after`, `contrast` -> `before_after`
@@ -130,6 +145,7 @@ For `flow`, the IR accepts an optional `edges` array (same shape as the spec's) 
 - Use `circular_loop` for repeated traps, flywheels, incentive loops, metric loops, and cyclic experiences.
 - Use `timeline` for chronological plans, release paths, incident sequences, and maturity stages.
 - Use `funnel` for conversion, filtering, narrowing, leakage, and drop-off.
+- Use `ranking` for magnitude comparison of independent parallel quantities (spend, volume, frequency); a funnel's shrinking bars assert one narrowing population, a ranking's do not.
 - Use `matrix` for prioritization, positioning, tradeoff maps, and impact-effort comparisons.
 - Use `stack` for layers, capability stacks, dependencies, and mental models.
 - Use `before_after` for transformation, contrast, migration, and manual-to-automated shifts.
@@ -186,6 +202,22 @@ Recommended: 3 to 7 steps. Put short explanatory detail in `body`.
 ```
 
 Recommended: 3 to 6 stages. Use `value` for count, rate, or short status.
+
+## `ranking`
+
+```json
+{
+  "layout": "ranking",
+  "title": {"main": "Spend by Service", "subtitle": "Monthly, sorted"},
+  "items": [
+    {"label": "Compute", "value": 42, "display": "42k"},
+    {"label": "Storage", "value": 18, "display": "18k"},
+    {"label": "Network", "value": 9, "display": "9k"}
+  ]
+}
+```
+
+Numeric `value` (non-negative) sets bar length; optional `display` overrides the printed value. Items render sorted descending by default; set `"sort": "none"` to keep spec order. Recommended: 3 to 8 items with short labels.
 
 ## `matrix`
 
@@ -285,7 +317,7 @@ One infographic page that stacks several primitives as sections. Use it for mult
 ```
 
 - A section is any composable layout's spec fields inlined, plus `span`, `height`, and string `title`/`subtitle` (which become the sub-diagram's own title — there is no separate heading element).
-- Composable layouts: `circular_loop`, `timeline`, `funnel`, `matrix`, `stack`, `before_after`, `flow`. Nested `composite` and `architecture` sections are rejected.
+- Composable layouts: `circular_loop`, `timeline`, `funnel`, `ranking`, `matrix`, `stack`, `before_after`, `flow`. Nested `composite` and `architecture` sections are rejected.
 - Arrangement: sections stack in order; a `half` pairs with the immediately following `half`, an orphan `half` is promoted to full width, and a row is as tall as its tallest cell. Margins/gutters are fixed (36/28) with a 118px page title block.
 - Page height is computed from the rows — setting `canvas.height` on a composite is a validation error. Width defaults to 1210.
 - `style`, `palette`, and `animation` inherit page -> section; a section key wins wholesale. `finish` applies once at page level only.
@@ -334,7 +366,14 @@ python scripts/render_animated_diagram.py \
 
 Everything mechanical (files exist, dimensions/fps/frames match, motion is nonzero, Excalidraw ids unique, fonts, text bounds, composite regions) is enforced by `--check` — read its JSON output for the full list. Exit codes: `0` ok, `1` a check failed, `2` invalid spec.
 
-What `--check` cannot verify, review by eye on the PNG:
+`--check` also measures the actually painted text boxes (not the estimated Excalidraw widths):
+
+- `readability_text_collision` fails when two painted text boxes overlap by more than `quality.collision_tolerance` px on both axes (default 2).
+- `readability_canvas_margin` fails when any painted text or shape sits closer than `quality.margin` px to the canvas edge (default 8).
+- Both knobs live under a top-level `"quality"` object; raise or lower them per spec only with a reason, not to silence a real collision.
+
+What `--check` still cannot verify, review by eye on the PNG:
 
 - The static PNG is understandable before relying on GIF motion.
-- No text overlap, cramped badges, or misleading hierarchy.
+- Icons or decorations covering a label (shape-over-text is legitimate for cards, so it is not machine-checked).
+- Cramped badges or misleading hierarchy.

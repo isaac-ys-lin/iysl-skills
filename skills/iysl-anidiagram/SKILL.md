@@ -10,16 +10,29 @@ Create animated explanatory diagrams from content, screenshots, articles, or sys
 ## Core Approach
 
 1. Extract actors, stages, loops, metrics, decisions, and takeaway.
-2. Decide the relation before visuals: sequence, cycle, narrowing, tradeoff, layers, contrast, branching, system map, or multi-part story.
+2. Decide the relation before visuals: sequence, loop, narrowing, ranking, tradeoff, layers, contrast, branching, system map, or multi-part story.
 3. Write compact JSON, or Diagram IR first when the source is not already a spec.
 4. Render with the bundled Python/Pillow renderer.
 5. Verify motion, dimensions, editable Excalidraw, and readability.
 
+## Design Latitude Contract
+
+1. Extract the claim before choosing the layout.
+2. Choose the relation first: sequence, loop, narrowing, ranking, tradeoff, layers, contrast, branching, system map, or multi-part story.
+3. Use `examples/gallery/` for judgment patterns, not visual copying.
+4. Use `assets/*-spec.json` only to confirm valid fields and renderer contracts.
+5. Vary label density, grouping, emphasis, tone, and animation when it clarifies the source.
+6. Do not use style atoms as a classifier; choose style after relation and layout.
+7. If no primitive fits, extend the renderer with tests instead of distorting an unrelated layout.
+8. Always render with `--verify --check`; it measures painted text collisions and canvas margins. Still human-review the PNG for hierarchy, icon-over-label overlap, and readability.
+9. If the source yields no claim (reference lists, plain tables, material with nothing to prove), say a diagram is not warranted and ask what the reader should take away — do not invent a claim. See `examples/gallery/09-no-claim-refusal/`.
+
 ## Layout Primitives
 
-- `circular_loop`: repeated traps, flywheels, metric loops, cycles.
+- `circular_loop`: repeated traps, flywheels, metric loops, feedback loops.
 - `timeline`: chronological plans, release steps, incidents, maturity paths.
 - `funnel`: conversion, filtering, leakage, drop-off.
+- `ranking`: magnitude comparison of independent parallel quantities; use `funnel` only when one population narrows through stages.
 - `matrix`: prioritization, positioning, tradeoffs.
 - `stack`: layers, capability stacks, dependencies.
 - `before_after`: transformation, contrast, migration.
@@ -28,7 +41,7 @@ Create animated explanatory diagrams from content, screenshots, articles, or sys
 - `architecture`: black-canvas system map with inputs, pipeline, gate, outputs.
 - For unsupported shapes, extend the script instead of distorting an existing layout.
 
-Schemas live only in `references/spec-format.md` (with Diagram IR and extension rules). Use `assets/*-spec.json` as quality anchors, not templates. Reports hold maintenance evidence.
+Schemas live in `references/spec-format.md`. Renderer contract samples live in `assets/*-spec.json`. Judgment examples live in `examples/gallery/`; read their `decision.md` files when a source could reasonably become more than one layout.
 
 ## Visual Principles
 

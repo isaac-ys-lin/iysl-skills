@@ -1,0 +1,34 @@
+{
+  "layout": "timeline",
+  "canvas": {
+    "width": 1210,
+    "height": 820,
+    "frames": 24,
+    "fps": 10
+  },
+  "animation": {
+    "marker": "dot"
+  },
+  "title": {
+    "main": "Support Path",
+    "subtitle": "Focus moves across active work"
+  },
+  "steps": [
+    {
+      "label": "Intake",
+      "body": "Request captured"
+    },
+    {
+      "label": "Triage",
+      "body": "Owner sorts and routes"
+    },
+    {
+      "label": "Specialist work",
+      "body": "Issue resolved"
+    },
+    {
+      "label": "Closeout",
+      "body": "Customer informed"
+    }
+  ]
+}

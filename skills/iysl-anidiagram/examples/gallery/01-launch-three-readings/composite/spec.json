@@ -1,0 +1,90 @@
+{
+  "layout": "composite",
+  "canvas": {
+    "width": 1210,
+    "frames": 24,
+    "fps": 10
+  },
+  "title": {
+    "main": "Launch Readiness, One Page",
+    "subtitle": "Plan, adoption, and issue learning"
+  },
+  "sections": [
+    {
+      "span": "full",
+      "layout": "timeline",
+      "title": "Gate path",
+      "animation": {
+        "marker": "arrow"
+      },
+      "steps": [
+        {
+          "label": "Promise locked",
+          "body": "Shared scope and success signal"
+        },
+        {
+          "label": "Legal ready",
+          "body": "Terms and controls cleared"
+        },
+        {
+          "label": "Support ready",
+          "body": "Owners, docs, and macros in place"
+        },
+        {
+          "label": "Rollout live",
+          "body": "Phased release with checkpoints"
+        }
+      ]
+    },
+    {
+      "span": "half",
+      "layout": "funnel",
+      "title": "Adoption shape",
+      "stages": [
+        {
+          "label": "Reached",
+          "value": "18k"
+        },
+        {
+          "label": "Visited",
+          "value": "7.4k"
+        },
+        {
+          "label": "Activated",
+          "value": "2.6k"
+        },
+        {
+          "label": "Kept",
+          "value": "1.1k",
+          "style": {
+            "accent": "#16a34a"
+          }
+        }
+      ]
+    },
+    {
+      "span": "half",
+      "height": 600,
+      "layout": "circular_loop",
+      "title": "Issue-learning loop",
+      "steps": [
+        {
+          "label": "Users try flow",
+          "badge": "live"
+        },
+        {
+          "label": "Support tags pain",
+          "badge": "cases"
+        },
+        {
+          "label": "Ops spots drift",
+          "badge": "signal"
+        },
+        {
+          "label": "Team tunes launch",
+          "badge": "next"
+        }
+      ]
+    }
+  ]
+}

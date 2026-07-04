@@ -1,0 +1,38 @@
+{
+  "layout": "timeline",
+  "canvas": {
+    "width": 1210,
+    "height": 820,
+    "frames": 30,
+    "fps": 20
+  },
+  "animation": {
+    "marker": "arrow"
+  },
+  "title": {
+    "main": "Launch Gates",
+    "subtitle": "What must happen in order"
+  },
+  "steps": [
+    {
+      "label": "Promise locked",
+      "body": "Feature scope and claim align"
+    },
+    {
+      "label": "Legal gate",
+      "body": "Terms, review, release controls"
+    },
+    {
+      "label": "Support prep",
+      "body": "Macros, owners, escalation ready"
+    },
+    {
+      "label": "Controlled rollout",
+      "body": "Phased release with guardrails"
+    },
+    {
+      "label": "Learn and tune",
+      "body": "Usage, issues, next fixes"
+    }
+  ]
+}

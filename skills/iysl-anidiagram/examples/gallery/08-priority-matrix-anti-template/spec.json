@@ -1,0 +1,37 @@
+{
+  "layout": "matrix",
+  "canvas": {
+    "width": 1210,
+    "height": 820,
+    "frames": 24,
+    "fps": 10
+  },
+  "title": {
+    "main": "Priority Matrix",
+    "subtitle": "Impact and effort, not a fake timeline"
+  },
+  "x_axis": "Effort",
+  "y_axis": "Impact",
+  "items": [
+    {
+      "label": "Onboarding fix",
+      "x": 0.24,
+      "y": 0.79
+    },
+    {
+      "label": "Policy center",
+      "x": 0.73,
+      "y": 0.76
+    },
+    {
+      "label": "Status polish",
+      "x": 0.28,
+      "y": 0.34
+    },
+    {
+      "label": "Data rebuild",
+      "x": 0.81,
+      "y": 0.31
+    }
+  ]
+}

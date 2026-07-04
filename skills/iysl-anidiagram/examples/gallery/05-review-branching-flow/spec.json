@@ -1,0 +1,83 @@
+{
+  "layout": "flow",
+  "canvas": {
+    "width": 1210,
+    "height": 1000,
+    "frames": 30,
+    "fps": 20
+  },
+  "title": {
+    "main": "Review Branching Flow",
+    "subtitle": "Pass, revise, or escalate before merge"
+  },
+  "nodes": [
+    {
+      "id": "draft",
+      "label": "Draft ready",
+      "kind": "start"
+    },
+    {
+      "id": "review",
+      "label": "Reviewer checks",
+      "body": "Clarity, correctness, risk"
+    },
+    {
+      "id": "gate",
+      "label": "Next path?",
+      "kind": "decision"
+    },
+    {
+      "id": "revise",
+      "label": "Revise and resubmit",
+      "body": "Address comments",
+      "lane": "right"
+    },
+    {
+      "id": "deep",
+      "label": "Deeper review",
+      "body": "Escalate unclear or high risk",
+      "lane": "left"
+    },
+    {
+      "id": "merge",
+      "label": "Merge and announce",
+      "kind": "end"
+    }
+  ],
+  "edges": [
+    {
+      "from": "draft",
+      "to": "review"
+    },
+    {
+      "from": "review",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "merge",
+      "label": "pass"
+    },
+    {
+      "from": "gate",
+      "to": "revise",
+      "label": "revise"
+    },
+    {
+      "from": "gate",
+      "to": "deep",
+      "label": "escalate"
+    },
+    {
+      "from": "revise",
+      "to": "review",
+      "kind": "retry",
+      "label": "resubmit"
+    },
+    {
+      "from": "deep",
+      "to": "merge",
+      "label": "approved"
+    }
+  ]
+}

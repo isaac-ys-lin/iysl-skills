@@ -38,6 +38,31 @@ if [[ -f scripts/render_animated_diagram.py ]] && compgen -G "assets/*-spec.json
   done
 fi
 
-codex debug prompt-input "\$$skill_name verify prompt visibility" | rg "$skill_name|ani-diagram|animated explanatory diagrams" >/dev/null
+if [[ -f scripts/render_animated_diagram.py ]] && [[ -d examples/gallery ]]; then
+  gallery_spec_list="$outdir/gallery-specs-list"
+
+  if ! find examples/gallery -name spec.json -print0 | sort -z > "$gallery_spec_list"; then
+    echo "failed to enumerate gallery specs in examples/gallery" >&2
+    exit 1
+  fi
+
+  while IFS= read -r -d '' spec; do
+    rel="${spec#./}"
+    base="${rel%/spec.json}"
+    base="${base//\//-}"
+    if ! render_output="$("$python_bin" scripts/render_animated_diagram.py \
+      --spec "$spec" \
+      --outdir "$outdir/gallery-$base" \
+      --basename "$base" \
+      --verify \
+      --check 2>&1)"; then
+      echo "failed to render gallery spec: $spec" >&2
+      echo "$render_output" >&2
+      exit 1
+    fi
+  done < "$gallery_spec_list"
+fi
+
+codex debug prompt-input "\$$skill_name verify prompt visibility" | grep -E "$skill_name|ani-diagram|animated explanatory diagrams" >/dev/null
 
 echo "verified $skill_name"
