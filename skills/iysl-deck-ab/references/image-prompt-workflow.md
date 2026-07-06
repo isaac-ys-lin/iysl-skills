@@ -109,7 +109,7 @@ Check in order:
 4. Text behavior: Mode A has limited clean key text; Mode B obeys the whitelist.
 5. Label correctness: Chinese characters and acronyms are exact.
 6. Editability: final text can be added later in a clear area.
-7. Logic fidelity: element count, ordering, direction, and relation type in the image match the slide brief's logic spec.
+7. Logic fidelity: the image matches the spec stated in the slide brief's VISUAL — for diagram pages, element count, ordering, direction, and relation type; for editorial/typographic pages, focal elements, hierarchy, and reading path.
 
 When a result fails, report the smallest useful correction suffix, for example:
 
