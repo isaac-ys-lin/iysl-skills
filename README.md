@@ -1,6 +1,7 @@
 # iysl-skills
 
-Personal Codex skill source repository.
+Personal skill source repository for Codex and other agents that read global
+`npx skills` installs.
 
 ## Structure
 
@@ -21,7 +22,10 @@ tools/
 ## Source Of Truth
 
 - This repo is the source of truth for personal skills.
-- Installed live skills live under `~/.codex/skills/<skill-name>`.
+- Installed live skills should be symlinked from `~/.agents/skills/<skill-name>`
+  to `skills/<skill-name>` in this repo.
+- Do not keep duplicate live copies under `~/.codex/skills/<skill-name>` for
+  skills managed here.
 - Generated outputs, caches, virtual environments, and local render artifacts do not belong in this repo.
 
 ## Included Skills
@@ -34,6 +38,10 @@ tools/
 ```bash
 tools/install-skill.sh iysl-anidiagram
 ```
+
+The installer creates or refreshes a symlink in the global `npx skills` folder,
+so Antigravity, Codex, and other supported agents see the same repo-owned
+source.
 
 ## Verify A Skill
 
