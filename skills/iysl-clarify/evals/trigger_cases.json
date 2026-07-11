@@ -1,0 +1,29 @@
+{
+  "recommended_threshold": 0.18,
+  "should_trigger": [
+    {"text": "檢查過現有 diagnostics 與文件，沒有既定匯出範圍。幫我加匯出功能，但我還沒決定是否包含操作紀錄與敏感環境資料。", "family": "ambiguous_external_behavior", "expected_route": "iysl-clarify"},
+    {"text": "專案沒有自動同步慣例。把同步改成自動執行，但啟動事件與衝突覆寫行為尚未決定。", "family": "ambiguous_user_flow", "expected_route": "iysl-clarify"},
+    {"text": "幫我清掉所有舊資料；目前文件沒有定義『舊』的範圍，也沒決定是否可復原。", "family": "destructive_scope", "expected_route": "iysl-clarify"},
+    {"text": "讓團隊成員也能查看客戶資料，但目前沒有角色規則，我尚未決定哪些欄位可見。", "family": "permission_boundary", "expected_route": "iysl-clarify"},
+    {"text": "重新設計 onboarding；現有資料無法判斷應優化完成率還是縮短首次成功時間，兩者會導致不同流程。", "family": "conflicting_success_outcomes", "expected_route": "iysl-clarify"},
+    {"text": "Add an export feature. The repository has no convention for destination or secret handling, and both choices are still open.", "family": "explicit_material_ambiguity", "expected_route": "iysl-clarify"}
+  ],
+  "should_not_trigger": [
+    {"text": "把 Save 按鈕文字改成 Export。", "family": "mechanical_edit", "expected_route": "direct"},
+    {"text": "在 DiagnosticsPathResolver.swift 的 resolve() 加入空字串 guard。", "family": "concrete_code_change", "expected_route": "direct"},
+    {"text": "按下 Export 後 App 會卡住，錯誤訊息如下，幫我修。", "family": "bug_hunt", "expected_route": "hunt"},
+    {"text": "JSON 或 SQLite 哪個比較適合？請評估長期維護成本。", "family": "solution_design", "expected_route": "think"},
+    {"text": "Review this PR and report only actionable findings.", "family": "existing_work_review", "expected_route": "check"},
+    {"text": "新增 diagnostics 匯出：ZIP 格式、存到使用者選定位置、不含 token，成功後在 Finder 顯示。", "family": "complete_contract", "expected_route": "direct"},
+    {"text": "把這個函式拆成兩個 private helper，命名你決定。", "family": "agent_owned_choice", "expected_route": "direct"},
+    {"text": "重新設計 onboarding，有哪些方案？請比較取捨並推薦。", "family": "design_comparison", "expected_route": "think"},
+    {"text": "幫我加 diagnostics 匯出；AGENTS.md 已規定 ZIP、不含 secrets、存到使用者選定位置。", "family": "context_resolves_requirements", "expected_route": "direct"},
+    {"text": "匯出功能最近開始卡住；先找出回歸原因。若查到既有行為互相矛盾再問我。", "family": "bug_with_deferred_ambiguity", "expected_route": "hunt"}
+  ],
+  "near_neighbor": [
+    {"text": "幫我規劃 diagnostics 匯出的架構與測試策略。", "family": "clarify_vs_think", "expected_route": "think"},
+    {"text": "Diagnostics 匯出後偶爾沒有出現在 Finder，請找根因。", "family": "clarify_vs_hunt", "expected_route": "hunt"},
+    {"text": "需求已經寫在 spec，請檢查目前 PR 是否完整符合。", "family": "clarify_vs_check", "expected_route": "check"},
+    {"text": "新增 ZIP 匯出到使用者選定位置；錯誤文案與內部結構你決定。", "family": "clarify_vs_direct", "expected_route": "direct"}
+  ]
+}

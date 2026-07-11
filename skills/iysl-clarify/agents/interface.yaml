@@ -1,0 +1,22 @@
+interface:
+  display_name: "iysl-clarify"
+  short_description: "Clarify only material requirement ambiguity before proceeding."
+  default_prompt: "Use $iysl-clarify to resolve only material requirement ambiguity before proceeding."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "generic"
+  activation:
+    mode: "implicit"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "native-implicit-skill"
+    generic: "description-routed"

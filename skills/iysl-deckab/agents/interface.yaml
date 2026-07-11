@@ -1,7 +1,7 @@
 interface:
-  display_name: "iysl-deck-ab"
+  display_name: "iysl-deckab"
   short_description: "Create deck outlines, A/B slide prompts, and style-anchor workflows."
-  default_prompt: "Use $iysl-deck-ab for a source-faithful deck outline, Mode A/B prompts, or API-ready style-anchor workflow."
+  default_prompt: "Use $iysl-deckab for a source-faithful deck outline, Mode A/B prompts, or API-ready style-anchor workflow."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:

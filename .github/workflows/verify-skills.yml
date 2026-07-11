@@ -1,0 +1,50 @@
+name: Verify skills
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  source-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install --requirement requirements-dev.txt
+      - name: Run portable release gates
+        run: tools/verify-release.sh
+
+  trigger-evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: yaojingang/yao-meta-skill
+          ref: 4eb11f923dc71173736ebf541a7eebfff942d10e
+          path: .tools/yao-meta-skill
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run pinned deterministic trigger evals
+        env:
+          YAO_META_SKILL_DIR: ${{ github.workspace }}/.tools/yao-meta-skill
+        run: tools/verify-trigger-evals.sh
+
+  local-npx-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify isolated npx copy install
+        run: tools/verify-npx-install.sh

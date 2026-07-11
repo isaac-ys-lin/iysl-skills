@@ -3,7 +3,7 @@ name: iysl-anidiagram
 description: Use when the user asks for animated explanatory diagrams, one-page multi-diagram infographics, architecture/process/loop/funnel/timeline/flowchart visuals, animated SVG / MP4 / PNG output, or visuals from articles, screenshots, systems, or product stories.
 ---
 
-# ani-diagram
+# iysl-anidiagram
 
 Create animated explanatory diagrams as hand-authored SMIL animated SVGs. The model writes the SVG directly; `scripts/render_svg.py` validates the authoring contract, renders it deterministically in a browser, runs quality gates, and encodes MP4/PNG.
 

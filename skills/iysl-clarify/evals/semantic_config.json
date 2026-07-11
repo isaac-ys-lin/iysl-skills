@@ -1,0 +1,61 @@
+{
+  "recommended_threshold": 0.33,
+  "fallback_positive_concepts": [
+    "observable_behavior",
+    "scope_decision",
+    "high_risk_boundary",
+    "success_conflict"
+  ],
+  "positive_concepts": {
+    "observable_behavior": {
+      "weight": 0.25,
+      "phrases": ["observable behavior", "user flow", "操作紀錄", "自動執行", "外部行為"]
+    },
+    "scope_decision": {
+      "weight": 0.25,
+      "phrases": ["scope", "範圍", "尚未決定", "沒有定義", "both choices are still open"]
+    },
+    "high_risk_boundary": {
+      "weight": 0.3,
+      "phrases": ["destructive", "privacy", "security", "敏感", "刪除", "可復原", "角色規則", "欄位可見", "secret handling"]
+    },
+    "success_conflict": {
+      "weight": 0.2,
+      "phrases": ["acceptance criteria", "完成率", "首次成功時間", "兩者會導致不同"]
+    }
+  },
+  "negative_concepts": {
+    "mechanical_edit": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["按鈕文字", "空字串 guard", "private helper"]
+    },
+    "bug_diagnosis": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["會卡住", "錯誤訊息", "找根因", "偶爾沒有"]
+    },
+    "solution_design": {
+      "weight": 0.65,
+      "exclusive": true,
+      "phrases": ["哪個比較適合", "評估長期維護", "比較取捨", "架構與測試策略"]
+    },
+    "existing_work_review": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["review this pr", "檢查目前 pr"]
+    },
+    "complete_contract": {
+      "weight": 0.55,
+      "exclusive": true,
+      "phrases": ["zip 格式", "不含 token", "使用者選定位置", "內部結構你決定"]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "mechanical_edit",
+    "bug_diagnosis",
+    "solution_design",
+    "existing_work_review",
+    "complete_contract"
+  ]
+}

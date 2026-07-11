@@ -1,5 +1,5 @@
 interface:
-  display_name: "ani-diagram"
+  display_name: "iysl-anidiagram"
   short_description: "Source-faithful animated SVG diagrams with MP4 and PNG output"
   brand_color: "#2459C7"
   default_prompt: "Use $iysl-anidiagram to extract the claim, design a source-faithful animated SVG, render MP4 and PNG outputs, and verify readability."
