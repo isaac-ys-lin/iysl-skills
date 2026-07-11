@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675"
+     data-loop-seconds="8" data-poster-t="6.4"
+     font-family="'PingFang TC', 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif">
+  <rect width="1200" height="675" fill="#f6f8fc"/>
+
+  <text x="600" y="52" text-anchor="middle" font-size="32" font-weight="700" fill="#172033">How is ownership handed forward?</text>
+  <text x="600" y="82" text-anchor="middle" font-size="14" fill="#68758d">One transfer arrow advances across the same four-stage support path</text>
+
+  <rect x="56" y="120" width="1088" height="438" rx="22" fill="#ffffff" stroke="#dbe2ef" stroke-width="1.5"/>
+  <text x="88" y="158" font-size="12" font-weight="700" letter-spacing="1.6" fill="#6b7890">SHARED SUPPORT PATH</text>
+  <rect x="930" y="139" width="182" height="30" rx="15" fill="#fff1df"/>
+  <path d="M 945 149 H 957 L 957 145 L 965 154 L 957 163 L 957 159 H 945 Z" fill="#b76516"/>
+  <text x="974" y="159" font-size="12" font-weight="600" fill="#a45513">HANDOFF</text>
+
+  <path d="M 252 319 H 948" fill="none" stroke="#c8d3e5" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 385 312 L 399 319 L 385 326 Z M 633 312 L 647 319 L 633 326 Z M 881 312 L 895 319 L 881 326 Z" fill="#9eacc2"/>
+
+  <g>
+    <rect x="76" y="205" width="232" height="228" rx="18" fill="#f8faff" stroke="#cfd9eb" stroke-width="2"/>
+    <circle cx="192" cy="319" r="30" fill="#e3ebfb" stroke="#7c96c5" stroke-width="2"/>
+    <text x="192" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">01</text>
+    <text x="192" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Intake</text>
+    <text x="192" y="278" text-anchor="middle" font-size="13" fill="#68758d">Capture request and context</text>
+    <rect x="112" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <text x="192" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Service desk</text>
+  </g>
+  <g>
+    <rect x="324" y="205" width="232" height="228" rx="18" fill="#f8faff" stroke="#cfd9eb" stroke-width="2"/>
+    <circle cx="440" cy="319" r="30" fill="#e3ebfb" stroke="#7c96c5" stroke-width="2"/>
+    <text x="440" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">02</text>
+    <text x="440" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Triage</text>
+    <text x="440" y="278" text-anchor="middle" font-size="13" fill="#68758d">Assess urgency and route</text>
+    <rect x="360" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <text x="440" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Support lead</text>
+  </g>
+  <g>
+    <rect x="572" y="205" width="232" height="228" rx="18" fill="#f8faff" stroke="#cfd9eb" stroke-width="2"/>
+    <circle cx="688" cy="319" r="30" fill="#e3ebfb" stroke="#7c96c5" stroke-width="2"/>
+    <text x="688" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">03</text>
+    <text x="688" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Specialist work</text>
+    <text x="688" y="278" text-anchor="middle" font-size="13" fill="#68758d">Investigate and resolve</text>
+    <rect x="608" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <text x="688" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Domain specialist</text>
+  </g>
+  <g>
+    <rect x="820" y="205" width="232" height="228" rx="18" fill="#f8faff" stroke="#cfd9eb" stroke-width="2"/>
+    <circle cx="936" cy="319" r="30" fill="#e3ebfb" stroke="#7c96c5" stroke-width="2"/>
+    <text x="936" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">04</text>
+    <text x="936" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Customer closeout</text>
+    <text x="936" y="278" text-anchor="middle" font-size="13" fill="#68758d">Confirm outcome and close</text>
+    <rect x="856" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <text x="936" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Service desk</text>
+  </g>
+
+  <!-- One arrow at a time travels from the current owner to the next owner. -->
+  <g opacity="1" transform="translate(236 319)">
+    <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.22;0.25;0.75;0.97;1" dur="8s" repeatCount="indefinite"/>
+    <path d="M -14 -9 H 3 V -15 L 20 0 L 3 15 V 9 H -14 Z" fill="#b76516" stroke="#ffffff" stroke-width="2">
+      <animateTransform attributeName="transform" type="translate" values="0 0;160 0;160 0;0 0" keyTimes="0;0.22;0.97;1" dur="8s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <g opacity="0" transform="translate(484 319)">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.22;0.25;0.47;0.5;1" dur="8s" repeatCount="indefinite"/>
+    <path d="M -14 -9 H 3 V -15 L 20 0 L 3 15 V 9 H -14 Z" fill="#b76516" stroke="#ffffff" stroke-width="2">
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;160 0;160 0;0 0" keyTimes="0;0.25;0.47;0.97;1" dur="8s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <g opacity="0" transform="translate(732 319)">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.47;0.5;0.72;0.75;1" dur="8s" repeatCount="indefinite"/>
+    <path d="M -14 -9 H 3 V -15 L 20 0 L 3 15 V 9 H -14 Z" fill="#b76516" stroke="#ffffff" stroke-width="2">
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;160 0;160 0;0 0" keyTimes="0;0.5;0.72;0.97;1" dur="8s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <text x="600" y="493" text-anchor="middle" font-size="15" font-weight="600" fill="#a45513">The arrow answers “who hands ownership to whom?” — direction is explicit.</text>
+  <text x="600" y="620" text-anchor="middle" font-size="13" fill="#68758d">Same stages · same owners · same order · motion changes the reading</text>
+</svg>

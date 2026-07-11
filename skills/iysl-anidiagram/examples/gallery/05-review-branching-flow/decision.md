@@ -30,4 +30,4 @@ Keep the diagram compact and operational. Motion should follow the main path fir
 
 ## Validation
 
-Confirm the source brief genuinely needs branching, not just sequence. The spec must pass `--verify --check`, keep node and branch density low enough that labels remain readable at a glance, and still read clearly in PNG form with branch labels visible.
+Confirm the source brief genuinely needs branching, not just sequence. `diagram.svg` must pass `render_svg.py --check`, keep node and branch density low enough that labels remain readable at a glance, and still read clearly in the poster PNG with branch labels visible.

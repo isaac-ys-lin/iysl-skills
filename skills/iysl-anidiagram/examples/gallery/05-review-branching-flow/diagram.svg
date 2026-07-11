@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675"
+     data-loop-seconds="12" data-poster-t="1.8"
+     font-family="'PingFang TC', 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f8fb"/>
+
+  <!-- Claim level -->
+  <text x="600" y="46" text-anchor="middle" font-size="28" font-weight="700" fill="#182032">Review branches: pass, revise, or escalate</text>
+  <text x="600" y="74" text-anchor="middle" font-size="14" fill="#6b7890">One decision point routes every change — and all paths rejoin at merge</text>
+
+  <!-- Base edges -->
+  <g fill="none" stroke="#b8c8ee" stroke-width="3">
+    <path d="M 250 322 H 812"/>
+    <path d="M 960 322 H 1002"/>
+    <path d="M 430 274 L 430 198 Q 430 190 422 190 L 178 190 Q 170 190 170 198 L 170 284" stroke-dasharray="7 5"/>
+    <path d="M 430 374 L 430 482 Q 430 490 438 490 L 612 490"/>
+    <path d="M 800 490 L 882 490 Q 890 490 890 482 L 890 362"/>
+  </g>
+  <g fill="#8aa3d8">
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(812 322)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(1002 322)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(170 284) rotate(90)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(612 490)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(890 362) rotate(-90)"/>
+  </g>
+
+  <!-- Route highlight overlays: branches light up in turn -->
+  <g fill="none" stroke-width="3.5">
+    <path d="M 250 322 H 812 M 960 322 H 1002" stroke="#2459c7" opacity="0">
+      <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.29;0.34;1" dur="12s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 430 274 L 430 198 Q 430 190 422 190 L 178 190 Q 170 190 170 198 L 170 284" stroke="#c0836a" stroke-dasharray="7 5" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.35;0.38;0.62;0.66;1" dur="12s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 430 374 L 430 482 Q 430 490 438 490 L 612 490 M 800 490 L 882 490 Q 890 490 890 482 L 890 362" stroke="#6b4fbb" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.69;0.72;0.97;1" dur="12s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- Edge labels (detail level) -->
+  <text x="660" y="308" text-anchor="middle" font-size="13" fill="#2459c7">low risk — pass directly</text>
+  <text x="300" y="176" text-anchor="middle" font-size="13" fill="#a06a4e">issues — revise &amp; resubmit</text>
+  <text x="446" y="436" text-anchor="start" font-size="13" fill="#6b4fbb">high risk / unclear — escalate</text>
+  <text x="905" y="432" text-anchor="start" font-size="13" fill="#6b4fbb">approved</text>
+  <text x="408" y="404" text-anchor="end" font-size="11.5" fill="#6b7890">checks clarity, correctness, risk</text>
+
+  <!-- Route tokens (drawn under the cards) -->
+  <circle r="7" fill="#2459c7" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.02;0.04;0.29;0.31;1" dur="12s" repeatCount="indefinite"/>
+    <animateMotion path="M 175 322 L 1080 322" dur="12s" repeatCount="indefinite"
+                   calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.02;0.31;1"/>
+  </circle>
+  <circle r="7" fill="#c0836a" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.353;0.373;0.61;0.63;1" dur="12s" repeatCount="indefinite"/>
+    <animateMotion path="M 175 322 L 430 322 L 430 198 Q 430 190 422 190 L 178 190 Q 170 190 170 198 L 170 290" dur="12s" repeatCount="indefinite"
+                   calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.353;0.63;1"/>
+  </circle>
+  <circle r="7" fill="#6b4fbb" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.687;0.707;0.96;0.98;1" dur="12s" repeatCount="indefinite"/>
+    <animateMotion path="M 175 322 L 430 322 L 430 482 Q 430 490 438 490 L 882 490 Q 890 490 890 482 L 890 362" dur="12s" repeatCount="indefinite"
+                   calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.687;0.98;1"/>
+  </circle>
+
+  <!-- Nodes -->
+  <g>
+    <rect x="90" y="290" width="160" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <text x="170" y="317" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">Draft change</text>
+    <text x="170" y="339" text-anchor="middle" font-size="12" fill="#6b7890">prepared for review</text>
+  </g>
+
+  <polygon points="355,322 430,270 505,322 430,374" fill="#dce8fb" stroke="#2459c7" stroke-width="2"/>
+  <polygon points="343,322 430,262 517,322 430,382" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
+    <animate attributeName="opacity"
+             values="0;0;0.9;0;0;0.9;0;0;0.9;0;0"
+             keyTimes="0;0.04;0.08;0.12;0.37;0.41;0.45;0.7;0.74;0.78;1"
+             dur="12s" repeatCount="indefinite"/>
+  </polygon>
+  <text x="430" y="328" text-anchor="middle" font-size="16" font-weight="700" fill="#182032">Review</text>
+
+  <g>
+    <rect x="620" y="458" width="180" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <text x="710" y="485" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">Deeper review</text>
+    <text x="710" y="507" text-anchor="middle" font-size="12" fill="#6b7890">for high-risk changes</text>
+  </g>
+  <g>
+    <rect x="820" y="290" width="140" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <text x="890" y="317" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">Merge</text>
+    <text x="890" y="339" text-anchor="middle" font-size="12" fill="#6b7890">all paths rejoin</text>
+  </g>
+  <g>
+    <rect x="1010" y="290" width="140" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <text x="1080" y="317" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">Announce</text>
+    <text x="1080" y="339" text-anchor="middle" font-size="12" fill="#6b7890">share the change</text>
+  </g>
+
+  <!-- Legend (structure level) -->
+  <g stroke-width="3" fill="none">
+    <line x1="285" y1="608" x2="325" y2="608" stroke="#2459c7"/>
+    <line x1="510" y1="608" x2="550" y2="608" stroke="#c0836a" stroke-dasharray="7 5"/>
+    <line x1="760" y1="608" x2="800" y2="608" stroke="#6b4fbb"/>
+  </g>
+  <text x="333" y="612" font-size="12.5" fill="#182032">① pass directly</text>
+  <text x="558" y="612" font-size="12.5" fill="#182032">② revise &amp; resubmit</text>
+  <text x="808" y="612" font-size="12.5" fill="#182032">③ escalate &amp; rejoin</text>
+  <text x="600" y="586" text-anchor="middle" font-size="11.5" fill="#6b7890">the three outcomes light up in turn</text>
+
+  <!-- Detail level: footnote -->
+  <text x="600" y="650" text-anchor="middle" font-size="13" fill="#6b7890">The default route is the straight lane; exceptions are drawn, not implied — retries flow backward, escalations detour and return.</text>
+</svg>

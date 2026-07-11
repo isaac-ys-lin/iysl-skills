@@ -30,4 +30,4 @@ Not applicable. If the requester later names a claim (for example, "renewal mont
 
 ## Validation
 
-There is no spec to render. Validation for this case is behavioral: given a claim-free source, the skill should respond with the refusal-and-question above rather than a spec. Tests assert this case documents the refusal without a `spec.json`.
+There is no SVG to render. Validation for this case is behavioral: given a claim-free source, the skill should respond with the refusal-and-question above rather than inventing a diagram. Tests assert this case documents the refusal without a `diagram.svg`.

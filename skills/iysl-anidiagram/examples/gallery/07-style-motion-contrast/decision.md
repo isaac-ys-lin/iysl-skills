@@ -12,9 +12,9 @@ The same timeline can communicate either active focus moving across work or owne
 
 Sequence in both versions, with emphasis changing between focus-tracking and handoff causality.
 
-## Layout
+## Composition
 
-`timeline`
+A shared four-card timeline keeps stage order, owners, labels, spacing, and connectors identical in both variants. This controls the semantic layout so only the motion story changes.
 
 ## Why This Fits
 
@@ -22,12 +22,25 @@ The semantic structure stays linear in both readings, so the layout does not nee
 
 ## Rejected Alternatives
 
-A `flow` would suggest branching decisions that are not present. A `composite` would add weight without adding meaning. Switching to different primitives for the two readings would hide the gallery lesson that style and animation can vary inside one chosen relation.
+A branching flow would invent decisions that are not present. A multi-panel comparison would add weight without adding meaning. Switching primitives or coordinates between variants would hide the gallery lesson by conflating layout change with motion change.
 
-## Style And Animation
+## Motion Semantics
 
-Keep two spec variants: dot motion for active focus and arrow motion for forward handoff. Keep labels and stage order identical so the contrast is attributable to motion intent rather than content drift.
+- `dot/diagram.svg`: only one node pulses at a time. The pulse encodes active focus — “attention is here now” — and advances in stage order.
+- `arrow/diagram.svg`: only one transfer arrow is active at a time. It travels forward across a connector and encodes explicit ownership handoff from one role to the next.
+
+Both use an eight-second loop with two-second reading states. Their static diagrams remain complete without motion.
+
+## Coverage
+
+| Fact | Dot variant | Arrow variant |
+| --- | --- | --- |
+| F1 four ordered stages | Four numbered cards, left to right | Same four numbered cards, left to right |
+| F2–F5 stage owners | Owner badge inside every card | Same owner badge inside every card |
+| F6 active attention reading | Single sequential focus ring | Preserved in title contrast, not encoded by arrow motion |
+| F7 ownership handoff reading | Preserved in title contrast, not encoded by pulse motion | Single forward-moving arrow across each connector |
+| F8 identical semantic layout | Shared coordinates, labels, colors, and connectors | Shared coordinates, labels, colors, and connectors |
 
 ## Validation
 
-Confirm one brief can support two motion readings on the same semantic path. Both `dot/spec.json` and `arrow/spec.json` must pass `--verify --check`, and the PNGs should still look like the same process with different emphasis.
+Each SVG must pass `scripts/render_svg.py --check` with exit 0. Review the poster PNG and timeline frames to confirm that both remain recognizably the same process while the dot reads as current focus and the arrow reads as forward ownership transfer.
