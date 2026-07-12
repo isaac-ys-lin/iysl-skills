@@ -41,13 +41,13 @@
   </g>
 
   <text x="72" y="250" font-size="16" fill="#dfe3d6" opacity="0">① 樣本只有「飛得回來」的飛機
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.155;0.205;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.155;0.205;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
   <text x="72" y="310" font-size="16" fill="#dfe3d6" opacity="0">② 引擎／座艙中彈的，根本沒回來
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.28;0.33;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.28;0.33;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
   <text x="72" y="370" font-size="16" fill="#f2b3ab" opacity="0">③ 那裡彈孔少 ＝ 一中彈就墜毀
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.40;0.445;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.40;0.445;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- ===================== SQUADRON: flew out, some fell (invisible sample) ===================== -->
@@ -55,55 +55,55 @@
     <!-- survivor mini (stays) -->
     <g transform="translate(560 172)">
       <animateTransform attributeName="transform" type="translate" additive="sum"
-        values="0 34; 0 0; 0 0; 0 34" keyTimes="0;0.14;0.95;1" dur="11s" repeatCount="indefinite"/>
+        values="0 34; 0 0; 0 0; 0 34" keyTimes="0;0.14;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0 0 1 1 ; 0.23 1 0.32 1"/>
       <path d="M0 -13 L4 -3 L20 4 L4 6 L2 15 L-2 15 L-4 6 L-20 4 L-4 -3 Z"/>
     </g>
     <!-- hit mini 1 (falls / fades = missing data) -->
     <g opacity="1">
       <animateTransform attributeName="transform" type="translate"
         values="392 258; 392 224; 470 470; 470 470; 470 470; 392 258"
-        keyTimes="0;0.14;0.27;0.60;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.14;0.27;0.60;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
       <animateTransform attributeName="transform" type="rotate" additive="sum"
-        values="0;0;70;70;70;0" keyTimes="0;0.14;0.27;0.60;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.14;0.27;0.95;0.97;1" dur="11s" repeatCount="indefinite"/>
+        values="0;0;70;70;70;0" keyTimes="0;0.14;0.27;0.60;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.14;0.27;0.95;0.97;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       <path d="M0 -13 L4 -3 L20 4 L4 6 L2 15 L-2 15 L-4 6 L-20 4 L-4 -3 Z"/>
     </g>
     <!-- hit mini 2 (falls / fades = missing data) -->
     <g opacity="1">
       <animateTransform attributeName="transform" type="translate"
         values="468 214; 468 182; 388 478; 388 478; 388 478; 468 214"
-        keyTimes="0;0.14;0.30;0.60;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.14;0.30;0.60;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
       <animateTransform attributeName="transform" type="rotate" additive="sum"
-        values="0;0;-58;-58;-58;0" keyTimes="0;0.14;0.30;0.60;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.14;0.30;0.95;0.97;1" dur="11s" repeatCount="indefinite"/>
+        values="0;0;-58;-58;-58;0" keyTimes="0;0.14;0.30;0.60;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.14;0.30;0.95;0.97;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       <path d="M0 -13 L4 -3 L20 4 L4 6 L2 15 L-2 15 L-4 6 L-20 4 L-4 -3 Z"/>
     </g>
   </g>
 
   <!-- ghost planes = the missing sample, re-appear in the corrected beat -->
   <g stroke="#ef6a5c" stroke-width="1.6" fill="none" stroke-dasharray="4 4" stroke-linejoin="round" opacity="0" filter="url(#rough2)">
-    <animate attributeName="opacity" values="0;0;0.85;0.85;0" keyTimes="0;0.60;0.64;0.945;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;0.85;0.85;0" keyTimes="0;0.60;0.64;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <g transform="translate(400 214) rotate(18)"><path d="M0 -13 L4 -3 L20 4 L4 6 L2 15 L-2 15 L-4 6 L-20 4 L-4 -3 Z"/></g>
     <g transform="translate(492 232) rotate(-14)"><path d="M0 -13 L4 -3 L20 4 L4 6 L2 15 L-2 15 L-4 6 L-20 4 L-4 -3 Z"/></g>
   </g>
   <text x="360" y="182" font-size="14" fill="#f2b3ab" opacity="0">↓ 中彈沒回來的，沒進樣本
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.64;0.945;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.64;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- ===================== HERO PLANE (off-center right, top-down bomber, nose up) ===================== -->
   <g id="hero">
     <animateTransform attributeName="transform" type="translate"
-      values="0 26; 0 0; 0 0; 0 26" keyTimes="0;0.14;0.95;1" dur="11s" repeatCount="indefinite"/>
+      values="0 26; 0 0; 0 0; 0 26" keyTimes="0;0.14;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0 0 1 1 ; 0.23 1 0.32 1"/>
 
     <g filter="url(#rough)">
       <!-- wings -->
       <path d="M828 342 L672 372 L658 400 L690 402 L828 384 Z" fill="#1c2620" stroke="#e9ecdf" stroke-width="2.2"
             stroke-dasharray="900" stroke-linejoin="round">
-        <animate attributeName="stroke-dashoffset" values="900;0;0;900" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-dashoffset" values="900;0;0;900" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </path>
       <path d="M872 342 L1028 372 L1042 400 L1010 402 L872 384 Z" fill="#1c2620" stroke="#e9ecdf" stroke-width="2.2"
             stroke-dasharray="900" stroke-linejoin="round">
-        <animate attributeName="stroke-dashoffset" values="900;0;0;900" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-dashoffset" values="900;0;0;900" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </path>
       <!-- tail stabilisers -->
       <path d="M834 532 L786 548 L780 560 L836 552 Z" fill="#1c2620" stroke="#e9ecdf" stroke-width="2" stroke-linejoin="round"/>
@@ -112,7 +112,7 @@
       <path d="M850 200 C830 226 828 300 830 380 L829 520 C829 546 837 562 850 568
                C863 562 871 546 871 520 L870 380 C872 300 870 226 850 200 Z"
             fill="#1e2a23" stroke="#e9ecdf" stroke-width="2.4" stroke-dasharray="1200" stroke-linejoin="round">
-        <animate attributeName="stroke-dashoffset" values="1200;0;0;1200" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-dashoffset" values="1200;0;0;1200" keyTimes="0;0.145;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </path>
     </g>
 
@@ -125,7 +125,7 @@
 
     <!-- naive armour guess: white dashed boxes over the holes -->
     <g fill="none" stroke="#eef0e3" stroke-width="2" stroke-dasharray="5 5" opacity="0" filter="url(#rough2)">
-      <animate attributeName="opacity" values="0;0;0.95;0.95;0;0" keyTimes="0;0.409;0.427;0.545;0.575;1" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.95;0.95;0;0" keyTimes="0;0.409;0.427;0.545;0.575;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       <rect x="662" y="366" width="72" height="40" rx="4"/>
       <rect x="830" y="418" width="42" height="118" rx="6"/>
       <rect x="966" y="366" width="72" height="40" rx="4"/>
@@ -133,24 +133,24 @@
 
     <!-- red bullet holes: concentrated on wings / fuselage / tail -->
     <g fill="#ef6a5c">
-      <circle cx="700" cy="388" r="4.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.273;0.30;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="682" cy="393" r="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.285;0.312;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="716" cy="379" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.297;0.324;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="1000" cy="388" r="4.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.285;0.312;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="1018" cy="393" r="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.297;0.324;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="984" cy="379" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.309;0.336;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="846" cy="430" r="4.4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.321;0.348;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="856" cy="452" r="3.8" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.333;0.360;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="842" cy="478" r="4.2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.345;0.372;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="852" cy="508" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.357;0.384;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="806" cy="548" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.369;0.396;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
-      <circle cx="896" cy="549" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.381;0.408;0.95;1" dur="11s" repeatCount="indefinite"/></circle>
+      <circle cx="700" cy="388" r="4.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.273;0.30;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="682" cy="393" r="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.285;0.312;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="716" cy="379" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.297;0.324;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="1000" cy="388" r="4.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.285;0.312;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="1018" cy="393" r="4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.297;0.324;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="984" cy="379" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.309;0.336;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="846" cy="430" r="4.4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.321;0.348;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="856" cy="452" r="3.8" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.333;0.360;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="842" cy="478" r="4.2" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.345;0.372;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="852" cy="508" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.357;0.384;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="806" cy="548" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.369;0.396;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
+      <circle cx="896" cy="549" r="3.6" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.381;0.408;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/></circle>
     </g>
 
     <!-- corrected armour: chalk-cyan plates over the CLEAN zones (cockpit + engines);
          cyan (reinforce) is deliberately NOT the red of the bullet holes (damage) -->
     <g fill="#5fd0c4" fill-opacity="0.18" stroke="#5fd0c4" stroke-width="2.4" opacity="0" filter="url(#redglow)">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.573;0.60;0.945;1" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.573;0.60;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       <rect x="832" y="230" width="36" height="42" rx="5"/>
       <rect x="706" y="366" width="94" height="34" rx="8"/>
       <rect x="900" y="366" width="94" height="34" rx="8"/>
@@ -160,37 +160,37 @@
     <path d="M858 476 C930 452 940 360 878 300 C862 284 856 274 856 262"
           fill="none" stroke="#5fd0c4" stroke-width="3" stroke-linecap="round" opacity="0"
           stroke-dasharray="300" filter="url(#redglow)">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.575;0.60;0.945;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="stroke-dashoffset" values="300;300;0;0;300" keyTimes="0;0.575;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.575;0.60;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+      <animate attributeName="stroke-dashoffset" values="300;300;0;0;300" keyTimes="0;0.575;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </path>
     <g fill="#5fd0c4" opacity="0" filter="url(#redglow)">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.655;0.68;0.945;1" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.655;0.68;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       <path d="M856 258 L849 272 L863 272 Z"/>
     </g>
   </g>
 
   <!-- ===================== ANNOTATIONS around the hero ===================== -->
   <text x="612" y="232" font-size="15" fill="#c2cbb4" opacity="0">返航機：只算得到「飛回來」的
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.27;0.33;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.27;0.33;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
   <text x="612" y="590" font-size="14" fill="#f2b3ab" opacity="0">紅點＝彈孔，集中在機翼·機身·機尾；引擎·座艙幾乎沒有
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.36;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.36;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- naive beat label (straddles t=loop/2) -->
   <text x="360" y="470" font-size="17" font-weight="700" fill="#eef0e3" opacity="0">直覺：彈孔多 → 補這裡
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.409;0.427;0.545;0.575;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.409;0.427;0.545;0.575;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
   <text x="360" y="492" font-size="13" fill="#9aa694" opacity="0">（機翼／機身彈孔最密）
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.415;0.435;0.545;0.575;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.415;0.435;0.545;0.575;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- corrected conclusion (right-hand resolution, holds through the poster) -->
   <text x="596" y="656" font-size="19" font-weight="700" fill="#5fd0c4" opacity="0">沃德：補強<tspan fill="#a9e8de">沒有彈孔</tspan>的引擎與座艙
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.573;0.60;0.945;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.573;0.60;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
   <text x="596" y="682" font-size="14" fill="#c2cbb4" opacity="0">那裡一中彈就墜——所以樣本裡才看不到
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.63;0.945;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.63;0.945;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- ===================== BOTTOM: the general lesson (persistent) ===================== -->

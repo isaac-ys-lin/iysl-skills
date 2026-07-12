@@ -10,7 +10,7 @@ Create animated explanatory diagrams as hand-authored SMIL animated SVGs. The mo
 Three references are binding contracts, not suggestions:
 
 - `references/svg-authoring.md` — structural rules the validator enforces (SMIL only, self-contained, text stays text, CJK font fallback, loop discipline, size hierarchy).
-- `references/animation-semantics.md` — the relation-to-motion table. A motion pattern that mismatches the content relation is a defect, exactly like a wrong label.
+- `references/animation-semantics.md` — the relation-to-motion table, plus the motion-craft floor: eased interpolation (SMIL `keySplines`), staging and physicality, and a shared motion vocabulary. A motion pattern that mismatches the content relation is a defect, exactly like a wrong label; raw-linear reveals are a craft defect.
 - `references/style-directions.md` — the aesthetic range. The look and spatial staging are derived from the content's mood, never defaulted to the pale-blue editorial house look. Within a multi-diagram run, carry each accepted diagram's visual fingerprint forward so consecutive diagrams do not read as the same house.
 
 ## Decision Ladder
@@ -54,6 +54,7 @@ Each agent must produce:
 - `diagram.svg` conforming to `references/svg-authoring.md`,
 - a two-line visual fingerprint (`visual:` and `spatial:`) plus a one-sentence content-derived rationale, written before consulting the calibration family; then declare `anchor: none` or name the closest anchor and show at least one visual and one spatial mutation from it,
 - a coverage table mapping every `Fi` to where it lands in the diagram, or an explicit drop with a reason — `must-keep` facts may never be dropped,
+- eased motion by default: value-based reveals use `calcMode="spline"` `keySplines` (ease-out for entrances/exits, ease-in-out for on-screen moves), with constant velocity reserved for continuous loops, per the Motion Craft sections of `references/animation-semantics.md` — raw-linear reveals read as mechanical,
 - a passing run of `render_svg.py --check` (exit 0) on its own SVG before handing it back.
 
 ### Role 3 — Review (one adversarial subagent)
@@ -67,7 +68,7 @@ ffmpeg -i candidate.mp4 -vf "select='not(mod(n,ceil(N/6)))'" -vsync vfr frame_%d
 Rubric, in order:
 
 - **(a) Coverage diff** — walk `F1..Fn` against each coverage table: is every fact where the table says it is, and is every drop justified? A dropped `must-keep` is an automatic fail.
-- **(b) Animation semantics** — check each animated element against the relation-to-motion table in `references/animation-semantics.md`. A mismatched motion pattern is a fail, not a taste note.
+- **(b) Animation semantics & craft** — check each animated element against the relation-to-motion table in `references/animation-semantics.md`; a mismatched motion pattern is a fail, not a taste note. Then check craft against the Motion Craft sections: value-based reveals must be eased (`keySplines`), never raw linear; no ease-in on a reveal; overshoot done with keyframes, not out-of-range beziers; group entrances staggered; each reveal holds ≥1.2s. Reveals that are linear across the board are a finding.
 - **(c) Three reading depths** — the claim lands in 3 seconds (title), the structure lands in 10 seconds (section titles and layout), and a close read rewards with details (labels and annotations).
 - **(d) Visual quality** — hierarchy, density, whitespace, color contrast, and collisions that the scripted checks cannot see (low-contrast labels, icon-over-label overlap, cramped groups, dead zones). This is the eyes-on pass beyond `render_svg.py`.
 - **(e) Diversity audit** — compare the two visual fingerprints and actual posters. They must differ on at least one visual axis and one spatial axis. If an anchor is declared, verify that candidate differs from it on both kinds of axis; changing one hex value is not a mutation. In a multi-diagram run, also compare each candidate with the previous accepted fingerprint/poster: a candidate that repeats the previous house or wireframe fails unless the user explicitly approved continuity.
@@ -86,7 +87,7 @@ python3 /path/to/skill/scripts/render_svg.py \
 
 Exit codes: `0` = all checks passed and outputs written; `2` = structural validation failed (the JSON output lists every problem); `1` = a quality gate or output contract check failed. Exit 0 is required before any delivery.
 
-The renderer's quality gates measure text collisions and canvas margins at two timeline points, verify the animation actually moves, and probe the encoded outputs. These gates are floors, not goals — the Review role still looks at frames by eye.
+The renderer's quality gates measure text collisions and canvas margins at two timeline points, verify the animation actually moves, reject visible position jumps across the loop boundary, and probe the encoded outputs. These gates are floors, not goals — the Review role still looks at frames by eye.
 
 ## Deliverables
 

@@ -41,19 +41,19 @@
   <!-- Node halos: light up as the pulse arrives (staggered, seamless) -->
   <g fill="none" stroke="#2459c7" stroke-width="2.5">
     <circle cx="600" cy="267" r="19" opacity="0">
-      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.1;0.9;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.1;0.9;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="785" cy="402" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.13;0.2;0.27;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.13;0.2;0.27;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="715" cy="620" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.33;0.4;0.47;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.33;0.4;0.47;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="485" cy="620" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.53;0.6;0.67;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.53;0.6;0.67;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="415" cy="402" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.73;0.8;0.87;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.73;0.8;0.87;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
   </g>
 
@@ -75,7 +75,7 @@
   <g>
     <rect x="485" y="143" width="230" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="485" y="143" width="230" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.1;0.9;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.1;0.9;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="600" y="170" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">資訊沒有先整理</text>
     <text x="600" y="193" text-anchor="middle" font-size="12" fill="#6b7890">需求、風險、決策未成為可判斷的內容</text>
@@ -83,7 +83,7 @@
   <g>
     <rect x="780" y="334" width="230" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="780" y="334" width="230" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.13;0.2;0.27;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.13;0.2;0.27;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="895" y="361" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">主管不安，加開會議</text>
     <text x="895" y="384" text-anchor="middle" font-size="12" fill="#6b7890">用更多同步會議確認進度</text>
@@ -91,7 +91,7 @@
   <g>
     <rect x="667" y="681" width="230" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="667" y="681" width="230" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.33;0.4;0.47;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.33;0.4;0.47;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="782" y="708" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">資訊更散</text>
     <text x="782" y="731" text-anchor="middle" font-size="12" fill="#6b7890">決策散落在口頭對話與零碎訊息裡</text>
@@ -99,7 +99,7 @@
   <g>
     <rect x="303" y="681" width="230" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="303" y="681" width="230" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.53;0.6;0.67;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.53;0.6;0.67;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="418" y="708" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">返工增加</text>
     <text x="418" y="731" text-anchor="middle" font-size="12" fill="#6b7890">回頭撈決策、補紀錄、重新確認</text>
@@ -107,7 +107,7 @@
   <g>
     <rect x="190" y="334" width="230" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="190" y="334" width="230" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.73;0.8;0.87;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.73;0.8;0.87;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="305" y="361" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">下次更早開會</text>
     <text x="305" y="384" text-anchor="middle" font-size="12" fill="#6b7890">循環被強化，一圈比一圈嚴重</text>

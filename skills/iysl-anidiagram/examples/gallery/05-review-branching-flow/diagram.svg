@@ -26,13 +26,13 @@
   <!-- Route highlight overlays: branches light up in turn -->
   <g fill="none" stroke-width="3.5">
     <path d="M 250 322 H 812 M 960 322 H 1002" stroke="#2459c7" opacity="0">
-      <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.29;0.34;1" dur="12s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.29;0.34;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </path>
     <path d="M 430 274 L 430 198 Q 430 190 422 190 L 178 190 Q 170 190 170 198 L 170 284" stroke="#c0836a" stroke-dasharray="7 5" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.35;0.38;0.62;0.66;1" dur="12s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.35;0.38;0.62;0.66;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </path>
     <path d="M 430 374 L 430 482 Q 430 490 438 490 L 612 490 M 800 490 L 882 490 Q 890 490 890 482 L 890 362" stroke="#6b4fbb" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.69;0.72;0.97;1" dur="12s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.69;0.72;0.97;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </path>
   </g>
 
@@ -45,17 +45,17 @@
 
   <!-- Route tokens (drawn under the cards) -->
   <circle r="7" fill="#2459c7" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.02;0.04;0.29;0.31;1" dur="12s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.02;0.04;0.29;0.31;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <animateMotion path="M 175 322 L 1080 322" dur="12s" repeatCount="indefinite"
                    calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.02;0.31;1"/>
   </circle>
   <circle r="7" fill="#c0836a" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.353;0.373;0.61;0.63;1" dur="12s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.353;0.373;0.61;0.63;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <animateMotion path="M 175 322 L 430 322 L 430 198 Q 430 190 422 190 L 178 190 Q 170 190 170 198 L 170 290" dur="12s" repeatCount="indefinite"
                    calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.353;0.63;1"/>
   </circle>
   <circle r="7" fill="#6b4fbb" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.687;0.707;0.96;0.98;1" dur="12s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.687;0.707;0.96;0.98;1" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <animateMotion path="M 175 322 L 430 322 L 430 482 Q 430 490 438 490 L 882 490 Q 890 490 890 482 L 890 362" dur="12s" repeatCount="indefinite"
                    calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.687;0.98;1"/>
   </circle>
@@ -72,7 +72,7 @@
     <animate attributeName="opacity"
              values="0;0;0.9;0;0;0.9;0;0;0.9;0;0"
              keyTimes="0;0.04;0.08;0.12;0.37;0.41;0.45;0.7;0.74;0.78;1"
-             dur="12s" repeatCount="indefinite"/>
+             dur="12s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </polygon>
   <text x="430" y="328" text-anchor="middle" font-size="16" font-weight="700" fill="#182032">Review</text>
 

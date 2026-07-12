@@ -38,16 +38,16 @@
   <!-- Node halos: light up as the pulse arrives (staggered, seamless) -->
   <g fill="none" stroke="#2459c7" stroke-width="2.5">
     <circle cx="600" cy="260" r="19" opacity="0">
-      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="760" cy="420" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="600" cy="580" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
     <circle cx="440" cy="420" r="19" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </circle>
   </g>
 
@@ -70,7 +70,7 @@
   <g>
     <rect x="470" y="156" width="260" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="470" y="156" width="260" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="600" y="183" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">① 內建人類知識</text>
     <text x="600" y="206" text-anchor="middle" font-size="12" fill="#6b7890">把領域規則、人怎麼想，寫進系統</text>
@@ -79,7 +79,7 @@
   <g>
     <rect x="855" y="388" width="270" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="855" y="388" width="270" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="990" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">② 短期就領先</text>
     <text x="990" y="438" text-anchor="middle" font-size="12" fill="#6b7890">有效，也讓研究者更有成就感</text>
@@ -88,7 +88,7 @@
   <g>
     <rect x="470" y="600" width="260" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
     <rect x="470" y="600" width="260" height="64" rx="10" fill="none" stroke="#b3452e" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="600" y="627" text-anchor="middle" font-size="16" font-weight="600" fill="#b3452e">③ 長期撞牆</text>
     <text x="600" y="650" text-anchor="middle" font-size="12" fill="#6b7890">停滯，甚至阻礙進一步突破</text>
@@ -97,7 +97,7 @@
   <g>
     <rect x="75" y="388" width="270" height="64" rx="10" fill="#eef3fd" stroke="#2459c7" stroke-width="1.5"/>
     <rect x="75" y="388" width="270" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </rect>
     <text x="210" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#2459c7">④ 算力反超</text>
     <text x="210" y="438" text-anchor="middle" font-size="12" fill="#6b7890">搜尋＋學習，隨算力持續擴展而勝出</text>

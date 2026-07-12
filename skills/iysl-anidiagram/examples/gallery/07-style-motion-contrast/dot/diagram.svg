@@ -54,20 +54,20 @@
 
   <!-- Exactly one focus ring is active at a time. -->
   <circle cx="192" cy="319" r="42" fill="none" stroke="#315fce" stroke-width="6" opacity="1">
-    <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.22;0.25;0.75;0.97;1" dur="8s" repeatCount="indefinite"/>
-    <animate attributeName="r" values="38;44;42;42;42;38" keyTimes="0;0.22;0.25;0.75;0.97;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0;0;1" keyTimes="0;0.22;0.25;0.75;0.97;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    <animate attributeName="r" values="38;44;42;42;42;38" keyTimes="0;0.22;0.25;0.75;0.97;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </circle>
   <circle cx="440" cy="319" r="42" fill="none" stroke="#315fce" stroke-width="6" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.22;0.25;0.47;0.5;1" dur="8s" repeatCount="indefinite"/>
-    <animate attributeName="r" values="42;42;38;44;42;42" keyTimes="0;0.22;0.25;0.47;0.5;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.22;0.25;0.47;0.5;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    <animate attributeName="r" values="42;42;38;44;42;42" keyTimes="0;0.22;0.25;0.47;0.5;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </circle>
   <circle cx="688" cy="319" r="42" fill="none" stroke="#315fce" stroke-width="6" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.47;0.5;0.72;0.75;1" dur="8s" repeatCount="indefinite"/>
-    <animate attributeName="r" values="42;42;38;44;42;42" keyTimes="0;0.47;0.5;0.72;0.75;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.47;0.5;0.72;0.75;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    <animate attributeName="r" values="42;42;38;44;42;42" keyTimes="0;0.47;0.5;0.72;0.75;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </circle>
   <circle cx="936" cy="319" r="42" fill="none" stroke="#315fce" stroke-width="6" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.72;0.75;0.97;1;1" dur="8s" repeatCount="indefinite"/>
-    <animate attributeName="r" values="42;42;38;44;38;42" keyTimes="0;0.72;0.75;0.97;1;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.72;0.75;0.97;1;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    <animate attributeName="r" values="42;42;38;44;38;42" keyTimes="0;0.72;0.75;0.97;1;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </circle>
 
   <text x="600" y="493" text-anchor="middle" font-size="15" font-weight="600" fill="#315fce">The pulse answers “where is attention now?” — it does not imply a transfer.</text>

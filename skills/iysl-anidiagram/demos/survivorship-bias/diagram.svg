@@ -42,7 +42,7 @@
         fill="#4a4530" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">該補強的是<tspan fill="#a02a1c" font-weight="700">沒有彈孔</tspan>的地方 —— 不是彈孔最多的地方</text>
   <text x="600" y="138" text-anchor="middle" font-size="15" fill="#4a4530"
         font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif" opacity="0">一批轟炸機出擊，軍方要決定裝甲加在哪
-    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.10;0.20;0.93;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.10;0.20;0.93;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- confidential stamp -->
@@ -56,12 +56,12 @@
     <g opacity="0.85">
       <use href="#miniplane"/>
       <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
-        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </circle>
       <animateTransform attributeName="transform" type="translate"
         values="0,0; 0,-30; -150,278; -150,278; -150,278; 0,0"
-        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </g>
   </g>
   <!-- left inner -->
@@ -69,12 +69,12 @@
     <g opacity="0.85">
       <use href="#miniplane"/>
       <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
-        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </circle>
       <animateTransform attributeName="transform" type="translate"
         values="0,0; 0,-30; -125,262; -125,262; -125,262; 0,0"
-        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </g>
   </g>
   <!-- right outer -->
@@ -82,12 +82,12 @@
     <g opacity="0.85">
       <use href="#miniplane"/>
       <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
-        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </circle>
       <animateTransform attributeName="transform" type="translate"
         values="0,0; 0,-30; 150,278; 150,278; 150,278; 0,0"
-        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </g>
   </g>
   <!-- right inner -->
@@ -95,19 +95,19 @@
     <g opacity="0.85">
       <use href="#miniplane"/>
       <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
-        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
       </circle>
       <animateTransform attributeName="transform" type="translate"
         values="0,0; 0,-30; 125,262; 125,262; 125,262; 0,0"
-        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     </g>
   </g>
 
   <!-- missing-data label (only in corrected beat) -->
   <text x="600" y="678" text-anchor="middle" font-size="14" fill="#7a2418" opacity="0"
         font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">引擎／座艙中彈的飛機根本沒回來 —— 那才是缺失的資料
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </text>
 
   <!-- ================= HERO BOMBER (centered, survivor) ================= -->
@@ -141,7 +141,7 @@
     <circle cx="604" cy="486" r="5"/><circle cx="600" cy="414" r="4"/>
     <!-- tailplane -->
     <circle cx="540" cy="516" r="5"/><circle cx="600" cy="520" r="5"/><circle cx="660" cy="516" r="5"/>
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.42;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.42;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </g>
 
   <!-- ================= NAIVE emphasis (where holes are) ================= -->
@@ -149,13 +149,13 @@
     <rect x="350" y="316" width="500" height="54" rx="14"/>
     <rect x="574" y="376" width="52" height="128" rx="18"/>
     <rect x="500" y="500" width="200" height="34" rx="12"/>
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </g>
   <g opacity="0" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">
     <text x="188" y="408" text-anchor="middle" font-size="17" font-weight="700" fill="#a02a1c">直覺解讀</text>
     <text x="188" y="432" text-anchor="middle" font-size="13" fill="#4a4530">哪裡彈孔多</text>
     <text x="188" y="452" text-anchor="middle" font-size="13" fill="#4a4530">就補哪裡（機翼／機身）</text>
-    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </g>
 
   <!-- ================= CORRECTED: armor on the empty zones (F6) ================= -->
@@ -165,14 +165,14 @@
     <rect x="672" y="294" width="36" height="56" rx="11"/>
     <rect x="740" y="300" width="36" height="56" rx="11"/>
     <rect x="582" y="216" width="36" height="44" rx="12"/>
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </g>
   <g opacity="0" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">
     <text x="1012" y="360" text-anchor="middle" font-size="17" font-weight="700" fill="#2c2817">威爾德看出破綻</text>
     <text x="1012" y="384" text-anchor="middle" font-size="13" fill="#4a4530">樣本只含「飛得回來」的飛機</text>
     <text x="1012" y="430" text-anchor="middle" font-size="17" font-weight="700" fill="#2f4a24">該補強：引擎與座艙</text>
     <text x="1012" y="454" text-anchor="middle" font-size="13" fill="#2f4a24">＝返航機沒有彈孔之處</text>
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </g>
 
   <!-- ================= caption plate (always on) ================= -->
