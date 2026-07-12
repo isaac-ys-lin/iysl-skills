@@ -1,0 +1,22 @@
+{
+  "should_trigger": [
+    {"text": "https://youtu.be/dQw4w9WgXcQ 幫我整理成繁體中文閱讀報告。", "family": "video_report", "expected_route": "iysl-ytdlp-html-report"},
+    {"text": "這支影片幫我做重點摘要 https://www.youtube.com/watch?v=abc12345678", "family": "video_summary", "expected_route": "iysl-ytdlp-html-report"},
+    {"text": "分析一下這個影片的洞見與可行啟發 https://youtu.be/xyz98765432", "family": "video_insight", "expected_route": "iysl-ytdlp-html-report"},
+    {"text": "把這部影片整理成一份 HTML 報告 https://www.youtube.com/watch?v=qqqqqqqqqqq", "family": "video_html", "expected_route": "iysl-ytdlp-html-report"},
+    {"text": "這條推裡的影片幫我抓逐字稿做成報告 https://t.co/AbCdEf123", "family": "tco_video", "expected_route": "iysl-ytdlp-html-report"},
+    {"text": "這影片講什麼？整理重點給我 https://youtu.be/wwwwwwwwwww", "family": "video_keypoints", "expected_route": "iysl-ytdlp-html-report"}
+  ],
+  "should_not_trigger": [
+    {"text": "把這整個播放清單都整理成報告 https://www.youtube.com/playlist?list=PL123456", "family": "playlist_out_of_scope", "expected_route": "direct"},
+    {"text": "整理這個頻道最近的內容 https://www.youtube.com/@somechannel", "family": "channel_out_of_scope", "expected_route": "direct"},
+    {"text": "幫我把這段已經貼上的文字改寫得更順。", "family": "no_video", "expected_route": "write"},
+    {"text": "這個 repo 的 build 指令是什麼？", "family": "read_only_question", "expected_route": "direct"},
+    {"text": "把首頁的 Save 按鈕改成 Export。", "family": "trivial_edit", "expected_route": "direct"}
+  ],
+  "near_neighbor": [
+    {"text": "幫我讀這篇部落格文章並摘要 https://example.com/blog/post", "family": "article_not_video", "expected_route": "read"},
+    {"text": "只要幫我把這支影片的音檔下載下來就好 https://youtu.be/onlyaudio12", "family": "download_only", "expected_route": "direct"},
+    {"text": "這支影片有沒有中文字幕？只要回答有無，不用做報告 https://youtu.be/captioncheck", "family": "caption_lookup", "expected_route": "direct"}
+  ]
+}

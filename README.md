@@ -35,6 +35,7 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-anidiagram` — create animated explanatory diagrams.
 - `iysl-clarify` — may trigger implicitly when material user intent is missing.
 - `iysl-deckab` — create source-faithful deck and prompt workflows.
+- `iysl-ytdlp-html-report` — turn a single public video URL into a Traditional Chinese HTML reading report.
 
 ## Structure
 

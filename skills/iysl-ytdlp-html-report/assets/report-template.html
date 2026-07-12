@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} | 影片逐字稿閱讀報告</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #15181c;
+      --muted: #59636e;
+      --paper: #fffdf8;
+      --soft: #f4f2ee;
+      --line: #ded8ce;
+      --accent: #0d766f;
+      --accent-2: #b2472d;
+      --accent-3: #334e68;
+      --mark: #fff1c2;
+      --shadow: 0 18px 48px rgba(39, 35, 29, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, rgba(244, 242, 238, 0.92), rgba(255, 253, 248, 1) 460px), var(--paper);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      line-height: 1.78;
+    }
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    img { display: block; max-width: 100%; }
+    code {
+      border: 1px solid rgba(21, 24, 28, 0.12);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 0 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+    .page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    .hero {
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 36px;
+      align-items: center;
+      padding: 48px 0 36px;
+    }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-2);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      max-width: 22ch;
+      font-family: ui-serif, Georgia, "Times New Roman", "Noto Serif TC", serif;
+      font-size: 2.75rem;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    .title-sub {
+      max-width: 680px;
+      margin: 14px 0 0;
+      color: var(--accent-3);
+      font-size: 1.18rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .subtitle {
+      max-width: 680px;
+      margin: 22px 0 0;
+      color: #2e3338;
+      font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+      line-height: 1.65;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .meta li {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.72);
+      padding: 6px 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .hero-media {
+      overflow: hidden;
+      border: 1px solid rgba(21, 24, 28, 0.08);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      background: #111;
+    }
+    .hero-media img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      border-block: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.92);
+      backdrop-filter: blur(16px);
+    }
+    .nav-inner { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; }
+    .nav a {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    main { padding: 36px 0 64px; }
+    section { margin: 0 0 56px; }
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 0 0 22px;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 10px;
+    }
+    h2 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.5rem);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+    .section-kicker { color: var(--muted); font-size: 0.95rem; white-space: nowrap; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, 0.84);
+      padding: 22px;
+      box-shadow: 0 10px 26px rgba(39, 35, 29, 0.06);
+    }
+    .food {
+      border-left: 5px solid var(--accent-2);
+      background: #fff9e8;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(210px, 0.32fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+    .aside {
+      position: sticky;
+      top: 68px;
+      border-left: 4px solid var(--accent);
+      padding: 2px 0 2px 18px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .stack { display: grid; gap: 16px; }
+    .stack p:first-child, .panel p:first-child { margin-top: 0; }
+    .stack p:last-child, .panel p:last-child { margin-bottom: 0; }
+    .stack li + li { margin-top: 8px; }
+    .verification {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 20px 22px;
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 26px 0 42px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    @media (max-width: 900px) {
+      .hero, .content-grid { grid-template-columns: 1fr; min-height: auto; }
+      .aside { position: static; }
+      h1 { font-size: 2.35rem; }
+      .title-sub { font-size: 1.08rem; }
+    }
+    @media (max-width: 560px) {
+      .page { width: min(100% - 22px, 1120px); }
+      .hero { gap: 22px; padding-top: 26px; }
+      h1 { font-size: 1.95rem; }
+      .title-sub { font-size: 1rem; }
+      .section-heading { display: block; }
+      .section-kicker { display: block; margin-top: 6px; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page hero">
+    <div>
+      <p class="eyebrow">Transcript Reading Report</p>
+      <h1>{{heroMain}}</h1>
+      {{heroSubHtml}}
+      <p class="subtitle">根據影片逐字稿整理的閱讀報告，聚焦內容重述、分析洞見、思考提示、可行啟發與必要來源限制。</p>
+      <ul class="meta">
+        <li>{{channel}}</li>
+        <li>{{duration}}</li>
+        <li>{{extractedAt}}</li>
+      </ul>
+    </div>
+    <figure class="hero-media">
+      <a href="{{sourceUrl}}" target="_blank" rel="noreferrer">
+        <img src="{{thumbnail}}" alt="{{title}}">
+      </a>
+    </figure>
+  </header>
+
+  <nav class="nav">
+    <div class="page nav-inner">
+      <a href="#summary">內容重述</a>
+      <a href="#insights">洞見</a>
+      <a href="#food">food for thoughts</a>
+      <a href="#actions">可行啟發</a>
+      <a href="#verification">驗證與限制</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    <section id="summary">
+      <div class="section-heading"><h2>內容重述</h2><span class="section-kicker">影片說了什麼</span></div>
+      <div class="panel stack">{{summaryHtml}}</div>
+    </section>
+
+    <section id="insights">
+      <div class="section-heading"><h2>洞見</h2><span class="section-kicker">為什麼重要</span></div>
+      <div class="content-grid">
+        <aside class="aside">從逐字稿提煉可判斷、可討論、可行動的觀點。</aside>
+        <div class="panel stack">{{insightsHtml}}</div>
+      </div>
+    </section>
+
+    <section id="food">
+      <div class="section-heading"><h2>food for thoughts</h2><span class="section-kicker">留下來想</span></div>
+      <div class="panel food">{{foodHtml}}</div>
+    </section>
+
+    <section id="actions">
+      <div class="section-heading"><h2>可行啟發</h2><span class="section-kicker">拿去用</span></div>
+      <div class="panel stack">{{actionsHtml}}</div>
+    </section>
+
+    <section id="verification">
+      <div class="section-heading"><h2>驗證與限制</h2><span class="section-kicker">來源依據</span></div>
+      <div class="verification stack">{{verificationHtml}}</div>
+    </section>
+  </main>
+
+  <footer class="page">
+    <p>來源：<a href="{{sourceUrl}}" target="_blank" rel="noreferrer">{{sourceUrl}}</a></p>
+  </footer>
+</body>
+</html>

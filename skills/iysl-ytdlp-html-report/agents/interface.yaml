@@ -1,0 +1,22 @@
+interface:
+  display_name: "iysl-ytdlp-html-report"
+  short_description: "Single video URL to a Traditional Chinese HTML reading report."
+  default_prompt: "Use $iysl-ytdlp-html-report to turn a single public video URL into a Traditional Chinese HTML reading report grounded in transcript extraction; dispatch read-only subagents for analysis when useful."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "generic"
+  activation:
+    mode: "implicit"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "native-implicit-skill"
+    generic: "description-routed"

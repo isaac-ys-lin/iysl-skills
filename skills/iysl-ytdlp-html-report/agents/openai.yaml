@@ -1,0 +1,6 @@
+interface:
+  display_name: "iysl-ytdlp-html-report"
+  short_description: "Single video URL to a Traditional Chinese HTML reading report."
+  default_prompt: "Use $iysl-ytdlp-html-report to turn a single public video URL into a Traditional Chinese HTML reading report grounded in transcript extraction; dispatch read-only subagents for analysis when useful."
+policy:
+  allow_implicit_invocation: true
