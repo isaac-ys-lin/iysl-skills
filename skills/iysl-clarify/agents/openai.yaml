@@ -1,6 +1,6 @@
 interface:
   display_name: "iysl-clarify"
-  short_description: "釐清會實質改變產品結果或風險邊界的需求歧義"
+  short_description: "Clarify only material requirement ambiguity before proceeding."
   default_prompt: "Use $iysl-clarify to resolve only material requirement ambiguity before proceeding."
 policy:
   allow_implicit_invocation: true

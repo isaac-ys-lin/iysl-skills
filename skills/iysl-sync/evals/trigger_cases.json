@@ -1,0 +1,27 @@
+{
+  "should_trigger": [
+    {"text": "好，就照剛才決定的 ZIP 方案；不含 token，完成後在 Finder 顯示。把這些同步到目前計畫。", "family": "accepted_requirements", "expected_route": "iysl-sync"},
+    {"text": "原本只支援本機匯出，現在確認也要支援 iCloud；請更新既有 feature plan。", "family": "scope_change", "expected_route": "iysl-sync"},
+    {"text": "我們改用方案 B，因為 release build 不能依賴環境變數；舊方案標成 superseded。", "family": "superseded_decision", "expected_route": "iysl-sync"},
+    {"text": "準備開始實作這個跨多檔功能，先把已確認需求與驗收條件寫進 living plan。", "family": "before_implementation", "expected_route": "iysl-sync"},
+    {"text": "接手昨天的 diagnostics 工作，先讀 active plan，測試通過後把驗證與下一步更新回去。", "family": "continue_planned_work", "expected_route": "iysl-sync"},
+    {"text": "要交接給下一個 session，請記下目前 blocker、已驗證結果和下一個具體動作。", "family": "handoff_boundary", "expected_route": "iysl-sync"},
+    {"text": "目前計畫累積了舊內容；剛確認驗收條件已改，請用最新契約取代矛盾內容。", "family": "stale_contract_replacement", "expected_route": "iysl-sync"}
+  ],
+  "should_not_trigger": [
+    {"text": "把 Save 按鈕改成 Export。", "family": "trivial_edit", "expected_route": "direct"},
+    {"text": "我們隨便想想 diagnostics 可能還能做什麼，先不要定案。", "family": "tentative_brainstorm", "expected_route": "direct"},
+    {"text": "JSON 或 SQLite 哪個適合？請比較方案。", "family": "solution_design", "expected_route": "think"},
+    {"text": "匯出會卡住，先找根因。", "family": "bug_diagnosis", "expected_route": "hunt"},
+    {"text": "Review this PR and report actionable findings only.", "family": "existing_work_review", "expected_route": "check"},
+    {"text": "這個 repo 的 build 指令是什麼？", "family": "read_only_question", "expected_route": "direct"},
+    {"text": "資料夾裡有一份未完成的舊 plan，但現在先修完全無關的拼字。", "family": "stale_plan_hijack", "expected_route": "direct"},
+    {"text": "剛剛有人建議改用 SQLite，但我們還沒同意。", "family": "unaccepted_recommendation", "expected_route": "direct"},
+    {"text": "只讀目前計畫並摘要給我，不要修改。", "family": "read_plan_without_change", "expected_route": "direct"}
+  ],
+  "near_neighbor": [
+    {"text": "匯出範圍還沒決定，而且可能包含 secrets，先問清楚。", "family": "sync_vs_clarify", "expected_route": "iysl-clarify"},
+    {"text": "需求確定了，請提出架構方案與取捨，但先不要寫 plan。", "family": "sync_vs_think", "expected_route": "think"},
+    {"text": "計畫寫好了，現在直接完成實作。", "family": "sync_vs_implementation", "expected_route": "direct"}
+  ]
+}

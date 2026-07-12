@@ -1,6 +1,6 @@
 ---
 name: iysl-deckab
-description: 使用 $iysl-deckab 將任意內容、講稿、producer notes、slide brief 或 image prompt set 轉成 source-faithful deck outline、slide briefs、Mode A/B prompts 與 reference-image style-anchor workflow。觸發：iysl-deckab、STYLE_INSTRUCTIONS、SOURCE NEEDED、visible-label whitelist、中文 visible labels、風格不一致、style anchor、A/B 生圖 prompt、API production prompt pack。排除：直接 PPTX/Keynote export、單張圖片生成、純潤稿、純素材搜尋、純設計審查。
+description: Use $iysl-deckab to turn any content, talk, producer notes, slide brief, or image prompt set into a source-faithful deck outline, slide briefs, Mode A/B image prompts, and a reference-image style-anchor workflow. Trigger terms include iysl-deckab, STYLE_INSTRUCTIONS, SOURCE NEEDED, visible-label whitelist, Chinese visible labels, style inconsistency, style anchor, A/B image prompts, and API production prompt pack. Exclude direct PPTX/Keynote export, one-off image generation, writing polish, asset search, and design critique only.
 ---
 
 # iysl-deckab

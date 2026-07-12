@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
-EXPECTED_SKILLS = {"iysl-anidiagram", "iysl-clarify", "iysl-deckab"}
+EXPECTED_SKILLS = {"iysl-anidiagram", "iysl-clarify", "iysl-deckab", "iysl-sync"}
 RESIDUE_NAMES = {".DS_Store", "__pycache__", ".pytest_cache"}
 
 
