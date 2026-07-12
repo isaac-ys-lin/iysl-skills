@@ -25,12 +25,15 @@ Example root:
 
 ## Self-Contained, No Script, No External Resources
 
-- No `<script>` elements. Animation is SMIL only: `animate`, `animateMotion`,
-  `animateTransform`, `set`. CSS `@keyframes`, `animation:`, and `transition:`
-  (in `<style>` or `style` attributes) are rejected.
+- No `<script>`, `<style>`, or `style=` attributes. Use SVG presentation attributes
+  (`fill`, `stroke`, `font-*`, and so on) and SMIL only: `animate`, `animateMotion`,
+  `animateTransform`, `set`. Removing CSS surfaces keeps the browser input contract
+  auditable and prevents escaped or newly introduced CSS fetch syntax.
 - No external references of any kind: no external `href`, no `@import`, no webfonts.
   `<image>` content must be a data URI. `href` values must be fragments (`#id`) or
-  data URIs.
+  data URIs. `src` attributes, HTML/foreign active elements, event attributes, and
+  SMIL mutations of `href`, `src`, `style`, or event attributes are rejected before
+  the source is inserted into the browser harness.
 - Fonts come from the system stack. Type feel (geometric sans, humanist sans, serif
   editorial, mono, display) is a **style choice** — see `references/style-directions.md`;
   do not treat one stack as the house font. The only hard rule is a CJK fallback: every
@@ -57,6 +60,11 @@ Example root:
     boxes may overlap beyond `--collision-tolerance` px (default 2) on both axes.
   - `readability_canvas_margin`: every visible text bounding box stays at least
     `--margin` px (default 8) away from the SVG edges.
+  - `loop_position_seam`: a visible animated target may not jump substantially
+    farther across the video boundary than it moves between adjacent end frames.
+    Hidden reset motion is allowed.
+  - `external_resource_runtime`: the browser request guard observes no subresource
+    request. Any network or extra local-file fetch is aborted and fails the render.
 
 ## SMIL Patterns
 

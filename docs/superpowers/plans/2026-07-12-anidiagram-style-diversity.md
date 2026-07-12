@@ -1,7 +1,7 @@
 # iysl-anidiagram Style Diversity
 
-Status: Complete
-Last updated: 2026-07-12
+Status: Ready
+Last updated: 2026-07-13
 
 ## Goal
 
@@ -9,9 +9,9 @@ Last updated: 2026-07-12
 
 ## Current contract
 
-- In scope: 完成 Claude 中斷的 `examples/style-range/` showcase；把視覺外觀與空間構圖拆成可檢查的發散條件；補防腐測試、文件與完整驗證。
-- Out of scope: 不加入新的 runtime 依賴、不改 SVG renderer、不建立自動套版器、不處理無縫循環或 pipeline 成本分級。
-- Acceptance criteria: 三個 style-range SVG 都通過 `render_svg.py --check`；候選案必須至少同時跨一個 visual axis 與一個 spatial axis；style-range 有自動探索與 render 測試；skill-level tests 與 repo verifier 通過；沒有新增快取或背景程序殘餘。
+- In scope: 保留已完成的 style-diversity 合約；完成 motion craft 合約與 SVG retrofit；修正 renderer paint 同步、spline validation、尾端循環與 verifier 假綠；補 regression tests；隔離驗證後 commit、push 並整合回 `main`。
+- Out of scope: 不加入新的 runtime 依賴、不建立自動套版器、不處理 pipeline 成本分級；不納入同時存在的 `iysl-ytdlp-html-report`、README 與 package-contract WIP。
+- Acceptance criteria: motion regression tests 能在舊行為失敗並在修正後通過；所有 anidiagram SVG 通過結構、循環與 render gates；平行 render 不再產生不同 frame stream 或 hang；skill/package/release verifier 在隔離 worktree 通過；目標 commits 推送並 fast-forward 整合到遠端 `main`；沒有新增快取或背景程序殘餘。
 
 ## Decisions
 
@@ -19,6 +19,9 @@ Last updated: 2026-07-12
 - **Confirmed** — style directions 是校準跳板，不是八選一菜單；風格需由內容情緒推導。
 - **Confirmed** — 可參考 GitHub 原始專案補強判斷邏輯，但 repo examples 維持原創、repo-owned，不引入外部 runtime。
 - **Assumed** — 「Claude 做到一半，現在換你」授權完成同一批未提交的 anidiagram style-diversity 修改與驗證，不包含 commit 或 push。
+- **Confirmed** — 2026-07-13 使用者授權修正 review findings、commit、push，並把成果整合回 `main`。
+- **Confirmed** — Motion easing 必須依動作語義選擇，不以單一 ease-out 曲線全域替換。
+- **Confirmed** — 無關的 ytdlp skill 與 package inventory WIP 必須留在原 worktree，不得被 staging、commit 或 merge 帶入。
 
 ## Implementation outline
 
@@ -38,3 +41,7 @@ Last updated: 2026-07-12
 - 三個 SVG 另逐一執行 `render_svg.py --check --fps 10`，皆 exit 0；editorial、blueprint、print 的 MP4 均為 2400×1760、10 秒。
 - Reviewer re-review 為 clean，先前四個 blockers（假綠、showcase 同質、跨輪重複、八模板退化）均已關閉。
 - 清除 `__pycache__` / `.pyc` 後 package residue 檢查為空；未 commit、未 push。
+- `312d74d` 與 `0d78f9c` 已提交。2026-07-13 deep review 重現的 motion、renderer、verifier、loop 與 active-content blockers 均有先 RED 後 GREEN 的 regression guard；最終 adversarial re-review 為 clean。
+- Fresh detached worktree：root verifier regression `2 passed`、package contract `8 passed`、anidiagram `58 passed`、clarify `5 passed`、sync `8 passed`，`tools/verify-release.sh` 回報 `portable release gates passed`。
+- Packaged install surface：`tools/verify-npx-install.sh` 以 `skills@1.5.16` 在隔離 HOME 安裝四個 skills，source parity 通過且無 cache/noise residue。
+- 下一步：依 infrastructure/contracts/tests 與 SVG/MP4 retrofit 分批提交，推送 feature branch，fast-forward 整合並推送 `main`；完成後將本 plan 標記 `Complete`。

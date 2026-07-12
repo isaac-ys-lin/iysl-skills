@@ -101,3 +101,51 @@ def test_gallery_diagram_passes_check(browser_available, svg_path, tmp_path):
     )
     report = json.loads(result.stdout)
     assert report["ok"] is True
+
+
+def test_arrow_never_moves_backward_while_visible(browser_available):
+    from playwright.sync_api import sync_playwright
+
+    svg_path = GALLERY / "07-style-motion-contrast" / "arrow" / "diagram.svg"
+    with sync_playwright() as playwright:
+        try:
+            browser = playwright.chromium.launch(channel="chrome")
+        except Exception:
+            browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page(viewport={"width": 1200, "height": 680})
+            page.set_content(svg_path.read_text(encoding="utf-8"))
+            samples = page.evaluate(
+                """
+                async () => {
+                  const svg = document.querySelector('svg');
+                  const arrow = document.querySelector('animateTransform').parentElement;
+                  svg.pauseAnimations();
+                  const rows = [];
+                  for (let i = 0; i < 20; i++) {
+                    const t = 7.2 + i * (0.79 / 19);
+                    svg.setCurrentTime(t);
+                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                    let node = arrow;
+                    let opacity = 1;
+                    while (node && node !== svg) {
+                      opacity *= Number.parseFloat(getComputedStyle(node).opacity || '1');
+                      node = node.parentElement;
+                    }
+                    const rect = arrow.getBoundingClientRect();
+                    rows.push({t, x: rect.x + rect.width / 2, opacity});
+                  }
+                  return rows;
+                }
+                """
+            )
+        finally:
+            browser.close()
+
+    for previous, current in zip(samples, samples[1:]):
+        if previous["opacity"] >= 0.05 and current["opacity"] >= 0.05:
+            assert current["x"] >= previous["x"] - 1, (
+                "arrow moved backward while visible: "
+                f"t={previous['t']:.3f}->{current['t']:.3f}, "
+                f"x={previous['x']:.1f}->{current['x']:.1f}"
+            )

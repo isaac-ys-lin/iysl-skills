@@ -26,26 +26,10 @@ if [[ -d tests ]]; then
   test_files=(tests/test_*.py)
   shopt -u nullglob
 
-  # Detection must not depend on a single optional tool (rg): when it is absent
-  # or unresolved in the caller's context the old code silently fell back to
-  # `unittest discover`, which exits 0 on "Ran 0 tests" and reports false green.
-  # Use portable grep, and fail loudly if test files exist but nothing ran.
-  if [[ ${#test_files[@]} -gt 0 ]] \
-     && grep -lE '^(import|from) pytest' "${test_files[@]}" >/dev/null 2>&1; then
+  # Pytest collects both pytest functions and unittest.TestCase classes. Always
+  # use it when test files exist so a mixed suite cannot be partially skipped.
+  if [[ ${#test_files[@]} -gt 0 ]]; then
     "$python_bin" -m pytest -q -p no:cacheprovider tests
-  else
-    if output="$("$python_bin" -m unittest discover -s tests 2>&1)"; then
-      printf '%s\n' "$output"
-    else
-      status=$?
-      printf '%s\n' "$output"
-      exit "$status"
-    fi
-    if [[ ${#test_files[@]} -gt 0 ]] && grep -Eq 'Ran 0 tests|NO TESTS RAN' <<<"$output"; then
-      echo "verify-skill: tests/test_*.py present but unittest ran 0 tests" \
-           "(pytest-style tests need a resolvable pytest)" >&2
-      exit 1
-    fi
   fi
 fi
 
