@@ -31,10 +31,14 @@ Example root:
 - No external references of any kind: no external `href`, no `@import`, no webfonts.
   `<image>` content must be a data URI. `href` values must be fragments (`#id`) or
   data URIs.
-- Fonts come from the system stack. Always use:
-  `"PingFang TC", "Noto Sans TC", "Helvetica Neue", Arial, sans-serif`
-  (or a stack that includes at least one of the CJK families). Validation rejects
-  documents whose font stacks never mention `PingFang TC` or `Noto Sans TC`.
+- Fonts come from the system stack. Type feel (geometric sans, humanist sans, serif
+  editorial, mono, display) is a **style choice** — see `references/style-directions.md`;
+  do not treat one stack as the house font. The only hard rule is a CJK fallback: every
+  font-family stack must include at least one of `"PingFang TC"` / `"Noto Sans TC"` so
+  Chinese text never renders as tofu. Validation rejects documents whose stacks never
+  mention either family. A serif-led example stack:
+  `"Songti TC", "Noto Serif TC", "PingFang TC", Georgia, serif`; a neutral default:
+  `"PingFang TC", "Noto Sans TC", "Helvetica Neue", Arial, sans-serif`.
 
 ## Text Rules
 

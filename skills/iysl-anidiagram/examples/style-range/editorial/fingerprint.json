@@ -1,0 +1,4 @@
+{
+  "visual": ["light", "blue-mono-accent", "geometric-sans", "flat"],
+  "spatial": ["centered-hero", "symmetric", "rounded-card-containment", "framed"]
+}

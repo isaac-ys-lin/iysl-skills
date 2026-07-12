@@ -7,10 +7,11 @@ description: Use when the user asks for animated explanatory diagrams, one-page 
 
 Create animated explanatory diagrams as hand-authored SMIL animated SVGs. The model writes the SVG directly; `scripts/render_svg.py` validates the authoring contract, renders it deterministically in a browser, runs quality gates, and encodes MP4/PNG.
 
-Two references are binding contracts, not suggestions:
+Three references are binding contracts, not suggestions:
 
-- `references/svg-authoring.md` — structural rules the validator enforces (SMIL only, self-contained, text stays text, font stacks, loop discipline, size hierarchy).
+- `references/svg-authoring.md` — structural rules the validator enforces (SMIL only, self-contained, text stays text, CJK font fallback, loop discipline, size hierarchy).
 - `references/animation-semantics.md` — the relation-to-motion table. A motion pattern that mismatches the content relation is a defect, exactly like a wrong label.
+- `references/style-directions.md` — the aesthetic range. The look and spatial staging are derived from the content's mood, never defaulted to the pale-blue editorial house look. Within a multi-diagram run, carry each accepted diagram's visual fingerprint forward so consecutive diagrams do not read as the same house.
 
 ## Decision Ladder
 
@@ -19,6 +20,7 @@ Every diagram walks the same ladder, in order:
 1. **Claim** — what should a reader understand within 3 seconds? Extract it from the source; never invent it.
 2. **Relation** — sequence, loop, narrowing, ranking, tradeoff, layers, contrast, branching, system map, or multi-part story.
 3. **Composition** — the visual structure that makes that relation easiest to read. Style and animation are chosen last, in service of the explanation; they are never a classifier that picks the layout.
+4. **Style** — the ground, palette, type, and composition move, derived from the content's mood per `references/style-directions.md`. This is a real decision, not a default: do not auto-reach for the pale-blue editorial look.
 
 If the source yields no claim (reference lists, plain lookup tables, material that asserts nothing), refuse to draw and ask what the reader should take away — do not invent a claim. See `examples/gallery/09-no-claim-refusal/`.
 
@@ -30,8 +32,8 @@ Production runs as three roles. Direction happens in the main conversation; Crea
 
 1. Decompose the source into a numbered fact list `F1..Fn`. Tag each fact `must-keep` or `droppable`. This list is the coverage contract for everything downstream.
 2. Extract the claim (the 3-second takeaway), name the relation, and identify the audience.
-3. Propose a direction: a composition approach plus an **animation story** — what the motion will explain and why, grounded in the relation-to-motion table in `references/animation-semantics.md`.
-4. **Fixed step: present the claim, the fact list, and the proposed composition and animation intent to the user. Only proceed after the user confirms or corrects them.**
+3. Propose a direction: a composition approach, an **animation story** (what the motion will explain and why, grounded in `references/animation-semantics.md`), and a **style direction** (ground, palette, type, spatial staging) derived from the content's mood per `references/style-directions.md` — not the default editorial look. If a previous diagram exists in the same run, include its visual fingerprint as an explicit avoid/reuse decision; do not pretend to remember an artifact that was not supplied.
+4. **Fixed step: present the claim, the fact list, and the proposed composition, animation intent, and style direction to the user. Only proceed after the user confirms or corrects them.**
 
 If step 2 produces no claim, stop here and ask (the 09 case documents this refusal).
 
@@ -42,19 +44,21 @@ Dispatch two Creative agents in parallel. Each agent receives:
 - the source material,
 - the user-confirmed direction (claim, relation, audience, animation story),
 - the fact list `F1..Fn` with must-keep/droppable tags,
-- both reference contracts (`svg-authoring.md`, `animation-semantics.md`).
+- the previous accepted diagram's fingerprint and poster when producing a multi-diagram run,
+- all three reference contracts (`svg-authoring.md`, `animation-semantics.md`, `style-directions.md`).
 
-**Divergence is mandatory**: the two agents must take different visual languages and composition strategies — not the same layout with a different palette. Assign each agent a distinct direction explicitly in its prompt (for example, one spatial/geometric composition versus one editorial/panel composition).
+**Divergence is mandatory**: the two agents must land in visibly different houses and compositions. They must differ on at least one **visual axis** and at least one **spatial axis** from `style-directions.md`; changing only palette and type does not count as composition divergence. Keep the semantic relation fixed, then assign each agent a distinct visual treatment and spatial staging in its prompt (for example, centered hero with sparse chrome versus an off-center focal point with annotation-dense margins). Two candidates that would be mistaken for the same publication or the same wireframe is a divergence failure — regenerate.
 
 Each agent must produce:
 
 - `diagram.svg` conforming to `references/svg-authoring.md`,
+- a two-line visual fingerprint (`visual:` and `spatial:`) plus a one-sentence content-derived rationale, written before consulting the calibration family; then declare `anchor: none` or name the closest anchor and show at least one visual and one spatial mutation from it,
 - a coverage table mapping every `Fi` to where it lands in the diagram, or an explicit drop with a reason — `must-keep` facts may never be dropped,
 - a passing run of `render_svg.py --check` (exit 0) on its own SVG before handing it back.
 
 ### Role 3 — Review (one adversarial subagent)
 
-Dispatch one Review agent with both candidates. The reviewer reads the raw SVG source of each candidate, views the poster PNG, and extracts six equidistant frames from each MP4 with ffmpeg, inspecting every frame:
+Dispatch one Review agent with both candidates and, for a multi-diagram run, the previous accepted fingerprint and poster. The reviewer reads the raw SVG source of each candidate, views the poster PNG, and extracts six equidistant frames from each MP4 with ffmpeg, inspecting every frame:
 
 ```bash
 ffmpeg -i candidate.mp4 -vf "select='not(mod(n,ceil(N/6)))'" -vsync vfr frame_%d.png
@@ -65,9 +69,10 @@ Rubric, in order:
 - **(a) Coverage diff** — walk `F1..Fn` against each coverage table: is every fact where the table says it is, and is every drop justified? A dropped `must-keep` is an automatic fail.
 - **(b) Animation semantics** — check each animated element against the relation-to-motion table in `references/animation-semantics.md`. A mismatched motion pattern is a fail, not a taste note.
 - **(c) Three reading depths** — the claim lands in 3 seconds (title), the structure lands in 10 seconds (section titles and layout), and a close read rewards with details (labels and annotations).
-- **(d) Visual quality** — hierarchy, density, whitespace, and collisions that the scripted checks cannot see (icon-over-label overlap, cramped groups, dead zones). This is the eyes-on pass beyond `render_svg.py`.
+- **(d) Visual quality** — hierarchy, density, whitespace, color contrast, and collisions that the scripted checks cannot see (low-contrast labels, icon-over-label overlap, cramped groups, dead zones). This is the eyes-on pass beyond `render_svg.py`.
+- **(e) Diversity audit** — compare the two visual fingerprints and actual posters. They must differ on at least one visual axis and one spatial axis. If an anchor is declared, verify that candidate differs from it on both kinds of axis; changing one hex value is not a mutation. In a multi-diagram run, also compare each candidate with the previous accepted fingerprint/poster: a candidate that repeats the previous house or wireframe fails unless the user explicitly approved continuity.
 
-A fail returns a concrete fix list to the responsible Creative agent — at most two revision rounds. The main conversation picks the winner and delivers it.
+A fail returns a concrete fix list to the responsible Creative agent — at most two revision rounds. The main conversation picks the winner only from candidates that pass every gate and delivers it.
 
 ## Render
 
@@ -94,7 +99,8 @@ The static poster must be understandable before animation adds anything: motion 
 
 ## Judgment Assets
 
-- `examples/gallery/` holds worked judgment examples — claim extraction, relation choice, coverage tables, and the SVGs that resulted. They are quality anchors to reason against, not templates to copy.
+- `examples/gallery/` holds worked judgment examples — claim extraction, relation choice, coverage tables, and the SVGs that resulted. They are quality anchors to reason against, not templates to copy. They happen to share one palette; that is a limitation of the sample set, **not** a house style — derive palette, type, and composition per content via `references/style-directions.md`.
+- `examples/style-range/` keeps the claim and relation stable while showing how visual treatment and spatial staging can vary. Use it to calibrate range, never as three skins to copy.
 - Match the source language and tone; preserve Chinese labels when the source is Chinese.
 - One animation story at a time. Motion that explains nothing gets removed.
 - When two compositions both fit the relation, prefer the one whose poster frame reads faster.
