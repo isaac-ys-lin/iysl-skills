@@ -22,10 +22,14 @@ fi
 cd "$skill_dir"
 
 if [[ -d tests ]]; then
-  if rg -l '^import pytest|^from pytest' tests/test_*.py >/dev/null 2>&1; then
+  shopt -s nullglob
+  test_files=(tests/test_*.py)
+  shopt -u nullglob
+
+  # Pytest collects both pytest functions and unittest.TestCase classes. Always
+  # use it when test files exist so a mixed suite cannot be partially skipped.
+  if [[ ${#test_files[@]} -gt 0 ]]; then
     "$python_bin" -m pytest -q -p no:cacheprovider tests
-  else
-    "$python_bin" -m unittest discover -s tests
   fi
 fi
 

@@ -10,6 +10,7 @@ EXPECTED_SKILLS = {
     "iysl-anidiagram",
     "iysl-clarify",
     "iysl-deckab",
+    "iysl-sync",
     "iysl-ytdlp-html-report",
 }
 RESIDUE_NAMES = {".DS_Store", "__pycache__", ".pytest_cache"}

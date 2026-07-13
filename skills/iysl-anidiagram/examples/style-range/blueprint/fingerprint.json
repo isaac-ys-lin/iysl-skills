@@ -1,0 +1,4 @@
+{
+  "visual": ["dark", "cyan-amber", "mono", "grid-ruled", "soft-glow"],
+  "spatial": ["centered-hero", "symmetric", "technical-frame", "full-bleed-grid"]
+}

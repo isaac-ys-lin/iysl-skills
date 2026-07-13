@@ -11,20 +11,20 @@
   <rect x="60" y="130" width="480" height="460" rx="14" fill="#faf6f3" stroke="#e3d5cb" stroke-width="1.5"/>
   <rect x="660" y="130" width="480" height="460" rx="14" fill="#f4f8fd" stroke="#c9d6ef" stroke-width="1.5"/>
   <rect x="60" y="130" width="480" height="460" rx="14" fill="none" stroke="#c0836a" stroke-width="2.5" opacity="0">
-    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </rect>
   <rect x="660" y="130" width="480" height="460" rx="14" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </rect>
 
   <!-- Panel headers (eyebrows stay static) -->
   <text x="80" y="164" font-size="12" font-weight="600" letter-spacing="2" fill="#8a6d5c">BEFORE</text>
   <text x="680" y="164" font-size="12" font-weight="600" letter-spacing="2" fill="#2459c7">AFTER</text>
   <rect x="80" y="196" width="130" height="4" rx="2" fill="#c0836a" opacity="0.15">
-    <animate attributeName="opacity" values="1;1;0.15;0.15;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0.15;0.15;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </rect>
   <rect x="680" y="196" width="130" height="4" rx="2" fill="#2459c7" opacity="0.15">
-    <animate attributeName="opacity" values="0.15;0.15;1;1;0.15" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.15;0.15;1;1;0.15" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
   </rect>
 
   <!-- Center spine: shared checkpoints -->
@@ -44,7 +44,7 @@
 
   <!-- BEFORE content (dims while AFTER is being read) -->
   <g>
-    <animate attributeName="opacity" values="1;1;0.45;0.45;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0.45;0.45;1" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <text x="80" y="188" font-size="20" font-weight="700" fill="#182032">Ad hoc manual</text>
 
     <rect x="80" y="208" width="440" height="64" rx="10" fill="#ffffff" stroke="#e3d5cb" stroke-width="1.5" stroke-dasharray="6 4"/>
@@ -72,7 +72,7 @@
 
   <!-- AFTER content (dims while BEFORE is being read) -->
   <g opacity="0.45">
-    <animate attributeName="opacity" values="0.45;0.45;1;1;0.45" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.45;0.45;1;1;0.45" keyTimes="0;0.45;0.5;0.95;1" dur="8s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <text x="680" y="188" font-size="20" font-weight="700" fill="#182032">Verified agent-assisted</text>
 
     <rect x="680" y="208" width="440" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>

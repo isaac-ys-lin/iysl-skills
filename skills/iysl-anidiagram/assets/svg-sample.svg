@@ -10,7 +10,7 @@
 
   <g opacity="0">
     <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1"
-             dur="4s" repeatCount="indefinite"/>
+             dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <circle cx="140" cy="200" r="26" fill="#dce8fb" stroke="#2459c7" stroke-width="2.5"/>
     <text x="140" y="206" text-anchor="middle" font-size="16" fill="#182032">規劃</text>
     <text x="140" y="252" text-anchor="middle" font-size="12" fill="#6b7890">定義範圍與目標</text>
@@ -18,7 +18,7 @@
 
   <g opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.25;0.33;0.92;1"
-             dur="4s" repeatCount="indefinite"/>
+             dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <circle cx="320" cy="200" r="26" fill="#dce8fb" stroke="#2459c7" stroke-width="2.5"/>
     <text x="320" y="206" text-anchor="middle" font-size="16" fill="#182032">開發</text>
     <text x="320" y="252" text-anchor="middle" font-size="12" fill="#6b7890">迭代實作與測試</text>
@@ -26,13 +26,16 @@
 
   <g opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.5;0.58;0.92;1"
-             dur="4s" repeatCount="indefinite"/>
+             dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
     <circle cx="500" cy="200" r="26" fill="#dce8fb" stroke="#2459c7" stroke-width="2.5"/>
     <text x="500" y="206" text-anchor="middle" font-size="16" fill="#182032">發布</text>
     <text x="500" y="252" text-anchor="middle" font-size="12" fill="#6b7890">上線並監控成效</text>
   </g>
 
   <circle r="5" fill="#2459c7">
+    <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.85;0.92;1"
+             dur="4s" repeatCount="indefinite" calcMode="spline"
+             keySplines="0.23 1 0.32 1 ; 0 0 1 1 ; 0.23 1 0.32 1 ; 0 0 1 1"/>
     <animateMotion dur="4s" repeatCount="indefinite" rotate="none">
       <mpath href="#flowline"/>
     </animateMotion>

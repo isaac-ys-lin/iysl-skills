@@ -9,6 +9,7 @@ outputs/
 dist/
 build/
 .release-smoke/
+.firecrawl/
 .superpowers/
 *.pyc
 *.pyo

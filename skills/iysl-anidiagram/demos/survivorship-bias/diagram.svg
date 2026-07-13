@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850"
+     data-loop-seconds="11" data-poster-t="9.5"
+     font-family="'Stencil Std', 'Arial Narrow', 'PingFang TC', 'Noto Sans TC', sans-serif">
+  <defs>
+    <!-- olive-green armor reinforcement hatch -->
+    <pattern id="armorhatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="9" height="9" fill="#3d5a2f" fill-opacity="0.22"/>
+      <line x1="0" y1="0" x2="0" y2="9" stroke="#2f4a24" stroke-width="1.4"/>
+    </pattern>
+    <!-- reusable fallen bomber silhouette (top-down) -->
+    <g id="miniplane" stroke="#38341f" stroke-width="1.4" fill="#9a8f60" stroke-linejoin="round">
+      <path d="M0,-22 L5,-7 L5,9 L0,20 L-5,9 L-5,-7 Z"/>
+      <path d="M0,-4 L26,4 L26,10 L0,7 Z"/>
+      <path d="M0,-4 L-26,4 L-26,10 L0,7 Z"/>
+      <path d="M0,13 L12,18 L12,21 L0,18 Z"/>
+      <path d="M0,13 L-12,18 L-12,21 L0,18 Z"/>
+    </g>
+  </defs>
+
+  <!-- aged kraft / olive-drab ground -->
+  <rect x="0" y="0" width="1200" height="850" fill="#b0a373"/>
+  <g stroke="#a2946a" stroke-width="1" opacity="0.6">
+    <line x1="40" y1="180" x2="1160" y2="180"/>
+    <line x1="40" y1="560" x2="1160" y2="560"/>
+  </g>
+
+  <!-- ruled technical plate frame + registration ticks -->
+  <rect x="28" y="28" width="1144" height="794" fill="none" stroke="#38341f" stroke-width="2.5"/>
+  <rect x="40" y="40" width="1120" height="770" fill="none" stroke="#5c5537" stroke-width="1"/>
+  <g stroke="#38341f" stroke-width="1.4">
+    <path d="M40,58 L58,58 M58,40 L58,58"/>
+    <path d="M1160,58 L1142,58 M1142,40 L1142,58"/>
+    <path d="M40,792 L58,792 M58,810 L58,792"/>
+    <path d="M1160,792 L1142,792 M1142,810 L1142,792"/>
+  </g>
+
+  <!-- masthead -->
+  <text x="60" y="62" font-size="12" letter-spacing="1.5" fill="#5c5537">圖版 3-A · 返航轟炸機受損分布</text>
+  <text x="600" y="76" text-anchor="middle" font-size="34" font-weight="700" letter-spacing="3"
+        fill="#2c2817" font-family="'Stencil Std','Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">倖 存 者 偏 誤</text>
+  <text x="600" y="104" text-anchor="middle" font-size="15" letter-spacing="0.5"
+        fill="#4a4530" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">該補強的是<tspan fill="#a02a1c" font-weight="700">沒有彈孔</tspan>的地方 —— 不是彈孔最多的地方</text>
+  <text x="600" y="138" text-anchor="middle" font-size="15" fill="#4a4530"
+        font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif" opacity="0">一批轟炸機出擊，軍方要決定裝甲加在哪
+    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.10;0.20;0.93;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </text>
+
+  <!-- confidential stamp -->
+  <text x="1070" y="700" text-anchor="middle" font-size="24" font-weight="700" letter-spacing="4"
+        fill="#97281c" opacity="0.42" transform="rotate(-14 1070 700)"
+        font-family="'Stencil Std','PingFang TC','Noto Sans TC',sans-serif">機 密</text>
+
+  <!-- ================= FALLEN / MISSING PLANES (the invisible sample) ================= -->
+  <!-- left outer -->
+  <g transform="translate(300 292)">
+    <g opacity="0.85">
+      <use href="#miniplane"/>
+      <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+      </circle>
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; 0,-30; -150,278; -150,278; -150,278; 0,0"
+        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </g>
+  </g>
+  <!-- left inner -->
+  <g transform="translate(240 352)">
+    <g opacity="0.85">
+      <use href="#miniplane"/>
+      <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+      </circle>
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; 0,-30; -125,262; -125,262; -125,262; 0,0"
+        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </g>
+  </g>
+  <!-- right outer -->
+  <g transform="translate(900 292)">
+    <g opacity="0.85">
+      <use href="#miniplane"/>
+      <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.13;0.22;0.26;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+      </circle>
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; 0,-30; 150,278; 150,278; 150,278; 0,0"
+        keyTimes="0;0.11;0.26;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.11;0.24;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </g>
+  </g>
+  <!-- right inner -->
+  <g transform="translate(960 352)">
+    <g opacity="0.85">
+      <use href="#miniplane"/>
+      <circle cx="0" cy="2" r="6" fill="#a02a1c" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;1;0;0;1;1;0" keyTimes="0;0.10;0.14;0.23;0.27;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+      </circle>
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; 0,-30; 125,262; 125,262; 125,262; 0,0"
+        keyTimes="0;0.12;0.27;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.77 0 0.175 1 ; 0.77 0 0.175 1 ; 0 0 1 1 ; 0 0 1 1 ; 0 0 1 1"/>
+      <animate attributeName="opacity" values="0.85;0.85;0;0;0.5;0.5;0.85" keyTimes="0;0.12;0.25;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </g>
+  </g>
+
+  <!-- missing-data label (only in corrected beat) -->
+  <text x="600" y="678" text-anchor="middle" font-size="14" fill="#7a2418" opacity="0"
+        font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">引擎／座艙中彈的飛機根本沒回來 —— 那才是缺失的資料
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </text>
+
+  <!-- ================= HERO BOMBER (centered, survivor) ================= -->
+  <g stroke="#38341f" stroke-width="2" fill="#9c9163" stroke-linejoin="round">
+    <!-- fuselage -->
+    <path d="M600,188 C588,188 580,204 580,232 L580,498 C580,524 590,540 600,548 C610,540 620,524 620,498 L620,232 C620,204 612,188 600,188 Z"/>
+    <!-- main wing -->
+    <path d="M600,304 L356,328 L368,354 L600,364 L832,354 L844,328 Z"/>
+    <!-- tailplane -->
+    <path d="M600,494 L506,508 L513,525 L600,529 L687,525 L694,508 Z"/>
+  </g>
+  <!-- engine nacelles (clean) -->
+  <g stroke="#38341f" stroke-width="1.8" fill="#877c50">
+    <rect x="430" y="306" width="24" height="44" rx="9"/>
+    <rect x="498" y="300" width="24" height="44" rx="9"/>
+    <rect x="678" y="300" width="24" height="44" rx="9"/>
+    <rect x="746" y="306" width="24" height="44" rx="9"/>
+  </g>
+  <!-- cockpit / canopy (clean) -->
+  <path d="M588,224 C588,214 612,214 612,224 L612,250 L588,250 Z" stroke="#38341f" stroke-width="1.8" fill="#877c50"/>
+  <!-- centreline -->
+  <line x1="600" y1="192" x2="600" y2="544" stroke="#6f653f" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ================= BULLET HOLES on wings/fuselage/tail (F2) ================= -->
+  <g fill="#a02a1c" stroke="#5a1710" stroke-width="1" opacity="0">
+    <!-- wings -->
+    <circle cx="392" cy="331" r="5"/><circle cx="470" cy="341" r="5"/><circle cx="560" cy="347" r="5"/>
+    <circle cx="640" cy="345" r="5"/><circle cx="724" cy="347" r="5"/><circle cx="806" cy="336" r="5"/>
+    <!-- fuselage -->
+    <circle cx="596" cy="388" r="5"/><circle cx="608" cy="416" r="5"/><circle cx="590" cy="450" r="5"/>
+    <circle cx="604" cy="486" r="5"/><circle cx="600" cy="414" r="4"/>
+    <!-- tailplane -->
+    <circle cx="540" cy="516" r="5"/><circle cx="600" cy="520" r="5"/><circle cx="660" cy="516" r="5"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.42;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </g>
+
+  <!-- ================= NAIVE emphasis (where holes are) ================= -->
+  <g fill="none" stroke="#a02a1c" stroke-width="2.5" stroke-dasharray="8 6" opacity="0">
+    <rect x="350" y="316" width="500" height="54" rx="14"/>
+    <rect x="574" y="376" width="52" height="128" rx="18"/>
+    <rect x="500" y="500" width="200" height="34" rx="12"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </g>
+  <g opacity="0" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">
+    <text x="188" y="408" text-anchor="middle" font-size="17" font-weight="700" fill="#a02a1c">直覺解讀</text>
+    <text x="188" y="432" text-anchor="middle" font-size="13" fill="#4a4530">哪裡彈孔多</text>
+    <text x="188" y="452" text-anchor="middle" font-size="13" fill="#4a4530">就補哪裡（機翼／機身）</text>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.46;0.56;0.60;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </g>
+
+  <!-- ================= CORRECTED: armor on the empty zones (F6) ================= -->
+  <g stroke="#2f4a24" stroke-width="2.5" fill="url(#armorhatch)" opacity="0">
+    <rect x="424" y="300" width="36" height="56" rx="11"/>
+    <rect x="492" y="294" width="36" height="56" rx="11"/>
+    <rect x="672" y="294" width="36" height="56" rx="11"/>
+    <rect x="740" y="300" width="36" height="56" rx="11"/>
+    <rect x="582" y="216" width="36" height="44" rx="12"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </g>
+  <g opacity="0" font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">
+    <text x="1012" y="360" text-anchor="middle" font-size="17" font-weight="700" fill="#2c2817">威爾德看出破綻</text>
+    <text x="1012" y="384" text-anchor="middle" font-size="13" fill="#4a4530">樣本只含「飛得回來」的飛機</text>
+    <text x="1012" y="430" text-anchor="middle" font-size="17" font-weight="700" fill="#2f4a24">該補強：引擎與座艙</text>
+    <text x="1012" y="454" text-anchor="middle" font-size="13" fill="#2f4a24">＝返航機沒有彈孔之處</text>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.66;0.95;1" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+  </g>
+
+  <!-- ================= caption plate (always on) ================= -->
+  <rect x="70" y="734" width="1060" height="92" fill="#a89a6c" stroke="#5c5537" stroke-width="1"/>
+  <line x1="70" y1="734" x2="70" y2="826" stroke="#a02a1c" stroke-width="4"/>
+  <text x="600" y="762" text-anchor="middle" font-size="16" font-weight="700" fill="#2c2817"
+        font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">倖存者偏誤：你只量得到活著回來的樣本 —— 缺席的資料，才帶著訊號</text>
+  <text x="600" y="790" text-anchor="middle" font-size="13" fill="#413c28"
+        font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">二戰軍方研究返航轟炸機該加裝甲何處；裝甲很重、無法全機加，必須取捨</text>
+  <text x="600" y="812" text-anchor="middle" font-size="12" fill="#5c5537"
+        font-family="'Arial Narrow','PingFang TC','Noto Sans TC',sans-serif">哥倫比亞大學統計研究組，約 1943；統計學家 Abraham Wald 以機率計算各區存活率，非僅定性論證</text>
+</svg>

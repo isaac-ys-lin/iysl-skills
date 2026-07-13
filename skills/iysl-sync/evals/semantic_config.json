@@ -1,0 +1,18 @@
+{
+  "purpose": "test-heuristic-only",
+  "runtime_authoritative": false,
+  "recommended_threshold": 0.29,
+  "fallback_positive_concepts": ["confirmed_change", "active_plan", "context_boundary", "verified_progress"],
+  "positive_concepts": {
+    "confirmed_change": {"weight": 0.3, "phrases": ["確認", "決定", "改用", "superseded", "驗收條件"]},
+    "active_plan": {"weight": 0.3, "phrases": ["目前計畫", "既有 feature plan", "active plan", "living plan"]},
+    "context_boundary": {"weight": 0.2, "phrases": ["交接", "下一個 session", "handoff"]},
+    "verified_progress": {"weight": 0.2, "phrases": ["測試通過", "已驗證結果", "blocker", "下一步"]}
+  },
+  "negative_concepts": {
+    "trivial_or_read_only": {"weight": 0.7, "exclusive": true, "phrases": ["按鈕改成", "build 指令", "拼字", "只讀", "不要修改"]},
+    "tentative": {"weight": 0.75, "exclusive": true, "phrases": ["隨便想想", "先不要定案", "還沒同意"]},
+    "competing_workflow": {"weight": 0.65, "exclusive": true, "phrases": ["比較方案", "找根因", "review this pr", "先問清楚"]}
+  },
+  "exclusive_negative_concepts": ["trivial_or_read_only", "tentative", "competing_workflow"]
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "iysl-sync"
+  short_description: "Synchronize confirmed decisions and progress into one living plan."
+  default_prompt: "Use $iysl-sync to synchronize confirmed decisions and progress into the active living plan."
+policy:
+  allow_implicit_invocation: true

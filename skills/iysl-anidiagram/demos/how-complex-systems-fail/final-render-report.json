@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "readability_text_collision",
+      "ok": true,
+      "detail": "no text collisions at t=0 and t=loop/2"
+    },
+    {
+      "name": "readability_canvas_margin",
+      "ok": true,
+      "detail": "all text at least 8.0px from the SVG edges"
+    },
+    {
+      "name": "loop_position_seam",
+      "ok": true,
+      "detail": "no visible animated target jumps across the loop boundary"
+    },
+    {
+      "name": "motion_nonzero",
+      "ok": true,
+      "detail": "sampled frames [0, 67, 135, 202] show pixel activity [8247, 10748, 24737]"
+    },
+    {
+      "name": "external_resource_runtime",
+      "ok": true,
+      "detail": "browser emitted no subresource requests"
+    },
+    {
+      "name": "output_mp4",
+      "ok": true,
+      "detail": "how-complex-systems-fail.mp4: 2400x1350, duration 9.000s (expected 9.000s +-0.2s), even dimensions=True"
+    },
+    {
+      "name": "output_png",
+      "ok": true,
+      "detail": "how-complex-systems-fail.png: poster frame at t=7.2s (device_scale_factor=2)"
+    }
+  ],
+  "outputs": {
+    "mp4": "how-complex-systems-fail.mp4",
+    "png": "how-complex-systems-fail.png"
+  },
+  "frames": 270,
+  "fps": 30,
+  "loop_seconds": 9.0
+}

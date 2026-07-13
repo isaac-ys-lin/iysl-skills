@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 880" width="1200" height="880"
+     data-loop-seconds="10" data-poster-t="4"
+     font-family="'PingFang TC', 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif">
+  <rect x="0" y="0" width="1200" height="880" fill="#f6f8fb"/>
+
+  <!-- Claim level: title reads in 3 seconds -->
+  <text x="600" y="54" text-anchor="middle" font-size="32" font-weight="700" fill="#182032">苦澀的教訓：算力終究勝出</text>
+  <text x="600" y="86" text-anchor="middle" font-size="15" fill="#6b7890">70 年 AI 史反覆重演的一個循環——內建人類知識短期領先，長期總被算力反超</text>
+
+  <!-- Ring: the closed path the pulse travels forever -->
+  <path id="loop-ring" d="M 600 260 A 160 160 0 1 1 600 580 A 160 160 0 1 1 600 260"
+        fill="none" stroke="#b8c8ee" stroke-width="3"/>
+
+  <!-- Direction arrowheads at the four arc midpoints (clockwise) -->
+  <g fill="#8aa3d8">
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(713 307) rotate(45)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(713 533) rotate(135)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(487 533) rotate(225)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(487 307) rotate(315)"/>
+  </g>
+
+  <!-- Card-to-node connectors (drawn under the cards) -->
+  <g stroke="#c9d6ef" stroke-width="1.5">
+    <line x1="600" y1="220" x2="600" y2="249"/>
+    <line x1="855" y1="420" x2="771" y2="420"/>
+    <line x1="600" y1="600" x2="600" y2="591"/>
+    <line x1="345" y1="420" x2="429" y2="420"/>
+  </g>
+
+  <!-- Node circles on the ring -->
+  <g fill="#dce8fb" stroke="#2459c7" stroke-width="2">
+    <circle cx="600" cy="260" r="11"/>
+    <circle cx="760" cy="420" r="11"/>
+    <circle cx="600" cy="580" r="11"/>
+    <circle cx="440" cy="420" r="11"/>
+  </g>
+
+  <!-- Node halos: light up as the pulse arrives (staggered, seamless) -->
+  <g fill="none" stroke="#2459c7" stroke-width="2.5">
+    <circle cx="600" cy="260" r="19" opacity="0">
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="760" cy="420" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="600" cy="580" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="440" cy="420" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+  </g>
+
+  <!-- The circulating pulse: no start, no end -->
+  <g>
+    <circle r="13" fill="#2459c7" opacity="0.25">
+      <animateMotion dur="10s" repeatCount="indefinite" rotate="none">
+        <mpath href="#loop-ring"/>
+      </animateMotion>
+    </circle>
+    <circle r="7" fill="#2459c7">
+      <animateMotion dur="10s" repeatCount="indefinite" rotate="none">
+        <mpath href="#loop-ring"/>
+      </animateMotion>
+    </circle>
+  </g>
+
+  <!-- Structure level: four stage cards (the author's 4-step cycle) -->
+  <!-- 1. Top: build in human knowledge -->
+  <g>
+    <rect x="470" y="156" width="260" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <rect x="470" y="156" width="260" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </rect>
+    <text x="600" y="183" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">① 內建人類知識</text>
+    <text x="600" y="206" text-anchor="middle" font-size="12" fill="#6b7890">把領域規則、人怎麼想，寫進系統</text>
+  </g>
+  <!-- 2. Right: short-term win -->
+  <g>
+    <rect x="855" y="388" width="270" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <rect x="855" y="388" width="270" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </rect>
+    <text x="990" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#182032">② 短期就領先</text>
+    <text x="990" y="438" text-anchor="middle" font-size="12" fill="#6b7890">有效，也讓研究者更有成就感</text>
+  </g>
+  <!-- 3. Bottom: long-run plateau -->
+  <g>
+    <rect x="470" y="600" width="260" height="64" rx="10" fill="#ffffff" stroke="#c9d6ef" stroke-width="1.5"/>
+    <rect x="470" y="600" width="260" height="64" rx="10" fill="none" stroke="#b3452e" stroke-width="2.5" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </rect>
+    <text x="600" y="627" text-anchor="middle" font-size="16" font-weight="600" fill="#b3452e">③ 長期撞牆</text>
+    <text x="600" y="650" text-anchor="middle" font-size="12" fill="#6b7890">停滯，甚至阻礙進一步突破</text>
+  </g>
+  <!-- 4. Left: compute breaks through -->
+  <g>
+    <rect x="75" y="388" width="270" height="64" rx="10" fill="#eef3fd" stroke="#2459c7" stroke-width="1.5"/>
+    <rect x="75" y="388" width="270" height="64" rx="10" fill="none" stroke="#2459c7" stroke-width="2.5" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </rect>
+    <text x="210" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#2459c7">④ 算力反超</text>
+    <text x="210" y="438" text-anchor="middle" font-size="12" fill="#6b7890">搜尋＋學習，隨算力持續擴展而勝出</text>
+  </g>
+
+  <!-- Bitter tag on the loop closure: back to the start, next domain -->
+  <text x="470" y="322" text-anchor="middle" font-size="12" font-weight="600" fill="#b3452e">下個領域，苦澀地重演</text>
+
+  <!-- Center: the claim the loop keeps proving -->
+  <text x="600" y="396" text-anchor="middle" font-size="13" fill="#6b7890">驅動力是 Moore's law：算力成本指數下降</text>
+  <text x="600" y="432" text-anchor="middle" font-size="24" font-weight="700" fill="#2459c7">通用方法 × 大規模算力</text>
+  <text x="600" y="460" text-anchor="middle" font-size="13" fill="#6b7890">長期而言，大幅勝過內建的人類知識</text>
+
+  <!-- Evidence level: same pattern recurred across four domains -->
+  <rect x="60" y="700" width="1080" height="92" rx="14" fill="#eef2f9"/>
+  <text x="600" y="726" text-anchor="middle" font-size="14" font-weight="600" fill="#3a4557">同一模式，四個領域一再重演</text>
+  <g font-size="13" fill="#40506a">
+    <rect x="84" y="742" width="248" height="34" rx="8" fill="#ffffff" stroke="#d5dfef" stroke-width="1"/>
+    <text x="208" y="764" text-anchor="middle">西洋棋 · 1997 深度搜尋勝 Kasparov</text>
+    <rect x="344" y="742" width="248" height="34" rx="8" fill="#ffffff" stroke="#d5dfef" stroke-width="1"/>
+    <text x="468" y="764" text-anchor="middle">圍棋 · 搜尋＋自我對弈</text>
+    <rect x="604" y="742" width="248" height="34" rx="8" fill="#ffffff" stroke="#d5dfef" stroke-width="1"/>
+    <text x="728" y="764" text-anchor="middle">語音 · HMM 統計勝音素知識</text>
+    <rect x="864" y="742" width="252" height="34" rx="8" fill="#ffffff" stroke="#d5dfef" stroke-width="1"/>
+    <text x="990" y="764" text-anchor="middle">電腦視覺 · SIFT → 卷積網路</text>
+  </g>
+
+  <!-- Detail level: the two closing takeaways -->
+  <text x="600" y="826" text-anchor="middle" font-size="13" fill="#6b7890">search 與 learning 是唯二能隨算力任意擴展的方法。</text>
+  <text x="600" y="852" text-anchor="middle" font-size="13" fill="#6b7890">該內建的不是我們的答案，而是能自己發現複雜度的元方法。</text>
+</svg>

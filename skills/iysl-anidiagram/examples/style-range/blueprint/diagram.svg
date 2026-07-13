@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 880" width="1200" height="880"
+     data-loop-seconds="10" data-poster-t="4"
+     font-family="'SFMono-Regular', ui-monospace, 'PingFang TC', 'Noto Sans TC', monospace">
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1200" height="880" fill="#0f1620"/>
+
+  <!-- Blueprint grid ground (composition move: technical field, not white cards) -->
+  <g stroke="#1a2634" stroke-width="1">
+    <line x1="0" y1="160" x2="1200" y2="160"/><line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="440" x2="1200" y2="440"/><line x1="0" y1="580" x2="1200" y2="580"/>
+    <line x1="0" y1="700" x2="1200" y2="700"/>
+    <line x1="200" y1="0" x2="200" y2="880"/><line x1="600" y1="0" x2="600" y2="880"/>
+    <line x1="1000" y1="0" x2="1000" y2="880"/>
+  </g>
+
+  <text x="600" y="54" text-anchor="middle" font-size="31" font-weight="700" fill="#e6edf5">苦澀的教訓：算力終究勝出</text>
+  <text x="600" y="86" text-anchor="middle" font-size="14" fill="#8798ab">70 年 AI 史反覆重演的一個循環——內建人類知識短期領先，長期總被算力反超</text>
+
+  <path id="loop-ring" d="M 600 260 A 160 160 0 1 1 600 580 A 160 160 0 1 1 600 260"
+        fill="none" stroke="#2b4a6f" stroke-width="2" stroke-dasharray="5 5"/>
+
+  <g fill="#4da3ff">
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(713 307) rotate(45)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(713 533) rotate(135)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(487 533) rotate(225)"/>
+    <path d="M -8 -5.5 L 8 0 L -8 5.5 Z" transform="translate(487 307) rotate(315)"/>
+  </g>
+
+  <g stroke="#24374d" stroke-width="1.5">
+    <line x1="600" y1="220" x2="600" y2="249"/>
+    <line x1="855" y1="420" x2="771" y2="420"/>
+    <line x1="600" y1="600" x2="600" y2="591"/>
+    <line x1="345" y1="420" x2="429" y2="420"/>
+  </g>
+
+  <g fill="#14273d" stroke="#4da3ff" stroke-width="2">
+    <circle cx="600" cy="260" r="11"/><circle cx="760" cy="420" r="11"/>
+    <circle cx="600" cy="580" r="11"/><circle cx="440" cy="420" r="11"/>
+  </g>
+
+  <g fill="none" stroke="#4da3ff" stroke-width="2.5" filter="url(#glow)">
+    <circle cx="600" cy="260" r="19" opacity="0">
+      <animate attributeName="opacity" values="0.9;0;0;0.9" keyTimes="0;0.08;0.92;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="760" cy="420" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.18;0.25;0.32;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="600" cy="580" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.43;0.5;0.57;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+    <circle cx="440" cy="420" r="19" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.68;0.75;0.82;1" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines="0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1 ; 0.23 1 0.32 1"/>
+    </circle>
+  </g>
+
+  <g filter="url(#glow)">
+    <circle r="7" fill="#4da3ff">
+      <animateMotion dur="10s" repeatCount="indefinite" rotate="none"><mpath href="#loop-ring"/></animateMotion>
+    </circle>
+  </g>
+
+  <g>
+    <rect x="470" y="156" width="260" height="64" rx="4" fill="#14202e" stroke="#24374d" stroke-width="1.5"/>
+    <text x="600" y="183" text-anchor="middle" font-size="16" font-weight="600" fill="#e6edf5">01 內建人類知識</text>
+    <text x="600" y="206" text-anchor="middle" font-size="12" fill="#8798ab">把領域規則、人怎麼想，寫進系統</text>
+  </g>
+  <g>
+    <rect x="855" y="388" width="270" height="64" rx="4" fill="#14202e" stroke="#24374d" stroke-width="1.5"/>
+    <text x="990" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#e6edf5">02 短期就領先</text>
+    <text x="990" y="438" text-anchor="middle" font-size="12" fill="#8798ab">有效，也讓研究者更有成就感</text>
+  </g>
+  <g>
+    <rect x="470" y="600" width="260" height="64" rx="4" fill="#2a2214" stroke="#ffb454" stroke-width="1.5"/>
+    <text x="600" y="627" text-anchor="middle" font-size="16" font-weight="600" fill="#ffb454">03 長期撞牆</text>
+    <text x="600" y="650" text-anchor="middle" font-size="12" fill="#c9a878">停滯，甚至阻礙進一步突破</text>
+  </g>
+  <g>
+    <rect x="75" y="388" width="270" height="64" rx="4" fill="#16324a" stroke="#4da3ff" stroke-width="2"/>
+    <text x="210" y="415" text-anchor="middle" font-size="16" font-weight="600" fill="#8fd0ff">04 算力反超</text>
+    <text x="210" y="438" text-anchor="middle" font-size="12" fill="#a9c6db">搜尋＋學習，隨算力持續擴展而勝出</text>
+  </g>
+
+  <text x="470" y="322" text-anchor="middle" font-size="12" font-weight="600" fill="#ffb454">下個領域，苦澀地重演</text>
+
+  <text x="600" y="396" text-anchor="middle" font-size="13" fill="#8798ab">驅動力是 Moore's law：算力成本指數下降</text>
+  <text x="600" y="432" text-anchor="middle" font-size="23" font-weight="700" fill="#4da3ff">通用方法 × 大規模算力</text>
+  <text x="600" y="460" text-anchor="middle" font-size="13" fill="#8798ab">長期而言，大幅勝過內建的人類知識</text>
+
+  <rect x="60" y="700" width="1080" height="92" rx="4" fill="#131f2c" stroke="#20303f" stroke-width="1"/>
+  <text x="600" y="726" text-anchor="middle" font-size="14" font-weight="600" fill="#b9c6d6">同一模式，四個領域一再重演</text>
+  <g font-size="13" fill="#95a6b8">
+    <rect x="84" y="742" width="248" height="34" rx="3" fill="#0f1620" stroke="#24374d" stroke-width="1"/>
+    <text x="208" y="764" text-anchor="middle">西洋棋 · 1997 深度搜尋勝 Kasparov</text>
+    <rect x="344" y="742" width="248" height="34" rx="3" fill="#0f1620" stroke="#24374d" stroke-width="1"/>
+    <text x="468" y="764" text-anchor="middle">圍棋 · 搜尋＋自我對弈</text>
+    <rect x="604" y="742" width="248" height="34" rx="3" fill="#0f1620" stroke="#24374d" stroke-width="1"/>
+    <text x="728" y="764" text-anchor="middle">語音 · HMM 統計勝音素知識</text>
+    <rect x="864" y="742" width="252" height="34" rx="3" fill="#0f1620" stroke="#24374d" stroke-width="1"/>
+    <text x="990" y="764" text-anchor="middle">電腦視覺 · SIFT → 卷積網路</text>
+  </g>
+
+  <text x="600" y="826" text-anchor="middle" font-size="13" fill="#8798ab">search 與 learning 是唯二能隨算力任意擴展的方法。</text>
+  <text x="600" y="852" text-anchor="middle" font-size="13" fill="#8798ab">該內建的不是我們的答案，而是能自己發現複雜度的元方法。</text>
+</svg>
