@@ -1,1 +1,2 @@
 pytest>=8.0,<9
+-r skills/iysl-anidiagram/requirements.txt

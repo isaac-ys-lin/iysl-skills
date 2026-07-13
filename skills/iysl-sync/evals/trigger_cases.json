@@ -2,10 +2,10 @@
   "should_trigger": [
     {"text": "好，就照剛才決定的 ZIP 方案；不含 token，完成後在 Finder 顯示。把這些同步到目前計畫。", "family": "accepted_requirements", "expected_route": "iysl-sync"},
     {"text": "原本只支援本機匯出，現在確認也要支援 iCloud；請更新既有 feature plan。", "family": "scope_change", "expected_route": "iysl-sync"},
-    {"text": "我們改用方案 B，因為 release build 不能依賴環境變數；舊方案標成 superseded。", "family": "superseded_decision", "expected_route": "iysl-sync"},
+    {"text": "我們改用方案 B，因為 release build 不能依賴環境變數；請更新 active plan，將舊方案標成 superseded。", "family": "superseded_decision", "expected_route": "iysl-sync"},
     {"text": "準備開始實作這個跨多檔功能，先把已確認需求與驗收條件寫進 living plan。", "family": "before_implementation", "expected_route": "iysl-sync"},
     {"text": "接手昨天的 diagnostics 工作，先讀 active plan，測試通過後把驗證與下一步更新回去。", "family": "continue_planned_work", "expected_route": "iysl-sync"},
-    {"text": "要交接給下一個 session，請記下目前 blocker、已驗證結果和下一個具體動作。", "family": "handoff_boundary", "expected_route": "iysl-sync"},
+    {"text": "要交接給下一個 session，請更新 active plan，記下目前 blocker、已驗證結果和下一個具體動作。", "family": "handoff_boundary", "expected_route": "iysl-sync"},
     {"text": "目前計畫累積了舊內容；剛確認驗收條件已改，請用最新契約取代矛盾內容。", "family": "stale_contract_replacement", "expected_route": "iysl-sync"}
   ],
   "should_not_trigger": [
