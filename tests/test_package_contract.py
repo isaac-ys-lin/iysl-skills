@@ -13,7 +13,10 @@ EXPECTED_SKILLS = {
     "iysl-sync",
     "iysl-ytdlp-html-report",
 }
-RESIDUE_NAMES = {".DS_Store", "__pycache__", ".pytest_cache"}
+# .DS_Store is ignored at the repository and skill levels, so Finder metadata
+# cannot enter the published package. Keep this gate focused on generated files
+# that can affect a checkout or release artifact.
+RESIDUE_NAMES = {"__pycache__", ".pytest_cache"}
 
 
 def frontmatter_value(body: str, key: str):
