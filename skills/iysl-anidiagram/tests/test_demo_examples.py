@@ -16,10 +16,12 @@ SCRIPT = SKILL_DIR / "scripts" / "render_svg.py"
 DEMOS = SKILL_DIR / "demos"
 CASES = {
     "bitter-lesson": 30,
+    "how-complex-systems-fail": 30,
     "survivorship-bias": 30,
     "survivorship-bias-chalkboard": 10,
 }
 FFMPEG = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+DEMO_RENDER_TIMEOUT = 360  # 180s global-lock budget plus rendering/encoding time.
 
 
 @pytest.fixture(scope="session")
@@ -81,7 +83,7 @@ def test_demo_artifacts_are_fresh(browser_available, demo_name, tmp_path):
         ],
         capture_output=True,
         text=True,
-        timeout=180,
+        timeout=DEMO_RENDER_TIMEOUT,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(result.stdout)["ok"] is True
