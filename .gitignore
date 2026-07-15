@@ -11,6 +11,11 @@ build/
 .release-smoke/
 .firecrawl/
 .superpowers/
+.codex/browser/
+.codex/computer-use/
+.codex/automations/
+.codex/worktrees/
+.codex/plugins/
 *.pyc
 *.pyo
 *.log
