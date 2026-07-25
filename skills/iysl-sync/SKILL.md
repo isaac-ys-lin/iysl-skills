@@ -36,6 +36,8 @@ Before creating a file, search for a plan that matches the current change. Updat
 
 Use one plan per coherent change. Do not create global registries, findings logs, progress logs, or companion files unless the repository already requires them.
 
+Keep completed plans in place as concise historical records. Archive only superseded or abandoned plans, or when an existing repository convention or explicit cleanup request requires it.
+
 ## Synchronize Minimally
 
 1. Read the complete active plan.
