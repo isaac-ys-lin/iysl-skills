@@ -19,6 +19,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPT = SKILL_DIR / "scripts" / "render_svg.py"
 SAMPLE_SVG = SKILL_DIR / "assets" / "svg-sample.svg"
 FFMPEG = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+FFPROBE = shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe"
 
 CJK_FONT_STACK = "'PingFang TC', 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif"
 
@@ -371,7 +372,7 @@ class TestFullPipeline:
 
         probe = subprocess.run(
             [
-                "/opt/homebrew/bin/ffprobe", "-v", "error",
+                FFPROBE, "-v", "error",
                 "-select_streams", "v:0",
                 "-show_entries", "stream=width,height",
                 "-show_entries", "format=duration",
