@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 
@@ -12,7 +13,12 @@ function usage() {
 let reportPath = "";
 let metadataPath = "";
 let outPath = "";
-let templatePath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "assets", "report-template.html");
+let templatePath = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "assets",
+  "report-template.html",
+);
 
 for (let i = 0; i < args.length; i += 1) {
   if (args[i] === "--report") reportPath = args[++i] || usage();
