@@ -48,6 +48,12 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def normalized_text_sha256(path):
+    text = path.read_text(encoding="utf-8")
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def video_metadata(path):
     result = subprocess.run(
         [
@@ -88,6 +94,14 @@ def assert_same_video_contract(fresh, tracked):
     assert abs(fresh_metadata["duration"] - tracked_metadata["duration"]) <= frame_duration
 
 
+def test_normalized_text_sha256_ignores_platform_line_endings(tmp_path):
+    lf_path = tmp_path / "lf.svg"
+    crlf_path = tmp_path / "crlf.svg"
+    lf_path.write_bytes(b"<svg>\n<text>demo</text>\n</svg>\n")
+    crlf_path.write_bytes(b"<svg>\r\n<text>demo</text>\r\n</svg>\r\n")
+    assert normalized_text_sha256(lf_path) == normalized_text_sha256(crlf_path)
+
+
 @pytest.mark.parametrize("demo_name", CASES)
 def test_demo_manifest_matches_tracked_artifacts(demo_name):
     demo = DEMOS / demo_name
@@ -100,7 +114,8 @@ def test_demo_manifest_matches_tracked_artifacts(demo_name):
     }
     assert set(entry["sha256"]) == set(tracked_files)
     for artifact_type, path in tracked_files.items():
-        assert sha256(path) == entry["sha256"][artifact_type]
+        digest = normalized_text_sha256(path) if artifact_type == "svg" else sha256(path)
+        assert digest == entry["sha256"][artifact_type]
 
 
 @pytest.mark.parametrize("demo_name", CASES)
