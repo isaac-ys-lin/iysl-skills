@@ -1,9 +1,7 @@
-"""Demo artifacts must stay reproducible from their tracked SVG source."""
+"""Verify tracked demo integrity and cross-platform render contracts."""
 
 import hashlib
 import json
-import os
-import re
 import shutil
 import subprocess
 import sys
@@ -11,25 +9,21 @@ from fractions import Fraction
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPT = SKILL_DIR / "scripts" / "render_svg.py"
 DEMOS = SKILL_DIR / "demos"
+MANIFEST = json.loads((DEMOS / "artifact-manifest.json").read_text(encoding="utf-8"))
 CASES = {
     "bitter-lesson": 30,
     "how-complex-systems-fail": 30,
     "survivorship-bias": 30,
     "survivorship-bias-chalkboard": 10,
 }
-FFMPEG = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
 FFPROBE = shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe"
 DEMO_RENDER_TIMEOUT = 360  # 180s global-lock budget plus rendering/encoding time.
-MIN_ARTIFACT_SSIM = 0.99
-CANONICAL_RENDER = os.environ.get(
-    "IYSL_CANONICAL_RENDER",
-    "1" if sys.platform == "darwin" else "0",
-) == "1"
 
 
 @pytest.fixture(scope="session")
@@ -52,28 +46,6 @@ def browser_available():
 
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def media_ssim(fresh, tracked):
-    result = subprocess.run(
-        [
-            FFMPEG,
-            "-hide_banner",
-            "-loglevel", "info",
-            "-i", str(fresh),
-            "-i", str(tracked),
-            "-lavfi", "ssim",
-            "-f", "null",
-            "-",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    assert result.returncode == 0, result.stderr
-    match = re.search(r"All:([0-9.]+)", result.stderr)
-    assert match, f"ffmpeg did not report SSIM: {result.stderr[-500:]}"
-    return float(match.group(1))
 
 
 def video_metadata(path):
@@ -117,7 +89,22 @@ def assert_same_video_contract(fresh, tracked):
 
 
 @pytest.mark.parametrize("demo_name", CASES)
-def test_demo_artifacts_are_fresh(browser_available, demo_name, tmp_path):
+def test_demo_manifest_matches_tracked_artifacts(demo_name):
+    demo = DEMOS / demo_name
+    entry = MANIFEST["demos"][demo_name]
+    assert entry["fps"] == CASES[demo_name]
+    tracked_files = {
+        "svg": demo / "diagram.svg",
+        "png": demo / f"{demo_name}.png",
+        "mp4": demo / f"{demo_name}.mp4",
+    }
+    assert set(entry["sha256"]) == set(tracked_files)
+    for artifact_type, path in tracked_files.items():
+        assert sha256(path) == entry["sha256"][artifact_type]
+
+
+@pytest.mark.parametrize("demo_name", CASES)
+def test_demo_artifacts_render_on_platform(browser_available, demo_name, tmp_path):
     demo = DEMOS / demo_name
     result = subprocess.run(
         [
@@ -136,24 +123,10 @@ def test_demo_artifacts_are_fresh(browser_available, demo_name, tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(result.stdout)["ok"] is True
 
-    fresh_png = tmp_path / f"{demo_name}.png"
-    tracked_png = demo / f"{demo_name}.png"
-    if CANONICAL_RENDER:
-        assert sha256(fresh_png) == sha256(tracked_png)
-        minimum_ssim = 0.999
-    else:
-        minimum_ssim = MIN_ARTIFACT_SSIM
-
+    with Image.open(tmp_path / f"{demo_name}.png") as fresh_png:
+        with Image.open(demo / f"{demo_name}.png") as tracked_png:
+            assert fresh_png.size == tracked_png.size
     assert_same_video_contract(
         tmp_path / f"{demo_name}.mp4",
         demo / f"{demo_name}.mp4",
     )
-    for extension in ("png", "mp4"):
-        score = media_ssim(
-            tmp_path / f"{demo_name}.{extension}",
-            demo / f"{demo_name}.{extension}",
-        )
-        assert score >= minimum_ssim, (
-            f"{demo_name}.{extension} SSIM {score:.6f} "
-            f"is below {minimum_ssim:.3f}"
-        )

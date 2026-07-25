@@ -4,6 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 export PYTHONDONTWRITEBYTECODE=1
+export PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1
 
 python_bin="${PYTHON:-}"
 if [[ -z "$python_bin" ]]; then

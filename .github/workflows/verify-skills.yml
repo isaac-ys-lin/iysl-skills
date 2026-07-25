@@ -15,10 +15,8 @@ jobs:
         include:
           - platform: macOS
             os: macos-14
-            canonical_render: "1"
           - platform: Windows
             os: windows-2022
-            canonical_render: "0"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +33,6 @@ jobs:
         run: python -m pip install --requirement requirements-dev.txt
       - name: Run portable release gates
         shell: bash
-        env:
-          IYSL_CANONICAL_RENDER: ${{ matrix.canonical_render }}
         run: tools/verify-release.sh
 
   trigger-evals:

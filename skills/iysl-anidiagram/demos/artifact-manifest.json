@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "demos": {
+    "bitter-lesson": {
+      "fps": 30,
+      "sha256": {
+        "svg": "fa0a8481df920ba6172d15a86d120ed8ae4d1e7642f70be7498555d67b5ea057",
+        "png": "4c7126f178a3a66d869e336d5a0835a7e209dca0c97a1cb331fecf9ba7a6a0d3",
+        "mp4": "bd73da4fc719fc84fe2e06c92c2ead0f3091d2f2eff7519c32533b31c13bd553"
+      }
+    },
+    "how-complex-systems-fail": {
+      "fps": 30,
+      "sha256": {
+        "svg": "4ac42b468006d03d5ab0834c16b449f9cca106fd1bd61f697da5b949256d89b8",
+        "png": "65441942942c82c90fa50901659ef3faa0200a52b0bbd7cfde5d9c8a83d86164",
+        "mp4": "3d548ef8d2c4d5c45393a7cab6ad9fcdee760fbd0794d5673e545961a2874689"
+      }
+    },
+    "survivorship-bias": {
+      "fps": 30,
+      "sha256": {
+        "svg": "bffaa87e010eb7e269e8ea235e6e17e33528a5c9fe5b78454a451ac4d0d6b3df",
+        "png": "50fe4ee4f1ca50e49bc12c1256a29047b74a2036dbe8d6f8291d95a9667a4ba2",
+        "mp4": "2bd804cfda02bbb51f601a292b4a48d608e862af912867daa5fef03c12f4f94c"
+      }
+    },
+    "survivorship-bias-chalkboard": {
+      "fps": 10,
+      "sha256": {
+        "svg": "87f2ec4349abc1e7ae528caf025ca9f7e7d04cf9a2a7aad2defb39fb1cdeb19f",
+        "png": "fcbd5f449fce2c6ac3262aab9c7f4b87188f05cd2296c7c087eda86226481b0b",
+        "mp4": "20c9c0d702f45c8fc0cc933d738d10b6a9bb0728ac55fc05c7ab2ea48df39c45"
+      }
+    }
+  }
+}

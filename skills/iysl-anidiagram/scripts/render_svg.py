@@ -903,6 +903,9 @@ def render_pipeline(svg_text, meta, args):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(
         description="Validate and render a SMIL animated SVG into MP4/PNG (and optional GIF)."
     )
