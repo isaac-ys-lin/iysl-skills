@@ -9,7 +9,14 @@ fi
 skill_name="$1"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 skill_dir="$repo_root/skills/$skill_name"
-python_bin="${PYTHON:-python3}"
+python_bin="${PYTHON:-}"
+if [[ -z "$python_bin" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python_bin="python3"
+  else
+    python_bin="python"
+  fi
+fi
 outdir="$(mktemp -d "${TMPDIR:-/tmp}/codex-skill-verify-$skill_name.XXXXXX")"
 trap 'rm -rf "$outdir"' EXIT
 export PYTHONDONTWRITEBYTECODE=1

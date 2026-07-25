@@ -284,6 +284,12 @@ class TestStructureValidation:
         assert messages == []
 
     def test_render_lock_serializes_processes(self, tmp_path):
+        sys.path.insert(0, str(SCRIPT.parent))
+        try:
+            import render_svg
+        finally:
+            sys.path.remove(str(SCRIPT.parent))
+
         lock_path = tmp_path / "renderer.lock"
         ready = tmp_path / "ready"
         entered = tmp_path / "entered"
@@ -296,19 +302,16 @@ Path({str(ready)!r}).write_text('ready')
 with render_svg.exclusive_render_lock(Path({str(lock_path)!r})):
     Path({str(entered)!r}).write_text('entered')
 """
-        import fcntl
 
         process = None
         try:
-            with lock_path.open("a+") as handle:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            with render_svg.exclusive_render_lock(lock_path):
                 process = subprocess.Popen([sys.executable, "-c", code])
                 deadline = time.monotonic() + 5
                 while not ready.exists() and time.monotonic() < deadline:
                     time.sleep(0.01)
                 assert ready.exists(), "child did not reach the render lock"
                 assert not entered.exists(), "child entered while the render lock was held"
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             assert process.wait(timeout=5) == 0
         finally:
             if process is not None and process.poll() is None:
@@ -321,18 +324,31 @@ with render_svg.exclusive_render_lock(Path({str(lock_path)!r})):
         assert entered.exists()
 
     def test_render_lock_times_out(self, tmp_path):
-        import fcntl
-
         sys.path.insert(0, str(SCRIPT.parent))
         try:
             import render_svg
 
             lock_path = tmp_path / "renderer-timeout.lock"
-            with lock_path.open("a+") as handle:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-                with pytest.raises(TimeoutError):
-                    with render_svg.exclusive_render_lock(lock_path, timeout=0.05):
-                        pass
+            code = f"""
+import sys
+from pathlib import Path
+sys.path.insert(0, {str(SCRIPT.parent)!r})
+import render_svg
+try:
+    with render_svg.exclusive_render_lock(Path({str(lock_path)!r}), timeout=0.05):
+        pass
+except TimeoutError:
+    raise SystemExit(0)
+raise SystemExit(1)
+"""
+            with render_svg.exclusive_render_lock(lock_path):
+                result = subprocess.run(
+                    [sys.executable, "-c", code],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+            assert result.returncode == 0, result.stdout + result.stderr
         finally:
             sys.path.remove(str(SCRIPT.parent))
 

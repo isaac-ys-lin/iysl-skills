@@ -4,6 +4,14 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 yao_root="${YAO_META_SKILL_DIR:-${AGENTS_HOME:-$HOME/.agents}/skills/yao-meta-skill}"
 evaluator="$yao_root/scripts/trigger_eval.py"
+python_bin="${PYTHON:-}"
+if [[ -z "$python_bin" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python_bin="python3"
+  else
+    python_bin="python"
+  fi
+fi
 
 if [[ ! -f "$evaluator" ]]; then
   echo "missing Yao trigger evaluator: $evaluator" >&2
@@ -18,7 +26,7 @@ for skill_dir in "$repo_root"/skills/*; do
     continue
   fi
 
-  python3 "$evaluator" \
+  "$python_bin" "$evaluator" \
     --description-file "$skill_dir/SKILL.md" \
     --cases "$cases" \
     --semantic-config "$config" >/dev/null

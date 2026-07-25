@@ -14,9 +14,10 @@ Exit codes match the legacy JSON-spec pipeline:
 
 import argparse
 from contextlib import contextmanager
-import fcntl
+import errno
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -25,6 +26,11 @@ import tempfile
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 FFMPEG = "/opt/homebrew/bin/ffmpeg"
 FFPROBE = "/opt/homebrew/bin/ffprobe"
@@ -162,13 +168,29 @@ def exclusive_render_lock(lock_path=DEFAULT_RENDER_LOCK, timeout=180.0):
     """
     lock_path = Path(lock_path)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+") as handle:
+    with lock_path.open("a+b") as handle:
+        if os.name == "nt":
+            handle.seek(0, 2)
+            if handle.tell() == 0:
+                handle.write(b"\0")
+                handle.flush()
         deadline = time.monotonic() + timeout
         while True:
             try:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                handle.seek(0)
+                if os.name == "nt":
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
-            except BlockingIOError:
+            except OSError as error:
+                busy_errors = {
+                    errno.EACCES,
+                    errno.EAGAIN,
+                    getattr(errno, "EDEADLK", errno.EACCES),
+                }
+                if error.errno not in busy_errors:
+                    raise
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise TimeoutError(
@@ -178,7 +200,11 @@ def exclusive_render_lock(lock_path=DEFAULT_RENDER_LOCK, timeout=180.0):
         try:
             yield
         finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            handle.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def validate_structure(svg_text):
