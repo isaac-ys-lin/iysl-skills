@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PYTHONIOENCODING=utf-8
+export PYTHONUTF8=1
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 yao_root="${YAO_META_SKILL_DIR:-${AGENTS_HOME:-$HOME/.agents}/skills/yao-meta-skill}"
