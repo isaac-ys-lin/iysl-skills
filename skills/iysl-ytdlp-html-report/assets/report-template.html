@@ -165,6 +165,10 @@
     .stack { display: grid; gap: 16px; }
     .stack p:first-child, .panel p:first-child { margin-top: 0; }
     .stack p:last-child, .panel p:last-child { margin-bottom: 0; }
+    .stack > ul, .panel > ul, .verification > ul {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
     .stack li + li { margin-top: 8px; }
     .verification {
       border: 1px solid var(--line);

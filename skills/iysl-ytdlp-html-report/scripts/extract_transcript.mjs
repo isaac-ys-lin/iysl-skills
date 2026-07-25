@@ -147,6 +147,23 @@ if (metadataFull._type === "playlist" || Array.isArray(metadataFull.entries)) {
 const id = metadataFull.id || metadataFull.display_id;
 if (!id) throw new Error("yt-dlp 回傳的 metadata 沒有影片 id");
 
+const slug = `${safeSlug(metadataFull.title || metadataFull.fulltitle || id)}-${id}`;
+const metadataPath = path.join(outDir, `${id}.metadata.json`);
+const manifestPath = path.join(outDir, `${id}.manifest.json`);
+const baseMetadata = {
+  id,
+  title: metadataFull.title || metadataFull.fulltitle || id,
+  channel: metadataFull.channel || metadataFull.uploader || "",
+  uploader: metadataFull.uploader || "",
+  webpage_url: metadataFull.webpage_url || `https://www.youtube.com/watch?v=${id}`,
+  original_url: metadataFull.original_url || url,
+  duration: metadataFull.duration || null,
+  duration_string: metadataFull.duration_string || "",
+  upload_date: metadataFull.upload_date || "",
+  thumbnail: metadataFull.thumbnail || `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+  extracted_at: new Date().toISOString(),
+};
+
 run("yt-dlp", [
   "--no-playlist",
   "--skip-download",
@@ -163,6 +180,18 @@ run("yt-dlp", [
 
 const subtitleFile = pickSubtitleFile(transcriptDir, id);
 if (!subtitleFile || !existsSync(subtitleFile)) {
+  const metadata = { ...baseMetadata, subtitle_file: null, subtitle_format: null, subtitle_status: "unavailable" };
+  writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+  writeFileSync(manifestPath, `${JSON.stringify({
+    id,
+    slug,
+    url,
+    metadata: metadataPath,
+    transcript: null,
+    subtitle: null,
+    chunks: 0,
+    capture_status: "captions-unavailable",
+  }, null, 2)}\n`);
   throw new Error(`找不到 ${id} 的字幕檔。這支影片可能沒有符合 --langs ${langs} 的字幕。`);
 }
 
@@ -170,25 +199,12 @@ const chunks = subtitleFile.endsWith(".json3") ? cleanJson3(subtitleFile) : clea
 if (!chunks.length) throw new Error(`字幕檔可以解析，但沒有取得文字內容：${subtitleFile}`);
 
 const metadata = {
-  id,
-  title: metadataFull.title || metadataFull.fulltitle || id,
-  channel: metadataFull.channel || metadataFull.uploader || "",
-  uploader: metadataFull.uploader || "",
-  webpage_url: metadataFull.webpage_url || `https://www.youtube.com/watch?v=${id}`,
-  original_url: metadataFull.original_url || url,
-  duration: metadataFull.duration || null,
-  duration_string: metadataFull.duration_string || "",
-  upload_date: metadataFull.upload_date || "",
-  thumbnail: metadataFull.thumbnail || `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+  ...baseMetadata,
   subtitle_file: subtitleFile,
   subtitle_format: path.extname(subtitleFile).slice(1),
-  extracted_at: new Date().toISOString(),
 };
 
-const slug = `${safeSlug(metadata.title)}-${id}`;
 const transcriptPath = path.join(transcriptDir, `${id}.clean-transcript.md`);
-const metadataPath = path.join(outDir, `${id}.metadata.json`);
-const manifestPath = path.join(outDir, `${id}.manifest.json`);
 
 const transcript = [
   "# 整理後逐字稿",

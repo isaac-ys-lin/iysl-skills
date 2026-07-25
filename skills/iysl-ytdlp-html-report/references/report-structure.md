@@ -2,9 +2,29 @@
 
 這份 reference 規範要轉成 HTML 的分析 Markdown。Report 是給讀者看的，不是給 operator 查錯的執行紀錄。
 
+## 目錄
+
+- 讀者、語氣與跨語言原則
+- Watch-equivalent 內容分流
+- 內容輸出與去 AI 味
+- v2 structured report contract
+- v1 五區塊相容格式
+- 通用品質、交付自檢與禁止內容
+
 ## 讀者假設
 
 預設讀者是有工作經驗、對影片主題有基礎理解但沒看過這支影片的人。不需要解釋領域常識，但要把影片特有的觀點、邏輯和例子交代清楚，讓讀者讀完後能判斷「這支影片值不值得看」和「有什麼可以用」。
+
+## Watch-equivalent 內容分流
+
+目標不是縮短逐字稿，而是讓讀者用更少時間取得接近看完影片的理解：
+
+- 語音承載的主張、例子與轉折，用重述、key points 或比較文字呈現。
+- 逐字稿明確描述的流程、共同維度比較、控制與缺口，才重畫成 explanatory visuals。
+- 看完內容後仍值得追問的矛盾與取捨，放進 food for thoughts。
+- 不下載影片、不擷取畫面。視覺化只編碼逐字稿中的關係與數值；縮圖只作來源錨點。
+
+不要為了「看起來像完整影片報告」硬加視覺。沒有結構性關係時，清楚的文字比裝飾圖更接近觀看等價。
 
 ## 語氣
 
@@ -50,7 +70,45 @@
 
 保留有質地的句子：具體例子、講者用詞、矛盾、猶豫、前後轉折、和讀者能拿去判斷的條件。
 
-## 必要區塊與順序
+## v2 structured report contract
+
+預設以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 offline HTML。
+
+### Evidence registry
+
+- `evidence[].transcript_quote` 只能摘自 clean transcript；metadata、縮圖、留言或外部知識不可成為語意或視覺證據。
+- evidence id 在同一份 spec 內唯一。block 與所有 visual node/row/item 都要用非空 `evidence_refs` 指回 registry。
+- 縮圖只作為來源錨點，不能支撐 process、comparison、control-gap、key point 或 action。
+- 無法以逐字稿支撐的內容不要放入 spec；需要保留時改寫成有 evidence 的 `open_question`。
+
+### Claim type
+
+- `speaker_claim`：講者在逐字稿中直接表達的主張，不把報告推論冒充成講者原話。
+- `report_synthesis`：跨一段或多段 evidence 的報告綜整，措辭要保留推論邊界。
+- `open_question`：逐字稿留下的張力或未決問題，不寫成已驗證結論。
+
+### Adaptive blocks
+
+- `key-points`：預設作為第一個內容 block，給快速掃讀；通常保留 3–5 個真正影響理解的重點，每點用 heading 先交付判斷，再用 text 保留具體內容。
+- `process`：只在逐字稿有至少三個相依步驟，或三個以上順序會改變意義的事件時使用。論證鏈或 timeline 只有符合這個條件才可用 process 重畫。
+- `comparison`：只有各方案共享明確共同維度時使用 columns/rows；沒有共同維度就改用 key points。
+- `control-gap`：逐列對照 control、observed、gap；三欄都必須能回到同列 evidence。
+- `actions`：每個 item 寫具體 action，可用 `when` 限定適用場景。
+- `food-for-thought`：有實質張力時預設保留 1–3 題；每題不能靠重述影片直接回答，答案應會改變決策、流程或控制設計。context 只補足問題成立的條件，不重複摘要；素材不足時寧可不放，不用「值得深思」或「你怎麼看」湊數。
+
+逐字稿若描述選單、點擊與畫面切換，可以用 process 畫成「操作狀態圖」，但只能寫出逐字稿明講的狀態與動作；不可猜測按鈕位置、配色、欄位排列或重建真實介面。
+
+若逐字稿沒有完整、同口徑、可比較的數據，不可 chart。v2 first slice 不支援 chart；不要用定性詞或零散數字偽裝成圖表數據。
+
+### Reader-safe output
+
+- 讀者欄位禁止 `file://`、絕對本機路徑、command、traceback 或 cache/debug ledger。
+- `claim_type`、`evidence_refs`、evidence id、證據欄與逐字稿 evidence appendix 全部留在幕後，不進 reader-facing Markdown/HTML。
+- 所有字串進 HTML 前必須 escape；template 不使用 inline script、外部 JavaScript 或本機資源。
+- 375px viewport 必須沒有橫向頁面溢出；比較表可以在自己的容器內水平捲動。
+- Footer 只用一句話標示字幕/ASR 來源，以及未下載或檢視影片畫面；不要加入稽核 ledger。
+
+## v1 五區塊相容格式
 
 讀者沒看過影片，報告順序遵循 **理解 → 分析 → 反思 → 行動 → 限定** 的認知流：
 
@@ -101,7 +159,7 @@
 
 ### 洞見
 
-- 5-8 點。每點包含「觀點」+「為什麼重要」。
+- 5-8 點。每點包含「觀點」+「為什麼重要」。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
 - 需要時用一句關鍵引述或時間標記支撐，不需要每點都引。
 - 分析的是「逐字稿透露了什麼判斷和邏輯」，不是「講者說了什麼」。
 
@@ -110,7 +168,7 @@
 
 ### food for thoughts
 
-- 3-6 點。每點應該像一個可以想一整天的 prompt。
+- 3-6 點。每點應該像一個可以想一整天的 prompt。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
 - 挖矛盾、張力、未回答的問題、隱含的取捨。
 - 不是摘要 bullet，不是洞見的重複。
 
@@ -119,7 +177,7 @@
 
 ### 可行啟發
 
-- 至少 3 點。每點需要有具體場景或判斷條件。
+- 至少 3 點。每點需要有具體場景或判斷條件。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
 - 可操作 = 讀者看完知道「在什麼情境下做什麼」。
 
 ❌「要持續學習新技術。」（抽象價值觀，不是啟發）

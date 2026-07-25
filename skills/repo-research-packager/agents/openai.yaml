@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Research Packager"
+  short_description: "Curate any repository into an AI-ready research pack"
+  default_prompt: "Use $repo-research-packager to package this repository into a focused Taiwan Traditional Chinese Markdown research handoff for another AI."

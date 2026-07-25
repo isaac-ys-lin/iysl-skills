@@ -7,11 +7,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 EXPECTED_SKILLS = {
+    "equity-data",
     "iysl-anidiagram",
     "iysl-clarify",
     "iysl-deckab",
     "iysl-sync",
     "iysl-ytdlp-html-report",
+    "repo-research-packager",
 }
 # .DS_Store is ignored at the repository and skill levels, so Finder metadata
 # cannot enter the published package. Keep this gate focused on generated files

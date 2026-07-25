@@ -37,6 +37,8 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-deckab` — create source-faithful deck and prompt workflows.
 - `iysl-sync` — keep confirmed decisions and progress in one concise living plan.
 - `iysl-ytdlp-html-report` — turn a single public video URL into a Traditional Chinese HTML reading report.
+- `equity-data` — collect and label source-backed public-equity data packs before analysis.
+- `repo-research-packager` — curate a repository into a focused Markdown handoff for another AI.
 
 ## Structure
 

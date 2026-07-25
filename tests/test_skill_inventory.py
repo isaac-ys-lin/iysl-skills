@@ -5,10 +5,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
+ALLOWED_UNPREFIXED_SKILLS = {"equity-data", "repo-research-packager"}
 
 
 class SkillInventoryTest(unittest.TestCase):
-    def test_skill_directories_and_frontmatter_names_are_iysl_prefixed(self):
+    def test_skill_directories_and_frontmatter_names_follow_repo_policy(self):
         skill_dirs = sorted(path for path in SKILLS.iterdir() if path.is_dir())
         self.assertTrue(skill_dirs)
 
@@ -19,7 +20,10 @@ class SkillInventoryTest(unittest.TestCase):
             name = match.group(1)
 
             self.assertEqual(skill_dir.name, name)
-            self.assertTrue(name.startswith("iysl-"), name)
+            self.assertTrue(
+                name.startswith("iysl-") or name in ALLOWED_UNPREFIXED_SKILLS,
+                name,
+            )
 
 
 if __name__ == "__main__":

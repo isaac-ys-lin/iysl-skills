@@ -91,7 +91,7 @@ function inlineMarkdown(text) {
     .replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
-function markdownToHtml(markdown) {
+function markdownToHtml(markdown, { forceUnordered = false } = {}) {
   const lines = markdown.trim().split(/\r?\n/);
   const html = [];
   let paragraph = [];
@@ -115,14 +115,13 @@ function markdownToHtml(markdown) {
     const line = raw.trim();
     if (!line) {
       flushParagraph();
-      closeList();
       continue;
     }
     const bullet = line.match(/^[-*]\s+(.+)$/);
     const ordered = line.match(/^\d+\.\s+(.+)$/);
     if (bullet || ordered) {
       flushParagraph();
-      const type = ordered ? "ol" : "ul";
+      const type = forceUnordered ? "ul" : (ordered ? "ol" : "ul");
       if (list !== type) {
         closeList();
         list = type;
@@ -138,6 +137,7 @@ function markdownToHtml(markdown) {
       html.push(`<h3>${inlineMarkdown(heading[1])}</h3>`);
       continue;
     }
+    closeList();
     paragraph.push(line);
   }
   flushParagraph();
@@ -162,11 +162,11 @@ const replacements = {
   duration: metadata.duration_string || "",
   thumbnail: metadata.thumbnail || "",
   extractedAt: metadata.extracted_at || "",
-  foodHtml: markdownToHtml(sections.food),
-  insightsHtml: markdownToHtml(sections.insights),
+  foodHtml: markdownToHtml(sections.food, { forceUnordered: true }),
+  insightsHtml: markdownToHtml(sections.insights, { forceUnordered: true }),
   summaryHtml: markdownToHtml(sections.summary),
-  actionsHtml: markdownToHtml(sections.actions),
-  verificationHtml: markdownToHtml(sections.verification),
+  actionsHtml: markdownToHtml(sections.actions, { forceUnordered: true }),
+  verificationHtml: markdownToHtml(sections.verification, { forceUnordered: true }),
 };
 
 for (const [key, value] of Object.entries(replacements)) {

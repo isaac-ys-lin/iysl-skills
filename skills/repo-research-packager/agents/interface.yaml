@@ -1,7 +1,7 @@
 interface:
-  display_name: "iysl-ytdlp-html-report"
-  short_description: "Watch-equivalent video brief with transcript-derived visuals."
-  default_prompt: "Use $iysl-ytdlp-html-report to turn one public video into a watch-equivalent Traditional Chinese brief with key points, transcript-derived explanatory visuals, and food for thoughts."
+  display_name: "Repo Research Packager"
+  short_description: "Curate any repository into an AI-ready research pack"
+  default_prompt: "Use $repo-research-packager to package this repository into a focused Taiwan Traditional Chinese Markdown research handoff for another AI."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:
