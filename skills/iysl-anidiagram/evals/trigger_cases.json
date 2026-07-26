@@ -1,0 +1,17 @@
+{
+  "recommended_threshold": 0.25,
+  "should_trigger": [
+    {"text": "把這段系統流程做成 source-faithful animated SVG diagram。", "family": "animated_diagram", "expected_route": "iysl-anidiagram"},
+    {"text": "Create an explanatory diagram with MP4 and poster PNG; motion should show the relation.", "family": "animated_diagram", "expected_route": "iysl-anidiagram"},
+    {"text": "把這份資料整理成中立的結構圖，不要補因果。", "family": "neutral_structure", "expected_route": "iysl-anidiagram"}
+  ],
+  "should_not_trigger": [
+    {"text": "直接幫我生成一張產品海報圖片。", "family": "single_image", "expected_route": "image-generation"},
+    {"text": "請 review 這份 SVG 並只回報問題。", "family": "review_only", "expected_route": "review"},
+    {"text": "把這段文字潤稿得更自然。", "family": "writing_only", "expected_route": "writing"}
+  ],
+  "near_neighbor": [
+    {"text": "把流程圖做成真正可編輯的 PowerPoint。", "family": "deck_export", "expected_route": "presentation"},
+    {"text": "用一張靜態 infographic 解釋這個概念。", "family": "static_visual", "expected_route": "design"}
+  ]
+}

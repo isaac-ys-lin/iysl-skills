@@ -70,19 +70,25 @@ function sectionKey(heading) {
   if (h === "洞見" || h === "洞见") return "insights";
   if (h === "重述" || h === "內容重述" || h === "摘要" || h === "summary") return "summary";
   if (h === "可行啟發" || h === "可行启发" || h === "actions") return "actions";
-  if (h === "驗證與限制" || h === "验证与限制" || h === "verification") return "verification";
+  if (h === "驗證與限制" || h === "验证与限制" || h === "verification") return "discard";
   return "";
 }
 
 function splitSections(markdown) {
-  const sections = { food: "", insights: "", summary: "", actions: "", verification: "" };
+  const sections = { summary: "", insights: "", food: "", actions: "" };
   let current = "";
   for (const line of markdown.split(/\r?\n/)) {
     const match = line.match(/^#{1,3}\s+(.+?)\s*$/);
     if (match) {
       const key = sectionKey(match[1]);
-      current = key || current;
-      if (key) continue;
+      if (key === "discard") {
+        current = "";
+        continue;
+      }
+      if (key) {
+        current = key;
+        continue;
+      }
     }
     if (current && Object.hasOwn(sections, current)) {
       sections[current] += `${line}\n`;
@@ -167,12 +173,10 @@ const replacements = {
   originalUrl: metadata.original_url || "",
   duration: metadata.duration_string || "",
   thumbnail: metadata.thumbnail || "",
-  extractedAt: metadata.extracted_at || "",
   foodHtml: markdownToHtml(sections.food, { forceUnordered: true }),
   insightsHtml: markdownToHtml(sections.insights, { forceUnordered: true }),
   summaryHtml: markdownToHtml(sections.summary),
   actionsHtml: markdownToHtml(sections.actions, { forceUnordered: true }),
-  verificationHtml: markdownToHtml(sections.verification, { forceUnordered: true }),
 };
 
 for (const [key, value] of Object.entries(replacements)) {

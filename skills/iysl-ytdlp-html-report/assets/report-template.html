@@ -165,17 +165,11 @@
     .stack { display: grid; gap: 16px; }
     .stack p:first-child, .panel p:first-child { margin-top: 0; }
     .stack p:last-child, .panel p:last-child { margin-bottom: 0; }
-    .stack > ul, .panel > ul, .verification > ul {
+    .stack > ul, .panel > ul {
       margin: 0;
       padding-left: 1.25rem;
     }
     .stack li + li { margin-top: 8px; }
-    .verification {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-      padding: 20px 22px;
-    }
     footer {
       border-top: 1px solid var(--line);
       padding: 26px 0 42px;
@@ -204,11 +198,10 @@
       <p class="eyebrow">Transcript Reading Report</p>
       <h1>{{heroMain}}</h1>
       {{heroSubHtml}}
-      <p class="subtitle">根據影片逐字稿整理的閱讀報告，聚焦內容重述、分析洞見、思考提示、可行啟發與必要來源限制。</p>
+      <p class="subtitle">根據影片逐字稿整理的閱讀報告，聚焦內容重述、分析洞見、思考提示與可行啟發。</p>
       <ul class="meta">
         <li>{{channel}}</li>
         <li>{{duration}}</li>
-        <li>{{extractedAt}}</li>
       </ul>
     </div>
     <figure class="hero-media">
@@ -224,7 +217,6 @@
       <a href="#insights">洞見</a>
       <a href="#food">food for thoughts</a>
       <a href="#actions">可行啟發</a>
-      <a href="#verification">驗證與限制</a>
     </div>
   </nav>
 
@@ -252,10 +244,6 @@
       <div class="panel stack">{{actionsHtml}}</div>
     </section>
 
-    <section id="verification">
-      <div class="section-heading"><h2>驗證與限制</h2><span class="section-kicker">來源依據</span></div>
-      <div class="verification stack">{{verificationHtml}}</div>
-    </section>
   </main>
 
   <footer class="page">

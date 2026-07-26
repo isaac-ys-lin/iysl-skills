@@ -1,4 +1,5 @@
 {
+  "recommended_threshold": 0.30,
   "should_trigger": [
     {"text": "https://youtu.be/dQw4w9WgXcQ 幫我整理成繁體中文閱讀報告。", "family": "video_report", "expected_route": "iysl-ytdlp-html-report"},
     {"text": "這支影片幫我做重點摘要 https://www.youtube.com/watch?v=abc12345678", "family": "video_summary", "expected_route": "iysl-ytdlp-html-report"},

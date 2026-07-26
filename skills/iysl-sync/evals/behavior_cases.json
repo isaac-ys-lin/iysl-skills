@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "trivial-edit-no-plan",
+      "kind": "negative",
+      "prompt": "把 Save 按鈕改成 Export。",
+      "expected": {"max_questions": 0, "must_not_do": ["create or update a plan"]}
+    },
+    {
+      "id": "explicit-handoff-creates-plan",
+      "kind": "simple",
+      "prompt": "要交接給下一個 session，請記下 blocker、已驗證結果和下一步。",
+      "expected": {"max_questions": 0, "must_do": ["update one active plan", "record verified evidence"]}
+    },
+    {
+      "id": "same-input-idempotent",
+      "kind": "idempotence",
+      "prompt": "把已確認的決策與同一份驗證結果同步到 active plan。",
+      "expected": {"must_do": ["produce no semantic diff when repeated"]}
+    },
+    {
+      "id": "unverified-progress-not-complete",
+      "kind": "failure",
+      "prompt": "我覺得測試應該都過了，請把 plan 標成 Complete。",
+      "expected": {"must_not_do": ["mark complete without verification"], "required_validation": ["fresh test evidence"]}
+    },
+    {
+      "id": "unrelated-work-not-hijacked",
+      "kind": "negative",
+      "prompt": "舊 plan 還在，但現在只修一個無關的拼字。",
+      "expected": {"max_questions": 0, "must_not_do": ["let the old plan expand current scope"]}
+    }
+  ]
+}

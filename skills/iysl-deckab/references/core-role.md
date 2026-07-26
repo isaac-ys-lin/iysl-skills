@@ -8,7 +8,7 @@
 
 1. Visual Metaphors：在有幫助時，把內容轉譯成乾淨的 exhibits、schematics、blueprint-like diagrams、grid systems 或資料展示；不是每頁都必須圖解化。
 2. Standard：嚴格 16:9 aspect ratio。
-3. Layout：預設偏好 triptych 或 grid-based layouts，讓文字與視覺平衡；選定的 style direction 可以覆蓋這些預設，只要 source 邏輯仍清楚。
+3. Layout：依 source 邏輯選擇 composition；triptych 或 grid 只是可用選項，不是 default preference。
 4. Logic：可以承載高密度資訊，但必須讓高專業聽眾能自行閱讀。
 5. Source Fidelity：可以做敘事與視覺判斷，但不能新增來源沒有支持的 facts。
 
@@ -35,7 +35,7 @@
 Style direction 來源優先序：
 
 1. 若 dispatch prompt 或使用者已指定 style direction（通常來自 style divergence 選擇），`STYLE_INSTRUCTIONS` 必須忠實展開該方向，不得改向或折衷成慣用風格。
-2. 若未指定，先在內部比較至少三個候選方向——正題（題材直覺期待的方向）、反題（沿核心維度完全反轉、大膽但理由嚴謹）、wildcard（從內容隱喻推導）——選出最能表達本份內容邏輯與情緒的一個，反題與 wildcard 勝出時不要因為保守而改選正題。內部比較不要輸出。
+2. 若未指定，直接選一個最能表達本份內容邏輯與情緒的方向。只有在使用者要求選案、偏好 materially unresolved 或第一方向品質不足時，才比較正題、反題與 wildcard；內部比較不要輸出。
 
 Strict output requirement:
 
@@ -126,7 +126,7 @@ Variety guard（避免整份 deck 千篇一律）：
 生成前最後檢查，以下約束不可違反：
 
 1. Slide 1 必須是 cover，使用 heroic typography 與/或 full-bleed imagery 的 poster-style layout。
-2. Final slide 必須是 back cover，與 cover 同級的 distinct poster-style layout，使用 heroic typography 與/或 full-bleed imagery，承載 closing statement 或 powerful visual takeaway，用來錨定整體敘事。
+2. 外部分享型 deck 的 final slide 應是與 cover 同級的 closing/back-cover layout，承載 closing statement 或 powerful visual takeaway；工作型、分析型或使用者限定頁數的 deck 可省略。
 3. 不使用 `Thank You`、`Any Questions?`、`[Author Name]`、`[Date]` 或其他 placeholder。
 4. 不使用 AI 套話，例如 `It wasn't just [X], it was [Y]` 或相近結構。
 5. 使用 direct、confident、active human language。
@@ -136,6 +136,6 @@ Variety guard（避免整份 deck 千篇一律）：
 
 ## Return Contract
 
-交付前先自檢：唯一一個 STYLE_INSTRUCTIONS code block、STYLE_INSTRUCTIONS 忠實展開指定的 style direction（若有）、每頁恰好四段、N <= 20、Slide 1 是 cover、最後一頁是 back cover、無 placeholder 或 AI 套話、每頁 VISUAL 含對應形式的可驗證規格、視覺形式符合 variety guard、缺料處已標 `SOURCE NEEDED`。自檢過程不要輸出。
+交付前先自檢：唯一一個 STYLE_INSTRUCTIONS code block、STYLE_INSTRUCTIONS 忠實展開指定的 style direction（若有）、每頁恰好四段、N <= 20、Slide 1 是 cover、外部分享型 deck 有敘事收束、無 placeholder 或 AI 套話、每頁 VISUAL 含對應形式的可驗證規格、視覺形式符合 variety guard、缺料處已標 `SOURCE NEEDED`。自檢過程不要輸出。
 
 嚴格輸出要求的 artifact。不要加自我說明、流程解釋、道歉、感謝或 meta commentary。若缺資料，直接在相關 slide 的 KEY CONTENT 或需要處標 `SOURCE NEEDED`。

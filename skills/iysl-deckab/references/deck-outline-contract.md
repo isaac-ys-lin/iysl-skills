@@ -20,9 +20,17 @@ Core source fidelity rules are in `core-role.md`. Additional rules for outline w
 1. If the user asks for stronger persuasion, improve narrative strategy and visual communication without inventing proof.
 2. Preserve quote meaning; if it is not exact, use summary language and no quotation marks.
 
-## Style Divergence
+## Optional Style Exploration
 
-Before outline production is dispatched, the orchestrating agent presents at least three style directions whose differences are visible at a glance — if any two cover thumbnails would read as the same deck, regenerate. Structure them as thesis / antithesis / wildcard: **thesis** is the direction the topic most obviously calls for, executed at its best; **antithesis** deliberately inverts the thesis on core dimensions (dark↔light, dense↔airy, cool↔warm, technical↔humanist, restrained↔expressive) — bold, yet argued rigorously from the content's logic and emotion, never bold for its own sake, and disqualified if it reads as a mere variation of the thesis; **wildcard** is derived from a content-specific metaphor, outside common family lists. Each direction includes a name, design aesthetic, background + palette hexes, font mood, visual-element language, and a fit rationale. The user picks, blends, or adjusts. Skip only when the user already specified a style, provided a style anchor (the orchestrating agent then extracts an anchor-derived style contract as the direction), or asked to proceed directly. In non-interactive runs (batch/automation), the orchestrating agent selects one direction itself and records the rationale in the handoff message or run manifest — never inside the outline artifact. The chosen direction is passed into the dispatch prompt and must be expanded faithfully in `STYLE_INSTRUCTIONS` (see `core-role.md`).
+Use `references/style-exploration.md` only when the user asks to compare
+directions, when brand or audience preference is materially unresolved, or when
+the first direction has a demonstrated quality gap. A useful comparison may
+include the topic's natural direction, a reasoned inversion, and a
+content-specific wildcard, but a normal outline does not require three options
+or a user selection ceremony. A specified style, anchor, or direct-production
+request is authoritative. When exploration is used, alternatives must differ in
+visual and spatial logic, and the chosen direction must be expanded faithfully
+in `STYLE_INSTRUCTIONS` (see `core-role.md`).
 
 ## Outline Shape
 

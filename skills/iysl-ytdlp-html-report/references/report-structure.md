@@ -8,7 +8,7 @@
 - Watch-equivalent 內容分流
 - 內容輸出與去 AI 味
 - v2 structured report contract
-- v1 五區塊相容格式
+- v1 四區塊相容格式
 - 通用品質、交付自檢與禁止內容
 
 ## 讀者假設
@@ -49,7 +49,7 @@
 
 ## 內容輸出重點
 
-這個 skill 的主要價值不是「把影片整理成五個區塊」，而是讓讀者讀完後真的比較懂這支影片。寫作時優先處理三件事：
+這個 skill 的主要價值不是「把影片塞進固定模板」，而是讓讀者讀完後真的比較懂這支影片。寫作時優先處理三件事：
 
 1. 讓讀者先知道影片的主線，而不是先丟結論。
 2. 把講者的判斷、例子和轉折保留下來，不要壓成泛用摘要。
@@ -72,12 +72,12 @@
 
 ## v2 structured report contract
 
-預設以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 offline HTML。
+預設以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。四個 reader-facing 章節固定依序為 `內容重述`、`洞見`、`food for thoughts`、`可行啟發`。
 
 ### Evidence registry
 
 - `evidence[].transcript_quote` 只能摘自 clean transcript；metadata、縮圖、留言或外部知識不可成為語意或視覺證據。
-- evidence id 在同一份 spec 內唯一。block 與所有 visual node/row/item 都要用非空 `evidence_refs` 指回 registry。
+- evidence id 在同一份 spec 內唯一。block 與所有 paragraph/node/row/item 都要用非空 `evidence_refs` 指回 registry。
 - 縮圖只作為來源錨點，不能支撐 process、comparison、control-gap、key point 或 action。
 - 無法以逐字稿支撐的內容不要放入 spec；需要保留時改寫成有 evidence 的 `open_question`。
 
@@ -87,14 +87,20 @@
 - `report_synthesis`：跨一段或多段 evidence 的報告綜整，措辭要保留推論邊界。
 - `open_question`：逐字稿留下的張力或未決問題，不寫成已驗證結論。
 
-### Adaptive blocks
+### Adaptive blocks 與固定章節
 
-- `key-points`：預設作為第一個內容 block，給快速掃讀；通常保留 3–5 個真正影響理解的重點，每點用 heading 先交付判斷，再用 text 保留具體內容。
+- `內容重述`：至少放入一個 `narrative`、`process`、`comparison` 或 `control-gap`。一般敘事、訪談與沒有結構性視覺關係的影片用 `narrative`；只有逐字稿真的支撐關係時才用視覺 block。
+- `洞見`：放入 `key-points`，至少要有一個。
+- `food for thoughts`：放入 `food-for-thought`，至少要有一個。
+- `可行啟發`：放入 `actions`，至少要有一個。
+
+- `key-points`：通常保留 3–5 個真正影響理解的重點，每點用 heading 先交付判斷，再用 text 保留具體內容。
+- `narrative`：用一個以上有各自 evidence refs 的段落重建主線、例子與轉折；它是內容重述的正常文字載體，不是 visual fallback 的失敗狀態。
 - `process`：只在逐字稿有至少三個相依步驟，或三個以上順序會改變意義的事件時使用。論證鏈或 timeline 只有符合這個條件才可用 process 重畫。
 - `comparison`：只有各方案共享明確共同維度時使用 columns/rows；沒有共同維度就改用 key points。
 - `control-gap`：逐列對照 control、observed、gap；三欄都必須能回到同列 evidence。
 - `actions`：每個 item 寫具體 action，可用 `when` 限定適用場景。
-- `food-for-thought`：有實質張力時預設保留 1–3 題；每題不能靠重述影片直接回答，答案應會改變決策、流程或控制設計。context 只補足問題成立的條件，不重複摘要；素材不足時寧可不放，不用「值得深思」或「你怎麼看」湊數。
+- `food-for-thought`：保留 1–3 題實質張力；每題不能靠重述影片直接回答，答案應會改變決策、流程或控制設計。context 只補足問題成立的條件，不重複摘要；素材不足以形成有意義問題時，不要硬湊完整報告。
 
 逐字稿若描述選單、點擊與畫面切換，可以用 process 畫成「操作狀態圖」，但只能寫出逐字稿明講的狀態與動作；不可猜測按鈕位置、配色、欄位排列或重建真實介面。
 
@@ -105,12 +111,12 @@
 - 讀者欄位禁止 `file://`、絕對本機路徑、command、traceback 或 cache/debug ledger。
 - `claim_type`、`evidence_refs`、evidence id、證據欄與逐字稿 evidence appendix 全部留在幕後，不進 reader-facing Markdown/HTML。
 - 所有字串進 HTML 前必須 escape；template 不使用 inline script、外部 JavaScript 或本機資源。
-- 375px viewport 必須沒有橫向頁面溢出；比較表可以在自己的容器內水平捲動。
-- Footer 只用一句話標示字幕/ASR 來源，以及未下載或檢視影片畫面；不要加入稽核 ledger。
+- 預設 acceptance surface 是 desktop browser；不預設執行 mobile viewport 或 screenshot QA。
+- 不顯示字幕/ASR、未檢視畫面、轉錄品質或其他來源限制；全部寫進 verification sidecar。
 
-## v1 五區塊相容格式
+## v1 四區塊相容格式
 
-讀者沒看過影片，報告順序遵循 **理解 → 分析 → 反思 → 行動 → 限定** 的認知流：
+讀者沒看過影片，報告順序遵循 **理解 → 分析 → 反思 → 行動** 的認知流：
 
 ```markdown
 # 內容重述
@@ -128,10 +134,6 @@
 ## 可行啟發
 
 整理可以實際採用的啟發，可能是工作方式、產品判斷、研究方法、寫作、決策或團隊流程。
-
-## 驗證與限制
-
-只列讀者需要知道的來源與品質限制，例如素材來源類型、字幕/自動轉錄來源、逐字稿品質、專名或數字可能誤聽、上下文不足等風險。
 ```
 
 ## 區塊設計邏輯
@@ -143,8 +145,6 @@
 `food for thoughts` 回答：「理解內容和分析之後，有哪些值得繼續想的問題和張力？」
 
 `可行啟發` 回答：「讀者明天可以怎麼用？」
-
-`驗證與限制` 回答：「讀者理解這份整理時，需要知道哪些來源限制？」
 
 ## 各區塊品質約束
 
@@ -183,19 +183,14 @@
 ❌「要持續學習新技術。」（抽象價值觀，不是啟發）
 ✅「如果你的團隊在評估 LLM 供應商，講者建議先跑一輪 retrieval baseline 再比較——這可以省掉至少一輪不必要的 fine-tuning 實驗。」
 
-### 驗證與限制
-
-- 只列讀者需要知道的來源與品質限制。
-- 不要列完整 internal verification ledger。
-
 ## 通用品質標準
 
 - 除非使用者另有要求，使用自然的台灣繁體中文。
 - 所有主張都要以 clean transcript 為根據，不要只看標題或 metadata 推論。
 - 長影片要掃過開頭、中段、結尾；若有章節或使用者提供的時間戳，也要納入。
-- 若逐字稿品質差，在 `驗證與限制` 說明並降低信心。
+- 若逐字稿品質差但仍足以支撐內容，降低 reader-facing 主張強度，並把具體限制寫進 sidecar。
 - 若素材太短，不足以產出深度洞見，直接說明，不要硬湊。
-- 完整驗證資訊要放在 sidecar，不要讓 report 尾段變成執行紀錄。
+- 所有來源限制與完整驗證資訊都放在 sidecar；report 不建立 `驗證與限制` 或同義尾段。
 
 ## 交付前品質自檢
 
@@ -214,15 +209,10 @@
 以下內容只能放在 `<video_id>.verification.md` sidecar：
 
 - source URL 和 resolved URL 的完整 ledger
+- 字幕／ASR 來源、轉錄品質、可能誤聽、未檢視畫面與上下文不足等限制
 - metadata、transcript、audio、cache 的完整本機路徑
 - 抽取工具完整命令
 - stderr / traceback / debug log
 - fetch_results.jsonl 的完整內容
 - 完整時間戳 ledger
 - operator-only 判斷，例如 DNS retry、backend crash、cache reuse 細節
-
-Report 的 `驗證與限制` 可以摘要這些資訊對讀者的影響，例如：
-
-- 這支影片沒有原生字幕，本報告使用音訊自動轉錄作為逐字稿來源。
-- 自動轉錯可能誤聽專名、數字或英文縮寫。
-- 影片上下文若依賴畫面、圖表或留言，本報告只反映可取得的語音/字幕內容。

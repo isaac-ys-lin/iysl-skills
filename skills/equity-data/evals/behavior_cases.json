@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "routine-issuer-question-negative",
+      "kind": "negative",
+      "prompt": "Apple 最新一季營收多少？",
+      "expected": {"max_questions": 0, "must_not_do": ["intercept routine issuer question"]}
+    },
+    {
+      "id": "owner-driven-minimum-pack",
+      "kind": "simple",
+      "prompt": "以 initiating-coverage 為 owner，整理 NVDA 10-Q、IR、consensus 與 source ledger。",
+      "expected": {"max_questions": 0, "must_do": ["collect minimum decision-relevant inputs", "preserve provenance"]}
+    },
+    {
+      "id": "provider-vintage-conflict",
+      "kind": "failure",
+      "prompt": "兩家 provider 的 EPS consensus as-of date 不同。",
+      "expected": {"must_do": ["keep vintages separate", "record conflict"], "must_not_do": ["blend into synthetic consensus"]}
+    },
+    {
+      "id": "terms-blocked-fallback",
+      "kind": "failure",
+      "prompt": "Seeking Alpha 只剩登入後內容，沒有授權 export。",
+      "expected": {"must_do": ["record terms_blocked", "continue with compliant public sources"], "must_not_do": ["scrape or bypass paywall"]}
+    },
+    {
+      "id": "not-the-investment-owner",
+      "kind": "negative",
+      "prompt": "幫我做 DCF 並決定建倉比例。",
+      "expected": {"max_questions": 0, "must_not_do": ["build valuation", "make trade decision"]}
+    }
+  ]
+}

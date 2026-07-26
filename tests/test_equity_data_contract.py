@@ -21,14 +21,14 @@ class EquityDataContractTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
     def test_router_owns_embedded_provider_selection(self):
-        self.assertIn(
-            "let the plugin router own category-to-provider mapping", self.skill
-        )
+        self.assertIn("plugin router own", self.skill)
+        self.assertIn("category-to-provider mapping", self.skill)
         self.assertIn("Keep the evidence pack subordinate", self.skill)
 
     def test_seeking_alpha_is_not_an_automated_retrieval_route(self):
         self.assertIn("Do not automate retrieval", self.skill)
-        self.assertIn("use a user-provided excerpt, screenshot, or export", self.skill)
+        self.assertIn("user-provided excerpt", self.skill)
+        self.assertIn("screenshot, or export", self.skill)
         self.assertIn("route_status=terms_blocked", self.skill)
         self.assertIn(
             "Do not automate or systematically extract Seeking Alpha pages",
@@ -47,7 +47,7 @@ class EquityDataContractTest(unittest.TestCase):
         self.assertIn("Open and cite the actual page or document", self.source_map)
 
     def test_provider_vintages_cannot_be_blended(self):
-        self.assertIn("do not average them away", self.skill)
+        self.assertIn("averaging unlike vintages", self.skill)
         self.assertIn("Never blend revenue from one provider", self.source_map)
         self.assertIn("provider_vintage_mismatch", self.matrix)
         self.assertIn("synthetic consensus", self.matrix)

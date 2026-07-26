@@ -1,4 +1,4 @@
-# Style Directions — Diverge, Don't Default
+# Style Directions — Derive, Then Diverge When Needed
 
 This is the aesthetic counterpart to `svg-authoring.md` (which fixes *structure*) and
 `animation-semantics.md` (which fixes *motion meaning*). Neither of those says anything
@@ -19,12 +19,12 @@ dashboard. Let that mood pick the ground, the palette, and the type. Write the i
 visual fingerprint before opening the calibration family below; the family is a range
 check, not the source of the idea.
 
-## Two Kinds of Divergence
+## Two Kinds of Divergence (only for variants)
 
-Color variation is not composition variation. Two candidates must differ in both
-categories below: **at least one visual axis and at least one spatial axis**. Placed
-side by side, they should not be mistaken for the same publication or the same
-wireframe.
+Color variation is not composition variation. When the user asks for multiple
+candidates, they must differ in both categories below: **at least one visual axis
+and at least one spatial axis**. A one-off diagram does not need a fingerprint or
+artificial divergence ceremony.
 
 ### Visual axes
 
@@ -49,9 +49,9 @@ The content relation still governs semantic geometry: a loop must read as recurr
 and a sequence must preserve order. Spatial divergence changes how that relation is
 staged on the page, not what the relation means.
 
-## Visual Fingerprint
+## Visual Fingerprint for comparisons
 
-Make the decision inspectable before authoring. Every candidate emits two compact
+For a variant comparison or multi-diagram run, make the decision inspectable. Each candidate emits two compact
 lines plus a content-derived reason:
 
 ```text
@@ -60,18 +60,17 @@ spatial: off-center hero · asymmetric · open annotations · full-bleed
 reason: the source is a technical post-mortem, so it should feel diagnostic rather than promotional
 ```
 
-Within a multi-diagram run, pass the accepted fingerprint to the next Direction step
-and state what may repeat and what must change. For a one-off diagram, compare the two
-Creative candidates; there is no hidden cross-run memory.
+Within a multi-diagram run, pass the accepted fingerprint to the next decision and
+state what may repeat and what must change. Do not create a fingerprint only to
+complete a one-off workflow.
 
 ## Calibration Family (a springboard, not a menu)
 
-Eight coherent directions with concrete palettes, so range is actionable. **Do not
-just pick one** — derive the fingerprint from the content first, then use the table to
-notice whether the idea is still trapped in a familiar basin. If the result closely
-matches a family, declare that anchor and deliberately mutate at least one visual choice
-and one spatial choice, explaining both. The list exists to show how wide the range is,
-and to name the default look (#1) so you can consciously avoid over-using it.
+Eight coherent directions with concrete palettes, so range is actionable. Derive the
+look from the content first, then use the table as a calibration check. If a requested
+variant closely matches a family, name the anchor and deliberately mutate at least one
+visual choice and one spatial choice. The list exists to show range, not to force a
+menu or a default look.
 
 | # | Direction | Ground / Ink / Primary / Accent (hex) | Type & finish | Fits content that is… |
 | --- | --- | --- | --- | --- |

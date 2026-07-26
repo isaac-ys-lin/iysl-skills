@@ -1,0 +1,17 @@
+{
+  "recommended_threshold": 0.30,
+  "should_trigger": [
+    {"text": "把這個 repo 打包成一份 self-contained Markdown handoff，給看不到原始碼的另一個 AI。", "family": "blind_handoff", "expected_route": "repo-research-packager"},
+    {"text": "整理 repository evidence pack，讓沒有 repo access 的 receiver 能回答 primary flow。", "family": "receiver_pack", "expected_route": "repo-research-packager"},
+    {"text": "為另一個 AI 產生 focused research handoff，保留相對路徑與 evidence gaps。", "family": "evidence_handoff", "expected_route": "repo-research-packager"}
+  ],
+  "should_not_trigger": [
+    {"text": "只 review 目前 diff，回報 actionable findings，不要產生 handoff。", "family": "ordinary_review", "expected_route": "check"},
+    {"text": "幫我做這個 repo 的 architecture review，直接指出問題。", "family": "architecture_review", "expected_route": "direct"},
+    {"text": "修好這個 bug 並交付可發布的 artifact。", "family": "shipped_artifact", "expected_route": "direct"}
+  ],
+  "near_neighbor": [
+    {"text": "替這個專案寫 implementation plan，列出改檔步驟。", "family": "implementation_plan", "expected_route": "direct"},
+    {"text": "把 repo 壓成 ZIP 給我下載。", "family": "zip_only", "expected_route": "direct"}
+  ]
+}

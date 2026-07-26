@@ -1,0 +1,48 @@
+{
+  "purpose": "test-heuristic-only",
+  "runtime_authoritative": false,
+  "recommended_threshold": 0.30,
+  "fallback_positive_concepts": ["video_source", "transcript_report", "validated_output"],
+  "positive_concepts": {
+    "video_source": {
+      "weight": 0.32,
+      "phrases": ["YouTube", "youtu.be", "t.co/X", "影片"]
+    },
+    "transcript_report": {
+      "weight": 0.40,
+      "phrases": ["transcript evidence", "reading report", "逐字稿", "閱讀報告"]
+    },
+    "validated_output": {
+      "weight": 0.28,
+      "phrases": ["v2", "Markdown", "HTML", "verification sidecar", "驗證"]
+    }
+  },
+  "negative_concepts": {
+    "playlist_or_channel": {
+      "weight": 0.70,
+      "exclusive": true,
+      "phrases": ["playlist", "播放清單", "頻道", "channel"]
+    },
+    "download_only": {
+      "weight": 0.70,
+      "exclusive": true,
+      "phrases": ["音檔下載", "下載音檔", "download audio"]
+    },
+    "caption_lookup_only": {
+      "weight": 0.70,
+      "exclusive": true,
+      "phrases": ["有沒有中文字幕", "只要回答有無", "caption lookup"]
+    },
+    "non_video_summary": {
+      "weight": 0.60,
+      "exclusive": true,
+      "phrases": ["部落格文章", "文章摘要", "blog post"]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "playlist_or_channel",
+    "download_only",
+    "caption_lookup_only",
+    "non_video_summary"
+  ]
+}

@@ -1,75 +1,50 @@
 ---
 name: repo-research-packager
-description: Curate a software repository into a focused, self-contained Markdown research pack for another AI, using Taiwan Traditional Chinese by default. Use for product research, architecture review, planning, debugging, security analysis, or feature ideation when the receiving AI cannot access the repository.
+description: Curate a software repository into one focused, self-contained Markdown research handoff for another AI when that receiver cannot access the repository. Preserve evidence and safety boundaries; do not use for an ordinary architecture review or a shipped artifact.
+compatibility: Requires Python for the deterministic assembler; packaging itself is read-only and does not require network access.
 ---
 
-# Repo Research Packager
+# Repository Research Packager
 
-Create one evidence-dense Markdown handoff. Let the model decide what matters;
-use the bundled assembler for deterministic formatting, safety, and budget
-enforcement.
+## Intent
 
-## Contract
+Produce one evidence-dense Markdown handoff that lets a receiver understand the
+research objective, relevant architecture and flow, current behavior, and
+evidence gaps without repository access.
 
-- Make the pack self-contained and trace major claims to embedded source.
-- Separate repository facts, external facts, hypotheses, proposals, and open
-  questions.
-- Select the smallest evidence set that still explains the relevant
-  architecture, flows, contracts, state, failure behavior, and tests.
-- Preserve repository-relative paths and line ranges. Keep code, identifiers,
-  and commands verbatim.
-- Exclude secrets, personal or user data, binaries, generated outputs,
-  dependencies, and irrelevant implementation detail.
-- Keep packaging read-only. Do not confuse the working tree with a shipped or
-  deployed baseline.
-- Default to natural Taiwan Traditional Chinese and one `.md` file. Use another
-  language or ZIP only when explicitly requested.
+## Use and boundaries
 
-## Method
+- Use when the deliverable is explicitly for another AI or reviewer without
+  repository access.
+- Select the smallest evidence set that explains the relevant contracts, state,
+  failure behavior, tests, and constraints.
+- Do not package an ordinary code review, implementation plan, or deployment
+  baseline unless the user asks for a handoff.
+- Default to one Taiwan Traditional Chinese `.md`; support another language or
+  ZIP only when explicitly requested.
 
-1. Read repository instructions and authoritative project, architecture,
-   release, build, and Git context.
-2. Map the research-relevant system before choosing full files or focused line
-   slices. Give every selection a one-sentence reason.
-3. Print the manifest template and replace its placeholders with the objective,
-   verified context, constraints, open questions, and repository-relative
-   evidence:
+## Invariants
 
-```bash
-skill_dir="${AGENTS_HOME:-$HOME/.agents}/skills/repo-research-packager"
-python3 "$skill_dir/scripts/assemble_research_pack.py" --print-template > manifest.json
-```
+- Keep repository facts, external facts, hypotheses, proposals, and open
+  questions distinct.
+- Use repository-relative paths and line ranges; every major claim needs an
+  embedded evidence source and a short selection reason.
+- Exclude secrets, personal data, binaries, generated outputs, dependencies,
+  unrelated details, absolute home paths, and credentials.
+- Packaging is read-only. The assembler owns format, safety, overwrite, and
+  character-budget checks; do not bypass a failed check by silently dropping
+  load-bearing evidence.
 
-4. Assemble the pack:
+## Adaptive execution
 
-```bash
-python3 "$skill_dir/scripts/assemble_research_pack.py" \
-  --repo /absolute/path/to/repository \
-  --manifest /absolute/path/to/manifest.json \
-  --output /absolute/path/to/research-pack.md
-```
+Read project instructions and map the research question before selecting files;
+use the bundled assembler's `--print-template` and `--help` when needed. Choose
+full files or focused line slices by evidence density, then stop when a blind receiver can answer the required questions. Add a second pass, fixture, or ZIP
+only when uncertainty or an explicit request justifies it.
 
-Use `--force` only to replace a previously verified generated pack. If the
-budget fails, improve evidence density or split independent research questions;
-do not silently remove load-bearing evidence.
+## Validation and resources
 
-## Quality gate
-
-Before delivery, verify that:
-
-- The receiving AI can explain the product, relevant architecture, primary
-  flow, research objective, and evidence gaps without repository access.
-- Current behavior and proposals remain distinguishable.
-- Claims are traceable to selected evidence and line ranges remain current.
-- The output is valid UTF-8 Markdown within budget and contains no secrets,
-  personal data, or absolute home-directory paths.
-- Temporary manifests and other packaging residue are removed.
-
-Unless the user specifies otherwise, write the result to:
-
-```text
-<repo>/output/research-packs/<repository>-<topic>-YYYYMMDD.md
-```
-
-Report the output path, source commit, estimated size, exclusions, and known
-evidence gaps.
+Run assembler/tests; before delivery inspect generated UTF-8 Markdown for
+relative evidence, source commit, exclusions, known gaps, no secrets/personal
+data, and no temporary manifest residue. Use blind-receiver cases as
+calibration, not as a claim of human judgment.

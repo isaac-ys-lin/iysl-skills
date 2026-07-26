@@ -1,0 +1,18 @@
+{
+  "purpose": "test-heuristic-only",
+  "runtime_authoritative": false,
+  "recommended_threshold": 0.25,
+  "fallback_positive_concepts": ["animated_diagram", "svg_output", "relation_motion"],
+  "positive_concepts": {
+    "animated_diagram": {"weight": 0.45, "phrases": ["animated svg", "animated diagram", "explanatory diagram", "系統流程", "結構圖"]},
+    "svg_output": {"weight": 0.25, "phrases": ["svg", "mp4", "poster png", "可編輯"]},
+    "relation_motion": {"weight": 0.3, "phrases": ["motion", "relation", "因果", "流程"]}
+  },
+  "negative_concepts": {
+    "single_image": {"weight": 0.6, "exclusive": true, "phrases": ["海報圖片", "single image"]},
+    "review_only": {"weight": 0.6, "exclusive": true, "phrases": ["review", "只回報問題"]},
+    "writing_only": {"weight": 0.6, "exclusive": true, "phrases": ["潤稿"]},
+    "deck_export": {"weight": 0.8, "exclusive": true, "phrases": ["powerpoint", "pptx", "keynote"]}
+  },
+  "exclusive_negative_concepts": ["single_image", "review_only", "writing_only", "deck_export"]
+}

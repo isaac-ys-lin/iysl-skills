@@ -32,13 +32,13 @@ installs are copied snapshots; they do not follow local source changes.
 
 ## Included Skills
 
-- `iysl-anidiagram` — create animated explanatory diagrams.
-- `iysl-clarify` — may trigger implicitly when material user intent is missing.
-- `iysl-deckab` — create source-faithful deck and prompt workflows.
-- `iysl-sync` — keep confirmed decisions and progress in one concise living plan.
-- `iysl-ytdlp-html-report` — turn a single public video URL into a Traditional Chinese HTML reading report.
-- `equity-data` — collect and label source-backed public-equity data packs before analysis.
-- `repo-research-packager` — curate a repository into a focused Markdown handoff for another AI.
+- `iysl-anidiagram` — turn a supported claim or relation into a source-faithful animated SVG, MP4, and PNG, with render checks.
+- `iysl-clarify` — resolve only material intent, scope, authority, safety, or success-criteria ambiguity before an actionable change.
+- `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
+- `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
+- `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
+- `equity-data` — collect and reconcile source-backed public-equity inputs for explicit evidence-pack or owner-requested workflows, not routine issuer Q&A.
+- `repo-research-packager` — curate one self-contained Markdown handoff for an AI without repository access; it is not an ordinary architecture review.
 
 ## Structure
 

@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "simple-flow-inline",
+      "kind": "simple",
+      "prompt": "把三步流程做成一張動畫 SVG，附 MP4 與 PNG。",
+      "expected": {"max_questions": 0, "max_subagents": 0, "must_do": ["choose one composition", "run render_svg.py --check"]}
+    },
+    {
+      "id": "specified-style-no-ceremony",
+      "kind": "simple",
+      "prompt": "用使用者指定的黑底 mono style 做 diagram，不要提出其他方向。",
+      "expected": {"max_questions": 0, "max_subagents": 0, "must_not_do": ["force multiple style proposals"]}
+    },
+    {
+      "id": "neutral-structure",
+      "kind": "negative",
+      "prompt": "這份 reference list 沒有 claim，但請整理成不帶因果的中立結構圖。",
+      "expected": {"max_questions": 0, "must_do": ["preserve descriptive neutrality"]}
+    },
+    {
+      "id": "validator-repair",
+      "kind": "failure",
+      "prompt": "第一版 SVG 的 structural validator 報告 forbidden external resource。",
+      "expected": {"must_do": ["repair the reported failure", "rerun render_svg.py --check"], "must_not_do": ["deliver before the hard gate passes"]}
+    },
+    {
+      "id": "high-value-variants",
+      "kind": "quality",
+      "prompt": "這是高價值外部交付，請給兩個真正不同的視覺與空間方向並做 blind review。",
+      "expected": {"must_do": ["use meaningful visual and spatial divergence", "review poster and sampled frames"], "max_subagents": 3}
+    }
+  ]
+}

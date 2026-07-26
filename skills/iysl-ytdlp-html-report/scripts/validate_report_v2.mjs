@@ -2,7 +2,13 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const BLOCK_TYPES = new Set(["process", "comparison", "control-gap", "actions", "key-points", "food-for-thought"]);
+const BLOCK_TYPES = new Set(["narrative", "process", "comparison", "control-gap", "actions", "key-points", "food-for-thought"]);
+const REQUIRED_READER_SECTIONS = [
+  ["內容重述", new Set(["narrative", "process", "comparison", "control-gap"])],
+  ["洞見", new Set(["key-points"])],
+  ["food for thoughts", new Set(["food-for-thought"])],
+  ["可行啟發", new Set(["actions"])],
+];
 const CLAIM_TYPES = new Set(["speaker_claim", "report_synthesis", "open_question"]);
 const TRANSCRIPT_KINDS = new Set(["native_captions", "auto_captions", "audio_asr"]);
 const LOCAL_PATH = /(?:file:\/\/|(?:^|[\s"'(])\/(?!\/)\S+|(?:^|[\s"'(])[A-Za-z]:[\\/]\S*)/i;
@@ -17,10 +23,20 @@ function hasText(value) {
 
 function isSafeMediaUrl(value) {
   if (!hasText(value)) return false;
-  if (/^https?:\/\//i.test(value)) return true;
+  if (/^https?:\/\//i.test(value)) return isSafeHttpUrl(value);
   if (/^(?:file:|\/|[A-Za-z]:[\\/])/i.test(value) || value.includes("\\")) return false;
   if (value.split("/").includes("..")) return false;
   return /^[A-Za-z0-9._~!$&'()+,;=@%/-]+$/.test(value);
+}
+
+function isSafeHttpUrl(value) {
+  if (!hasText(value) || /[\s\u0000-\u001f\u007f]/.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === "http:" || parsed.protocol === "https:") && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
 }
 
 function requireKeys(object, allowed, required, at, errors) {
@@ -94,8 +110,8 @@ export function validateReportV2(spec) {
   const sourceAllowed = ["video_id", "url", "channel", "duration", "thumbnail_url", "transcript_kind"];
   if (requireKeys(spec.source, sourceAllowed, ["video_id", "url", "transcript_kind"], "$.source", errors)) {
     if (!hasText(spec.source.video_id)) errors.push("$.source.video_id 必須是非空字串");
-    if (!hasText(spec.source.url) || !/^https?:\/\//i.test(spec.source.url)) {
-      errors.push("$.source.url 必須是 http(s) URL");
+    if (!isSafeHttpUrl(spec.source.url)) {
+      errors.push("$.source.url 必須是無空白、換行或憑證的 http(s) URL");
     }
     if ("thumbnail_url" in spec.source && !isSafeMediaUrl(spec.source.thumbnail_url)) {
       errors.push("$.source.thumbnail_url 必須是 http(s) URL 或不含 traversal 的安全相對路徑");
@@ -123,6 +139,7 @@ export function validateReportV2(spec) {
     errors.push("$.blocks 必須至少有一個 adaptive block");
   } else {
     const blockIds = new Set();
+    const presentBlockTypes = new Set();
     spec.blocks.forEach((block, index) => {
       const at = `$.blocks[${index}]`;
       if (!isObject(block)) {
@@ -133,8 +150,10 @@ export function validateReportV2(spec) {
         errors.push(`${at}.type 不受支援；v2 first slice 禁止 chart`);
         return;
       }
+      presentBlockTypes.add(block.type);
       const common = ["id", "type", "title", "summary", "claim_type", "evidence_refs"];
       const typeFields = {
+        narrative: ["paragraphs"],
         process: ["nodes"],
         comparison: ["columns", "rows"],
         "control-gap": ["rows"],
@@ -151,7 +170,9 @@ export function validateReportV2(spec) {
       if (!CLAIM_TYPES.has(block.claim_type)) errors.push(`${at}.claim_type 不受支援`);
       validateRefs(block.evidence_refs, `${at}.evidence_refs`, evidenceIds, errors);
 
-      if (block.type === "process") {
+      if (block.type === "narrative") {
+        validateItems(block.paragraphs, `${at}.paragraphs`, ["text", "evidence_refs"], ["text", "evidence_refs"], evidenceIds, errors);
+      } else if (block.type === "process") {
         validateItems(block.nodes, `${at}.nodes`, ["label", "detail", "evidence_refs"], ["label", "evidence_refs"], evidenceIds, errors);
       } else if (block.type === "comparison") {
         if (!Array.isArray(block.columns) || block.columns.length < 2 || block.columns.some((value) => !hasText(value))) {
@@ -175,6 +196,11 @@ export function validateReportV2(spec) {
         validateItems(block.items, `${at}.items`, ["prompt", "context", "evidence_refs"], ["prompt", "evidence_refs"], evidenceIds, errors);
       }
     });
+    for (const [sectionTitle, acceptedTypes] of REQUIRED_READER_SECTIONS) {
+      if (![...acceptedTypes].some((type) => presentBlockTypes.has(type))) {
+        errors.push(`$.blocks 缺少 reader-facing 章節：${sectionTitle}`);
+      }
+    }
   }
 
   validateReaderStrings(spec, "$", errors);

@@ -1,6 +1,6 @@
 interface:
   display_name: "iysl-ytdlp-html-report"
-  short_description: "Watch-equivalent video brief with transcript-derived visuals."
-  default_prompt: "Use $iysl-ytdlp-html-report to turn one public video into a watch-equivalent Traditional Chinese brief with key points, transcript-derived explanatory visuals, and food for thoughts."
+  short_description: "Transcript-first Traditional Chinese video report with verification sidecar."
+  default_prompt: "Use $iysl-ytdlp-html-report for one public video: produce a transcript-grounded v2 Traditional Chinese Markdown/HTML report and a separate verification sidecar."
 policy:
   allow_implicit_invocation: true

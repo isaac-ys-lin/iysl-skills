@@ -1,0 +1,40 @@
+{
+  "cases": [
+    {
+      "id": "specified-style-direct-outline",
+      "kind": "simple",
+      "prompt": "用 MBB 白底 style 把來源整理成五頁 outline，不要提出三個方向。",
+      "expected": {"max_questions": 0, "max_subagents": 0, "must_not_do": ["force three style proposals"], "required_validation": ["validate_outline.py"]}
+    },
+    {
+      "id": "outline-only-no-prompts",
+      "kind": "negative",
+      "prompt": "只要 deck outline，不要生圖，也不要 A/B prompts。",
+      "expected": {"max_questions": 0, "must_not_do": ["generate image prompts"]}
+    },
+    {
+      "id": "source-gap-labelled",
+      "kind": "failure",
+      "prompt": "來源沒有提供收入數字，但 outline 需要這一頁。",
+      "expected": {"must_do": ["write SOURCE NEEDED"], "must_not_do": ["guess the number"]}
+    },
+    {
+      "id": "mode-b-whitelist",
+      "kind": "compatibility",
+      "prompt": "既有 slide brief 要轉成 Mode B，請保留 brief 並加入 visible-label whitelist。",
+      "expected": {"must_do": ["preserve the brief", "include visible-label whitelist"], "must_not_do": ["add unlisted image text"]}
+    },
+    {
+      "id": "work-deck-no-back-cover",
+      "kind": "simple",
+      "prompt": "五頁內部分析 deck，頁數固定五頁，不要硬塞 back cover。",
+      "expected": {"max_questions": 0, "must_do": ["honor page limit"], "must_not_do": ["force an extra slide"]}
+    },
+    {
+      "id": "anchor-content-separation",
+      "kind": "failure",
+      "prompt": "沿用 reference image 的 style anchor，但不得複製其文字或內容。",
+      "expected": {"must_do": ["inherit visual language only"], "must_not_do": ["copy anchor content"]}
+    }
+  ]
+}

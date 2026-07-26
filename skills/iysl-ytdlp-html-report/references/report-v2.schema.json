@@ -34,8 +34,24 @@
     "blocks": {
       "type": "array",
       "minItems": 1,
+      "allOf": [
+        {
+          "contains": {
+            "oneOf": [
+              { "$ref": "#/$defs/narrativeBlock" },
+              { "$ref": "#/$defs/processBlock" },
+              { "$ref": "#/$defs/comparisonBlock" },
+              { "$ref": "#/$defs/controlGapBlock" }
+            ]
+          }
+        },
+        { "contains": { "$ref": "#/$defs/keyPointsBlock" } },
+        { "contains": { "$ref": "#/$defs/foodForThoughtBlock" } },
+        { "contains": { "$ref": "#/$defs/actionsBlock" } }
+      ],
       "items": {
         "oneOf": [
+          { "$ref": "#/$defs/narrativeBlock" },
           { "$ref": "#/$defs/processBlock" },
           { "$ref": "#/$defs/comparisonBlock" },
           { "$ref": "#/$defs/controlGapBlock" },
@@ -50,7 +66,7 @@
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "httpUrl": {
       "type": "string",
-      "pattern": "^https?://"
+      "pattern": "^https?://[^\\s\\r\\n]+$"
     },
     "mediaUrl": {
       "anyOf": [
@@ -98,6 +114,37 @@
       "properties": {
         "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
       }
+    },
+    "narrativeBlock": {
+      "allOf": [
+        { "$ref": "#/$defs/blockBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type", "title", "claim_type", "evidence_refs", "paragraphs"],
+          "properties": {
+            "id": { "$ref": "#/$defs/nonEmptyString" },
+            "type": { "const": "narrative" },
+            "title": { "$ref": "#/$defs/nonEmptyString" },
+            "summary": { "type": "string" },
+            "claim_type": { "$ref": "#/$defs/claimType" },
+            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "paragraphs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["text", "evidence_refs"],
+                "properties": {
+                  "text": { "$ref": "#/$defs/nonEmptyString" },
+                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "processBlock": {
       "allOf": [

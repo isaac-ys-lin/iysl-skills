@@ -1,0 +1,20 @@
+{
+  "recommended_threshold": 0.25,
+  "should_trigger": [
+    {"text": "整理 NVDA 最新 10-Q、IR、consensus 與 source ledger。", "family": "explicit_evidence_pack", "expected_route": "equity-data"},
+    {"text": "以 initiating-coverage 為 owner，先收集 filings、estimates、transcripts 與 market data。", "family": "owner_requested_inputs", "expected_route": "equity-data"},
+    {"text": "核對兩家 provider 的 EPS consensus 定義與 as-of date。", "family": "provider_reconciliation", "expected_route": "equity-data"},
+    {"text": "Build a source-backed public-equity evidence pack with freshness and conflicts.", "family": "explicit_evidence_pack", "expected_route": "equity-data"}
+  ],
+  "should_not_trigger": [
+    {"text": "Apple 最新一季營收多少？", "family": "routine_issuer_question", "expected_route": "direct"},
+    {"text": "幫我寫 NVDA 投資 thesis。", "family": "thesis_writing", "expected_route": "public-equity-owner"},
+    {"text": "幫我做 DCF。", "family": "valuation", "expected_route": "public-equity-owner"},
+    {"text": "今天股價為什麼跌？", "family": "market_question", "expected_route": "direct"},
+    {"text": "幫我決定建倉比例。", "family": "trade_decision", "expected_route": "public-equity-owner"}
+  ],
+  "near_neighbor": [
+    {"text": "投資 thesis 已完成，只要幫我潤稿成繁中。", "family": "thesis_polish", "expected_route": "writing"},
+    {"text": "比較兩個 DCF 假設並推薦一個。", "family": "model_decision", "expected_route": "public-equity-owner"}
+  ]
+}

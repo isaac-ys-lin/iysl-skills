@@ -1,0 +1,34 @@
+{
+  "purpose": "test-heuristic-only",
+  "runtime_authoritative": false,
+  "recommended_threshold": 0.30,
+  "fallback_positive_concepts": ["blind_handoff", "repository_evidence"],
+  "positive_concepts": {
+    "blind_handoff": {
+      "weight": 0.60,
+      "phrases": ["another AI", "receiver cannot access", "research handoff", "self-contained Markdown", "handoff"]
+    },
+    "repository_evidence": {
+      "weight": 0.40,
+      "phrases": ["repository", "repo", "evidence", "相對路徑", "evidence gaps"]
+    }
+  },
+  "negative_concepts": {
+    "ordinary_review": {
+      "weight": 0.70,
+      "exclusive": true,
+      "phrases": ["architecture review", "code review", "review 目前 diff"]
+    },
+    "shipped_artifact": {
+      "weight": 0.70,
+      "exclusive": true,
+      "phrases": ["可發布的 artifact", "ship artifact", "deployment"]
+    },
+    "zip_only": {
+      "weight": 0.60,
+      "exclusive": true,
+      "phrases": ["ZIP", "壓成 ZIP", "zip only"]
+    }
+  },
+  "exclusive_negative_concepts": ["ordinary_review", "shipped_artifact", "zip_only"]
+}

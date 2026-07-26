@@ -1,59 +1,50 @@
 ---
 name: equity-data
-description: Prepare source-backed evidence packs for Public Equity Investing workflows using filings, issuer materials, authorized provider exports or user-supplied account data, and gap-led public web research. Use when a listed issuer, ticker, watchlist, model, earnings task, memo, pitch, catalyst, thesis, or risk workflow needs collected, labeled, freshness-aware inputs before analysis; this is a support layer, not the owner of valuation, recommendations, model construction, or trade decisions.
+description: Collect, verify, and reconcile source-backed public-equity inputs when the user explicitly requests a data or evidence pack, or when an owning investment workflow needs filings, estimates, market data, transcripts, or research inputs. Do not use for routine issuer questions, valuation, thesis writing, recommendations, model construction, or trade decisions.
 ---
 
 # Equity Data
 
-## Role
+## Intent
 
-Prepare the smallest reliable evidence pack needed by an owning Public Equity Investing workflow.
+Prepare the smallest reliable evidence pack for the owning Public Equity
+Investing workflow. The owner, not this support layer, decides valuation,
+thesis, model construction, recommendation, sizing, and trades.
 
-When a plugin workflow is already selected, follow its input needs and preserve it as the owner. If no owner is clear, collect a baseline suitable for `company-tearsheet`, recommend the next workflow, and ask only when the choice would materially change what must be collected.
+## Use and boundaries
 
-## Principles
+- Use for an explicit data/evidence-pack request or an owner-requested input
+  collection pass; do not intercept a routine issuer fact question or thesis.
+- Start from the decision and minimum input set. Let the plugin router own
+  category-to-provider mapping, concrete routes, and provider guides.
+- Read non-public, premium, account, or internal sources only when supplied or
+  explicitly authorized. Never inspect credentials or browser storage.
 
-- Start from the investment workflow and decision, then collect data. Do not build a universal company dossier by default.
-- Prefer the source closest to the claim: filings and regulators, issuer IR and transcripts, timestamped providers, authorized internal research, then public news or social sources as leads.
-- Treat provider-standardized fundamentals, consensus, ratings, targets, and factor scores as separate evidence classes. Never promote an aggregator value to an issuer-reported fact or merge unlike provider universes into one consensus.
-- When embedded, let the plugin router own category-to-provider mapping, concrete routes, and provider guides; do not substitute routes or add setup gates. Outside plugin-managed routes, confirm permission before reading non-public sources.
-- Keep facts, provider-standardized data, management claims, consensus, calculations, and assumptions distinct. Track freshness, conflicts, and missing evidence separately.
-- Continue with a clearly limited or not-decision-ready pack when useful. Stop only when a missing input owns a required output and cannot be reliably supplied or inferred.
-- Keep the evidence pack subordinate to the plugin's investor-facing artifact. Do not make valuation, thesis, recommendation, sizing, or trade decisions.
+## Invariants
 
-## Workflow
+- Prefer the source closest to the claim and keep issuer facts, provider data,
+  consensus, management claims, calculations, and assumptions distinct.
+- Preserve source IDs, freshness, provider vintage, definitions, conflicts,
+  gaps, route status, permission, and retrieval evidence.
+- Treat search results and snippets as discovery only; open and verify the
+  underlying source before relying on a material claim.
+- Reconcile conflicts without averaging unlike vintages; do not average them
+  away or synthesize a consensus across provider universes.
+- Keep the evidence pack subordinate to the owner's investor-facing artifact.
+- Do not automate retrieval or bypass paywalls, login, CAPTCHA, robots rules,
+  or provider terms. For Seeking Alpha, use a user-provided excerpt,
+  screenshot, or export and record `route_status=terms_blocked` when needed.
 
-1. Confirm the issuer/security, owning workflow, decision use, and data cut-off. For non-US, dual-listed, or ADR issuers, also capture the home listing, reporting regime, currency, accounting standard, and share/ADR relationship when relevant.
-2. Define the minimum input set from the owning workflow. Gather only the needed plugin categories:
-   - `company_filings_ir`
-   - `earnings_transcripts_presentations`
-   - `market_data_estimates`
-   - `portfolio_models_trackers`
-   - `internal_research`
-3. Resolve the source route and record every attempt. Prefer a callable provider selected by the plugin; otherwise use user-provided exports or excerpts, then primary-source-first public web research. Treat search results and snippets as discovery only until the underlying page is opened and verified.
-4. Build a source ledger before relying on extracted values. For each material source, retain a source ID, provider/document, source kind, category, access mode, permission, route status, period or provider as-of date, retrieval time and timezone, location, freshness, confidence, intended use, and fallback reason when applicable.
-5. Record material items with value/unit, definition and provider universe, period or as-of date, evidence nature, source IDs, confidence, freshness, conflict or gap status, and downstream use. A screenshot, excerpt, or export changes the access mode, not the evidence nature: provider consensus remains consensus and a proprietary score remains a provider score. For consensus or price targets, also retain the listing/currency, analyst population, statistic, lookback, forecast horizon, low/high when available, and whether estimates are GAAP or normalized.
-6. Reconcile conflicts using the source closest to the claim. Preserve unresolved provider vintages and definitions as separate rows; do not average them away. For public inference, cite the inputs and show the calculation or reasoning; never reconstruct inaccessible or paywalled content.
-7. For a substantial embedded pass, preserve the plugin's canonical `owning_workflow`, `decision_impact`, `readiness_effect`, `artifact_role=embedded_support_artifact`, and `hidden_unless_requested=true` fields. Pass the ledger to the owner in internal context or a support artifact, but keep it out of the reader-facing artifact unless requested. For standalone collection, use `owning_workflow=standalone_support_request`, `artifact_role=standalone_support_artifact`, and expose the requested data pack.
+## Adaptive execution
 
-## Evidence And Readiness
+Collect only what the owner needs, continue with clearly labeled gaps when the
+missing input is non-critical, and stop only when a conclusion-blocking input
+cannot be supplied reliably. Read `references/source-map.md` for provider and
+workflow detail; use the templates for the source ledger and data matrix.
 
-When embedded, inherit the owning workflow's evidence and readiness contract. For a standalone pack, use the plugin-compatible labels in the collected-data template and keep evidence nature separate from freshness, conflict, and gap status.
+## Handoff and validation
 
-For structured embedded handoffs, use the owning workflow's `readiness_effect`. In reader-facing output, describe practical limitations in decision-specific, investor-readable language rather than implying the entire underwrite is ready.
-
-## Boundaries
-
-- Outside a plugin-managed route, use public sources by default and use premium, internal, local, portfolio, or account sources only when the user supplies or explicitly authorizes them.
-- Do not inspect credentials, cookies, browser storage, unrelated local files, or entitlement mechanisms; do not bypass paywalls or reproduce restricted article bodies.
-- Obey provider terms. Do not automate retrieval from a site that prohibits robots, scraping, data mining, or systematic extraction. For Seeking Alpha, use a user-provided excerpt, screenshot, or export for account-only fields; use its public help pages only for methodology and provenance. If no compliant export or callable licensed route exists, record `route_status=terms_blocked` and continue with public sources.
-- Keep provider content minimal: capture values, field labels, dates, definitions, and locators needed for the evidence pack, not article bodies or substitute summaries. Do not transmit restricted content to another service.
-- Stop a provider route on login, CAPTCHA, payment, permission, robot challenge, or entitlement failure. A public fallback receives a new source ID, access mode, availability, and confidence; it never inherits authenticated-provider status.
-- Do not normalize messy financials, build models, calculate intrinsic value, write the final memo or pitch, or recommend a position. Hand those jobs to the relevant Public Equity Investing owner.
-
-## Resources
-
-- Read `references/source-map.md` for plugin categories, source hierarchy, provider/web routing, Seeking Alpha field mapping, and workflow-specific minimum inputs.
-- Use `templates/source-ledger.md` for source-level provenance.
-- Use `templates/collected-data-matrix.md` for material facts, estimates, assumptions, conflicts, and gaps.
-- Use `templates/data-request-checklist.md` only to request missing decision-relevant inputs.
+For embedded work, preserve the owner's canonical handoff fields and keep the
+ledger hidden from reader-facing output by default. For standalone work, expose
+the requested pack. Verify provenance, freshness, conflicts, gaps, permissions,
+and evidence nature before handing the pack back.

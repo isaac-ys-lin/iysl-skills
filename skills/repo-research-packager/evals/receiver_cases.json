@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": "small-cli",
+      "receiver_questions": ["產品用途", "primary flow", "evidence gaps"],
+      "ground_truth_terms": ["entrypoint", "validation", "tests"]
+    },
+    {
+      "id": "multi-module-app",
+      "receiver_questions": ["relevant architecture", "current behavior", "failure behavior"],
+      "ground_truth_terms": ["module", "state", "failure"]
+    },
+    {
+      "id": "generated-and-secret",
+      "receiver_questions": ["what was excluded", "safe evidence", "open questions"],
+      "ground_truth_terms": ["excluded", "secret", "generated"]
+    }
+  ]
+}
