@@ -38,7 +38,6 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
 - `equity-data` — collect and reconcile source-backed public-equity inputs for explicit evidence-pack or owner-requested workflows, not routine issuer Q&A.
-- `repo-research-packager` — curate one self-contained Markdown handoff for an AI without repository access; it is not an ordinary architecture review.
 
 ## Structure
 

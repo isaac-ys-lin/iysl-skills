@@ -13,7 +13,6 @@ EXPECTED_SKILLS = {
     "iysl-deckab",
     "iysl-sync",
     "iysl-ytdlp-html-report",
-    "repo-research-packager",
 }
 # .DS_Store is ignored at the repository and skill levels, so Finder metadata
 # cannot enter the published package. Keep this gate focused on generated files

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Repo Research Packager"
-  short_description: "Self-contained Markdown handoff for an AI without repo access"
-  default_prompt: "Use $repo-research-packager to package this repository into a focused Taiwan Traditional Chinese Markdown research handoff for another AI."

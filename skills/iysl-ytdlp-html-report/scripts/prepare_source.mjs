@@ -36,6 +36,9 @@ export function buildSourceManifest({
   subtitlePath = null,
   captureStatus,
   asr = null,
+  sourceLanguage = null,
+  subtitleCatalog = null,
+  subtitleSelection = null,
 }) {
   return {
     id,
@@ -45,6 +48,12 @@ export function buildSourceManifest({
     subtitle: subtitlePath,
     capture_status: captureStatus,
     subtitle_status: subtitlePath ? "available" : "unavailable",
+    source_language: sourceLanguage,
+    available_subtitles: subtitleCatalog,
+    subtitle_language: subtitleSelection?.selected_language || null,
+    subtitle_kind: subtitleSelection?.selected_kind || null,
+    subtitle_is_fallback: subtitleSelection?.is_fallback_language ?? false,
+    subtitle_selection: subtitleSelection,
     ...(asr ? {
       transcription_method: asr.method || "local ASR",
       asr_backend: asr.backend || "unknown",
@@ -58,7 +67,7 @@ export function buildSourceManifest({
 
 function usage(exitCode = 2) {
   console.error([
-    "用法：prepare_source.mjs <公開單支影片 URL> --out-dir <run-dir> [--asr auto|local-qwen|none]",
+    "用法：prepare_source.mjs <公開單支影片 URL> --out-dir <run-dir> [--asr auto|local-qwen|none] [--langs <字幕語言>]",
     "選項：--model <model>、--allow-model-download、--no-opencc",
     "prepare_source 不接受 cookies-from-browser，也不讀取 browser credentials。",
   ].join("\n"));
@@ -71,6 +80,7 @@ function parseArgs(args) {
     url: args[0],
     outDir: "video-report-run",
     asr: "auto",
+    langs: null,
     model: DEFAULT_MODEL,
     allowModelDownload: false,
     noOpencc: false,
@@ -82,6 +92,7 @@ function parseArgs(args) {
     }
     if (arg === "--out-dir") options.outDir = args[++index] || usage();
     else if (arg === "--asr") options.asr = args[++index] || usage();
+    else if (arg === "--langs") options.langs = args[++index] || usage();
     else if (arg === "--model") options.model = args[++index] || usage();
     else if (arg === "--allow-model-download") options.allowModelDownload = true;
     else if (arg === "--no-opencc") options.noOpencc = true;
@@ -178,6 +189,9 @@ function prepareWithLocalQwen(options, manifestPath) {
     transcriptPath,
     subtitlePath: null,
     captureStatus: "audio-asr-ready",
+    sourceLanguage: manifest.source_language || null,
+    subtitleCatalog: manifest.available_subtitles || null,
+    subtitleSelection: manifest.subtitle_selection || null,
     asr: {
       method: metadata.transcription_method,
       backend: metadata.asr_backend,
@@ -201,7 +215,9 @@ export function main(args = process.argv.slice(2)) {
   const outDir = path.resolve(options.outDir);
   mkdirSync(outDir, { recursive: true });
   const extractor = path.join(SCRIPT_DIR, "extract_transcript.mjs");
-  const extracted = run(process.execPath, [extractor, options.url, "--out-dir", outDir]);
+  const extractorArgs = [extractor, options.url, "--out-dir", outDir];
+  if (options.langs) extractorArgs.push("--langs", options.langs);
+  const extracted = run(process.execPath, extractorArgs);
   const manifestPath = findManifest(outDir);
   if (extracted.status === 0) {
     if (!manifestPath) throw new Error("字幕抽取成功但找不到 source manifest。");
