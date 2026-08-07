@@ -37,8 +37,10 @@ whose composition and motion make the relation easier to understand.
    that relation. Produce one candidate by default.
 3. Run the renderer's structural and output checks. Fix the reported failure,
    then inspect the poster and a complexity-appropriate sample of frames.
-4. Deliver `diagram.svg`, MP4, and poster PNG when those formats are requested
-   or supported by the output contract. Stop once acceptance is met.
+4. Deliver the editable `diagram.svg`, MP4, and poster PNG as the default
+   verified bundle; add GIF only when requested. If browser rendering or ffmpeg
+   is unavailable, report the missing dependency instead of delivering a
+   partially verified bundle. Stop once acceptance is met.
 
 Escalate to additional candidates, subagents, blind review, or deeper frame
 sampling only for an explicit variants request, materially ambiguous visual

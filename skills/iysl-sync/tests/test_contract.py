@@ -40,6 +40,18 @@ class SyncContractTest(unittest.TestCase):
             self.assertIn(phrase, self.template)
         self.assertIn("template is a default shape, not a checklist", self.skill)
 
+    def test_completed_plan_lifecycle_stays_concise(self):
+        normalized_skill = re.sub(r"\s+", " ", self.skill)
+        for phrase in (
+            "At completion, replace the working plan with a concise final-state record",
+            "remove superseded content, stale execution detail, and resolved blockers",
+            "docs/plans/archive/<original-filename>.md",
+            "Keep only active plans in the active-plan location",
+            "Archive superseded or abandoned plans by the same rule",
+        ):
+            self.assertIn(phrase, normalized_skill)
+        self.assertNotIn("Keep completed plans at their original paths", normalized_skill)
+
     def test_eval_corpus_covers_routes_and_hijack_guard(self):
         self.assertGreaterEqual(len(self.cases["should_trigger"]), 6)
         negatives = self.cases["should_not_trigger"]

@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
-ALLOWED_UNPREFIXED_SKILLS = {"equity-data"}
+ALLOWED_UNPREFIXED_SKILLS = {"equity-data", "writing-great-skills"}
 
 
 class SkillInventoryTest(unittest.TestCase):

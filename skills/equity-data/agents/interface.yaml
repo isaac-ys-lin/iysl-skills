@@ -1,7 +1,7 @@
 interface:
   display_name: "Equity Data"
-  short_description: "Verified filings, provider data, and public research"
-  default_prompt: "Use $equity-data with @public-equity-investing to prepare a source-backed initiation pack from filings, my supplied provider snapshot, and public web research."
+  short_description: "Default evidence collection for public-equity analysis"
+  default_prompt: "Pair $equity-data with @public-equity-investing by default; collect filings, market data, public sources, and Seeking Alpha Chat evidence before investor analysis."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:

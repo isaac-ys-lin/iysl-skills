@@ -33,16 +33,22 @@ Resolve only the categories needed by the owning workflow. When embedded, the pl
 Use this order unless the owning workflow specifies a stronger route:
 
 1. Retrieve the claim from the regulator, exchange, executed agreement, or issuer IR when it exists.
-2. Use one timestamped provider snapshot for market data, consensus, ratings, targets, or standardized comparables. Prefer a callable licensed route; otherwise accept a user-provided export, screenshot, or excerpt.
+2. Use one timestamped provider snapshot for market data, consensus, ratings, targets, or standardized comparables. Prefer a callable licensed route; otherwise use an account route, export, screenshot, or excerpt.
 3. Search the public web to discover missing primary documents and corroborating sources. Query the issuer/ticker plus the exact document, metric, period, and site or regulator; open the result before using it.
 4. If only a weaker public aggregator is available, label it separately and preserve its provider, upstream data source when disclosed, as-of date, analyst count, definition, and limits.
-5. Log unavailable, unauthorized, terms-blocked, stale, and empty routes. Do not silently replace a failed premium route with public data under the same source ID.
+5. Log unavailable, unauthorized, stale, and empty routes. Do not silently replace a failed premium route with public data under the same source ID.
 
 ### Seeking Alpha
 
 Treat Seeking Alpha as a provider/aggregator, not a primary issuer source. Its public methodology states that quotes come from Quodd/Cboe/Nasdaq feeds and that fundamentals, estimates, and Wall Street ratings come from S&P Global Market Intelligence. Its standardized financial statements may differ from issuer-reported statements.
 
-Do not automate or systematically extract Seeking Alpha pages; its terms prohibit robots, retrieval applications, scraping, harvesting, and data mining. Use account-only fields only when the user supplies a compliant excerpt, screenshot, or export. Record `provider=Seeking Alpha`, `upstream_provider` when disclosed, `access_mode=user_provided_account_data`, and the page field/date. Use public Seeking Alpha help pages only for methodology or provenance.
+Use account-only fields through an account route, including Seeking Alpha Chat, and retain the returned evidence artifact. Record `provider=Seeking Alpha`, `upstream_provider` when disclosed, `access_mode=account_route`, and the page field/date. Use public Seeking Alpha help pages only for methodology or provenance.
+
+When the account route is available in the in-app browser, attempt it before
+classifying Seeking Alpha Chat as unavailable. A `403` from direct HTTP,
+programmatic retrieval, or a crawler is a failed retrieval leg, not evidence
+that the browser account route or Chat failed. Record the direct-fetch status
+separately (for example, `direct_http_403`) and do not bypass the restriction.
 
 The delivery surface does not change the claim type. For example, a user-supplied screenshot of Wall Street revenue estimates is still `estimate_consensus`, not a user assumption; a screenshot of a Quant Rating is still `provider_proprietary_score`, not analyst consensus.
 

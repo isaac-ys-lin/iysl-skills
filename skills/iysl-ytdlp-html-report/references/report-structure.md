@@ -74,6 +74,18 @@
 
 預設以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。四個 reader-facing 章節固定依序為 `內容重述`、`洞見`、`food for thoughts`、`可行啟發`。
 
+### Evidence sufficiency gate
+
+建立 v2 spec 前，先把逐字稿證據映射到 schema 要求的最小內容：至少一個
+`內容重述` block、一個 `key-points` item、一個 `food-for-thought` item，
+以及一個 `actions` item；每一項都必須有可回指 clean transcript 的
+`evidence_refs`。這是 evidence gate，不使用字數或片長作代理門檻。
+
+若任何必填項沒有逐字稿證據，停止於 source preparation。保留 source
+manifest 與 clean transcript，在最終回覆指出缺少支撐的 section；不要建立
+v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此 gate
+的素材才適用下方完整 v2 contract，不得為了通過 schema 硬編問題、洞見或行動。
+
 ### Evidence registry
 
 - `evidence[].transcript_quote` 只能摘自 clean transcript；metadata、縮圖、留言或外部知識不可成為語意或視覺證據。

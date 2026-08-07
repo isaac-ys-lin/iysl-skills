@@ -10,7 +10,7 @@
       "id": "owner-driven-minimum-pack",
       "kind": "simple",
       "prompt": "以 initiating-coverage 為 owner，整理 NVDA 10-Q、IR、consensus 與 source ledger。",
-      "expected": {"max_questions": 0, "must_do": ["collect minimum decision-relevant inputs", "preserve provenance"]}
+      "expected": {"max_questions": 0, "must_do": ["collect minimum decision-relevant inputs", "preserve provenance", "preserve embedded handoff fields"]}
     },
     {
       "id": "provider-vintage-conflict",
@@ -19,10 +19,10 @@
       "expected": {"must_do": ["keep vintages separate", "record conflict"], "must_not_do": ["blend into synthetic consensus"]}
     },
     {
-      "id": "terms-blocked-fallback",
-      "kind": "failure",
-      "prompt": "Seeking Alpha 只剩登入後內容，沒有授權 export。",
-      "expected": {"must_do": ["record terms_blocked", "continue with compliant public sources"], "must_not_do": ["scrape or bypass paywall"]}
+      "id": "seeking-alpha-user-supplied-evidence",
+      "kind": "simple",
+      "prompt": "用我提供的 Seeking Alpha Portfolio 匯出與 Ratings 截圖整理 evidence pack。",
+      "expected": {"max_questions": 0, "must_do": ["record provider and access mode", "preserve as-of fields", "keep Quant, SA Author, and Wall Street ratings separate"], "must_not_do": ["promote provider evidence to primary issuer evidence"]}
     },
     {
       "id": "not-the-investment-owner",

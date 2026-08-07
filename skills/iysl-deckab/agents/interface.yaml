@@ -8,7 +8,7 @@ compatibility:
     - "openai"
     - "generic"
   activation:
-    mode: "manual"
+    mode: "implicit"
     paths: []
   execution:
     context: "inline"
@@ -18,5 +18,5 @@ compatibility:
     remote_inline_execution: "forbid"
     remote_metadata_policy: "allow-metadata-only"
   degradation:
-    openai: "metadata-adapter"
-    generic: "neutral-source"
+    openai: "native-implicit-skill"
+    generic: "description-routed"

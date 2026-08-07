@@ -4,7 +4,7 @@
       "id": "simple-flow-inline",
       "kind": "simple",
       "prompt": "把三步流程做成一張動畫 SVG，附 MP4 與 PNG。",
-      "expected": {"max_questions": 0, "max_subagents": 0, "must_do": ["choose one composition", "run render_svg.py --check"]}
+      "expected": {"max_questions": 0, "max_subagents": 0, "must_do": ["choose one composition", "run render_svg.py --check", "deliver the verified SVG, MP4, and PNG bundle"]}
     },
     {
       "id": "specified-style-no-ceremony",

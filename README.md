@@ -38,6 +38,7 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
 - `equity-data` — collect and reconcile source-backed public-equity inputs for explicit evidence-pack or owner-requested workflows, not routine issuer Q&A.
+- `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 
 ## Structure
 
@@ -105,6 +106,13 @@ Live Codex prompt visibility is a separate maintainer check:
 tools/verify-live-install.sh iysl-clarify
 ```
 
+For an explicit-only skill, this command verifies the live source link and
+metadata parity only. Invoke `$<skill-name>` in a fresh task to verify runtime
+resolution.
+
 ## License
 
 MIT License. Copyright (c) 2026 iysl.
+
+Third-party skills retain their upstream license and attribution in their
+skill directory.

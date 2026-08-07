@@ -1,24 +1,23 @@
 ---
 name: equity-data
-description: Collect, verify, and reconcile source-backed public-equity inputs when the user explicitly requests a data or evidence pack, or when an owning investment workflow needs filings, estimates, market data, transcripts, or research inputs. Do not use for routine issuer questions, valuation, thesis writing, recommendations, model construction, or trade decisions.
+description: Default evidence-collection support for every Public Equity Investing analysis, including a Seeking Alpha Chat pass, and for standalone evidence-pack requests covering filings, estimates, market data, transcripts, or research inputs. The owning investment workflow retains valuation, thesis, models, recommendations, and trade decisions.
 ---
 
 # Equity Data
 
 ## Intent
 
-Prepare the smallest reliable evidence pack for the owning Public Equity
-Investing workflow. The owner, not this support layer, decides valuation,
-thesis, model construction, recommendation, sizing, and trades.
+Prepare the smallest reliable evidence pack before the owning Public Equity
+Investing workflow makes investor judgments.
 
 ## Use and boundaries
 
-- Use for an explicit data/evidence-pack request or an owner-requested input
-  collection pass; do not intercept a routine issuer fact question or thesis.
+- Pair with `$public-equity-investing:public-equity-investing` for every listed-
+  equity analysis and run this collection pass before investor judgment.
 - Start from the decision and minimum input set. Let the plugin router own
   category-to-provider mapping, concrete routes, and provider guides.
-- Read non-public, premium, account, or internal sources only when supplied or
-  explicitly authorized. Never inspect credentials or browser storage.
+- Use non-public, premium, account, or internal sources through the available
+  account or internal route.
 
 ## Invariants
 
@@ -31,20 +30,24 @@ thesis, model construction, recommendation, sizing, and trades.
 - Reconcile conflicts without averaging unlike vintages; do not average them
   away or synthesize a consensus across provider universes.
 - Keep the evidence pack subordinate to the owner's investor-facing artifact.
-- Do not automate retrieval or bypass paywalls, login, CAPTCHA, robots rules,
-  or provider terms. For Seeking Alpha, use a user-provided excerpt,
-  screenshot, or export and record `route_status=terms_blocked` when needed.
 
-## Adaptive execution
+## Execution
 
-Collect only what the owner needs, continue with clearly labeled gaps when the
-missing input is non-critical, and stop only when a conclusion-blocking input
-cannot be supplied reliably. Read `references/source-map.md` for provider and
-workflow detail; use the templates for the source ledger and data matrix.
+1. Resolve the owning workflow, decision use, evidence cut-off, and minimum
+   input set. Read `references/source-map.md` when selecting sources. Proceed
+   when the required fields are clear enough to collect without widening scope.
+2. Collect the closest available evidence and include the standard Seeking
+   Alpha Chat pass from `references/seeking-alpha-intake.md`. Adapt its lookback
+   and fields to the decision; broaden only when the first pass is thin, stale,
+   or conflicting. Proceed when each requested input has evidence or a labeled
+   gap.
+3. Reconcile definitions, vintages, and conflicts, then build the smallest
+   handoff using the source-ledger and data-matrix templates. Finish when the
+   owner can trace every material input to a source ID and see each unresolved
+   gap.
 
 ## Handoff and validation
 
-For embedded work, preserve the owner's canonical handoff fields and keep the
-ledger hidden from reader-facing output by default. For standalone work, expose
-the requested pack. Verify provenance, freshness, conflicts, gaps, permissions,
-and evidence nature before handing the pack back.
+For embedded work, read `references/plugin-handoff.md`, preserve the owner's
+canonical handoff fields, and keep the ledger hidden from reader-facing output
+by default. For standalone work, expose the requested pack.

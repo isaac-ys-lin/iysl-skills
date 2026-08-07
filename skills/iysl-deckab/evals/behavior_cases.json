@@ -25,6 +25,12 @@
       "expected": {"must_do": ["preserve the brief", "include visible-label whitelist"], "must_not_do": ["add unlisted image text"]}
     },
     {
+      "id": "multi-stage-storage-route",
+      "kind": "complex",
+      "prompt": "把這份六頁 slide brief 產生 Mode A 與 Mode B prompts，並用同一張 style anchor 準備 API production pack。",
+      "expected": {"must_do": ["read artifact-storage.md", "create one run folder"]}
+    },
+    {
       "id": "work-deck-no-back-cover",
       "kind": "simple",
       "prompt": "五頁內部分析 deck，頁數固定五頁，不要硬塞 back cover。",

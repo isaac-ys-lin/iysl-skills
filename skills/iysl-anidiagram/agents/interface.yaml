@@ -8,7 +8,7 @@ compatibility:
   adapter_targets:
     - "openai"
   activation:
-    mode: "manual"
+    mode: "implicit"
     paths: []
   execution:
     context: "inline"
@@ -18,4 +18,4 @@ compatibility:
     remote_inline_execution: "forbid"
     remote_metadata_policy: "allow-metadata-only"
   degradation:
-    openai: "native-codex-skill-with-openai-metadata"
+    openai: "native-implicit-skill"

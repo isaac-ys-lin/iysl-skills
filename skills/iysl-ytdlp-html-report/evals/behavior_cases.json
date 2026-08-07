@@ -19,6 +19,12 @@
       "expected": {"must_stop": true, "must_do": ["report captions-unavailable and missing backend"], "must_not_do": ["generate a report"]}
     },
     {
+      "id": "insufficient-evidence-stop",
+      "kind": "failure",
+      "prompt": "逐字稿只有片頭問候，無法支撐洞見、思考題或可行啟發。",
+      "expected": {"must_stop": true, "must_do": ["retain the source manifest and clean transcript", "name the unsupported required section"], "must_not_do": ["create a v2 spec", "invent content to satisfy the schema"]}
+    },
+    {
       "id": "private-or-playlist-reject",
       "kind": "negative",
       "prompt": "整理一個私人影片或 playlist URL。",

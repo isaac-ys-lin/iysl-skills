@@ -59,12 +59,16 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("讀者與 operator 資訊分離", self.skill)
 
     def test_kami_composition_owns_formal_presentation_without_vendoring(self):
+        normalized_skill = " ".join(self.skill.split())
         self.assertIn("內容與 presentation 分工", self.skill)
         self.assertIn("唯一語意 handoff", self.skill)
         self.assertIn("presentation_backend", self.skill)
         self.assertIn("presentation_fallback_reason", self.skill)
         self.assertIn("不要硬編碼安裝路徑", self.skill)
-        self.assertIn("不要把 Kami 的 template、diagram、CSS、字型、reference 或 script 複製進本 skill", self.skill)
+        self.assertIn(
+            "不要把 Kami 的 template、diagram、CSS、字型、reference 或 script 複製進本 skill",
+            normalized_skill,
+        )
         self.assertIn("只保留一份 final report HTML", self.skill)
         self.assertNotIn("/path/to/kami", self.skill.lower())
 
@@ -79,6 +83,15 @@ class YtdlpReportContractTest(unittest.TestCase):
         positions = [self.skill.find(name) for name in SECTIONS]
         self.assertTrue(all(pos >= 0 for pos in positions), positions)
         self.assertEqual(positions, sorted(positions))
+
+    def test_insufficient_transcript_stops_before_reader_artifacts(self):
+        normalized_skill = " ".join(self.skill.split())
+        for phrase in (
+            "confirm the transcript can support every required v2 section",
+            "retain the manifest and clean transcript",
+            "create no v2 spec, reader report, or verification sidecar",
+        ):
+            self.assertIn(phrase, normalized_skill)
 
     def test_audio_fallback_is_local_qwen_first_with_clean_degradation(self):
         self.assertIn("Qwen/Qwen3-ASR-1.7B", self.skill)

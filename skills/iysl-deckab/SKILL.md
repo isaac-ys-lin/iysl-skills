@@ -16,9 +16,14 @@ prompt layer.
 
 - Use for deck outlines, slide briefs, Mode A/B image prompts, or a
   reference-image style anchor workflow.
-- Classify the input first. Read only the reference for the requested output:
-  `core-role.md`, `deck-outline-contract.md`, `image-prompt-workflow.md`, or
-  `artifact-storage.md`.
+- Classify the requested output first. For a deck outline or slide brief, read
+  both `references/core-role.md` and
+  `references/deck-outline-contract.md`. For Mode A/B prompts or an anchor
+  workflow, read `references/image-prompt-workflow.md`. Read
+  `references/artifact-storage.md` before writing when the user requests saved
+  artifacts, the deck exceeds three slides, subagents are used, both A/B modes
+  are produced, or the work includes API production, anchors, image generation,
+  or a second correction round.
 - Do not use for PPTX/Keynote export, one-off image generation, writing polish,
   asset search, or design critique only.
 
@@ -41,11 +46,14 @@ anchor is authoritative; do not reopen the choice. A work or analysis deck may
 omit a back cover when page count or purpose calls for it; an external sharing
 deck should close the narrative deliberately.
 
-Run `scripts/validate_outline.py` when producing the structured outline. Fix
-only reported contract failures, then stop when the requested artifact is
-source-faithful and complete. Offer multiple style directions, variants, or
-subagents only when requested, when preference is materially ambiguous, or
-when the first direction has a demonstrated quality gap.
+Run `scripts/validate_outline.py` when producing the structured outline and fix
+every reported structural failure. Then compare every claim, number, quote, and
+proper noun with the source, confirm unsupported material is marked
+`SOURCE NEEDED`, and apply the completion checks in `references/core-role.md`.
+Stop only after the structural and source-fidelity checks both pass. Offer
+multiple style directions, variants, or subagents only when requested, when
+preference is materially ambiguous, or when the first direction has a
+demonstrated quality gap.
 
 ## Validation and resources
 

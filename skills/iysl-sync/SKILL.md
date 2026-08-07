@@ -42,6 +42,15 @@ instruction and record the superseded decision only when the durable plan
 needs that context. At handoff, record the latest verified result, blocker, and
 next meaningful action, then stop.
 
+At completion, replace the working plan with a concise final-state record:
+retain only the final contract, outcome, material verification, and decisions
+still needed to explain the result; remove superseded content, stale execution
+detail, and resolved blockers. Move the record out of the active-plan location
+using the repository's archive convention, or
+`docs/plans/archive/<original-filename>.md` when none exists. Keep only active
+plans in the active-plan location. Archive superseded or abandoned plans by the
+same rule.
+
 ## Validation and resources
 
 Before completion, check that the plan has no known contradiction, reflects
