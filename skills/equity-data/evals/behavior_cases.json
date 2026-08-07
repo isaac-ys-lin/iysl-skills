@@ -13,6 +13,18 @@
       "expected": {"max_questions": 0, "must_do": ["collect minimum decision-relevant inputs", "preserve provenance", "preserve embedded handoff fields"]}
     },
     {
+      "id": "substantive-analysis-default-seeking-alpha-scan",
+      "kind": "simple",
+      "prompt": "以 initiating-coverage 分析 RKLB；先做一輪 bounded Seeking Alpha/Ask SA 掃描，再針對重要訊號收集 structured data 並驗證重大主張。",
+      "expected": {"max_questions": 0, "must_do": ["run bounded Seeking Alpha scan", "target decision-relevant structured fields", "verify material claims", "pass only decision-relevant findings"], "must_not_do": ["use a fixed metric checklist", "treat Ask SA as direct proof"]}
+    },
+    {
+      "id": "ask-sa-failure-does-not-disable-structured-data",
+      "kind": "failure",
+      "prompt": "Ask SA 沒有回覆，但 Seeking Alpha symbol page 的 estimates 與 ratings 仍可讀。",
+      "expected": {"must_do": ["record Ask SA failure separately", "use accessible structured data when relevant"], "must_not_do": ["classify all Seeking Alpha as unavailable"]}
+    },
+    {
       "id": "provider-vintage-conflict",
       "kind": "failure",
       "prompt": "兩家 provider 的 EPS consensus as-of date 不同。",

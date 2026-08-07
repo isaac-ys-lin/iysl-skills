@@ -37,7 +37,7 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
-- `equity-data` — collect and reconcile source-backed public-equity inputs for explicit evidence-pack or owner-requested workflows, not routine issuer Q&A.
+- `equity-data` — run a bounded Seeking Alpha/Ask SA scan and collect the smallest source-backed evidence pack for substantive public-equity work, not routine issuer Q&A or investor judgment.
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 
 ## Structure

@@ -4,6 +4,7 @@
     {"text": "整理 NVDA 最新 10-Q、IR、consensus 與 source ledger。", "family": "explicit_evidence_pack", "expected_route": "equity-data"},
     {"text": "以 initiating-coverage 為 owner，先收集 filings、estimates、transcripts 與 market data。", "family": "owner_requested_inputs", "expected_route": "equity-data"},
     {"text": "核對兩家 provider 的 EPS consensus 定義與 as-of date。", "family": "provider_reconciliation", "expected_route": "equity-data"},
+    {"text": "對 RKLB 做一輪 bounded Seeking Alpha/Ask SA scan，再收集相關 structured data 與 primary-source verification。", "family": "seeking_alpha_scan", "expected_route": "equity-data"},
     {"text": "用我提供的 Seeking Alpha Portfolio 匯出與 Ratings 截圖整理 evidence pack。", "family": "user_supplied_account_evidence", "expected_route": "equity-data"},
     {"text": "Build a source-backed public-equity evidence pack with freshness and conflicts.", "family": "explicit_evidence_pack", "expected_route": "equity-data"}
   ],

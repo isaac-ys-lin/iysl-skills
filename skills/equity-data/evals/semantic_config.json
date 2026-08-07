@@ -2,11 +2,12 @@
   "purpose": "test-heuristic-only",
   "runtime_authoritative": false,
   "recommended_threshold": 0.25,
-  "fallback_positive_concepts": ["evidence_pack", "source_reconciliation", "owner_requested_inputs"],
+  "fallback_positive_concepts": ["evidence_pack", "source_reconciliation", "owner_requested_inputs", "seeking_alpha_scan"],
   "positive_concepts": {
     "evidence_pack": {"weight": 0.45, "phrases": ["evidence pack", "source-backed", "資料", "source ledger"]},
-    "source_reconciliation": {"weight": 0.35, "phrases": ["10-q", "filings", "consensus", "provider", "as-of date", "reconcile"]},
-    "owner_requested_inputs": {"weight": 0.25, "phrases": ["initiating-coverage", "owner", "market data", "estimates", "transcripts"]}
+    "source_reconciliation": {"weight": 0.4, "phrases": ["10-q", "filings", "consensus", "provider", "as-of date", "reconcile"]},
+    "owner_requested_inputs": {"weight": 0.25, "phrases": ["initiating-coverage", "owner", "market data", "estimates", "transcripts"]},
+    "seeking_alpha_scan": {"weight": 0.35, "phrases": ["seeking alpha", "ask sa", "structured data", "estimate revisions", "bounded scan"]}
   },
   "negative_concepts": {
     "routine_question": {"weight": 0.7, "exclusive": true, "phrases": ["最新一季營收多少", "股價為什麼跌"]},

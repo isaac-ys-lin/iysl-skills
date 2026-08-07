@@ -1,6 +1,8 @@
 # Public Equity Investing Source Map
 
-Read this only when selecting sources or defining the minimum handoff packet.
+Optional source-selection notes. Read only when selecting sources for
+standalone collection or resolving provider, provenance, or conflict details
+not supplied by the embedded plugin route.
 
 ## Source Hierarchy
 
@@ -54,6 +56,7 @@ The delivery surface does not change the claim type. For example, a user-supplie
 
 | Seeking Alpha area | Useful evidence | Evidence nature | Required treatment |
 |---|---|---|---|
+| Ask SA | Bounded search and synthesis of recent coverage, signals, and source leads | `provider_synthesis` | Use for recall and prioritization; verify load-bearing claims at the underlying source |
 | Summary / market data | Price, volume, market cap, 52-week range, short interest, beta | `fact_provider_standardized` | Timestamp and timezone; prefer exchange data for decisive market inputs |
 | Ratings | SA author, Wall Street, and Quant ratings | `analyst_interpretation`, `estimate_consensus`, `provider_proprietary_score` | Keep all three separate; retain lookback and analyst count |
 | Financials | Standardized income statement, balance sheet, cash flow | `fact_provider_standardized` | Reconcile material values to filing/XBRL; preserve reclassification differences |

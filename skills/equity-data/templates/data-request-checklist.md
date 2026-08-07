@@ -19,10 +19,13 @@ Request only inputs that materially improve or unblock the owning Public Equity 
 ## Provider And Web Route
 
 - [ ] Callable licensed provider checked when the owning workflow requires estimates or standardized data
-- [ ] User-provided account export, screenshot, or excerpt requested when a non-public provider is useful but no compliant callable route exists
+- [ ] One bounded Seeking Alpha or Ask SA scan completed for substantive issuer/security work, or the skip reason recorded
+- [ ] Structured Seeking Alpha fields targeted only to material signals found by the scan or required by the owning workflow
+- [ ] Authorized account or in-app browser route attempted before classifying Seeking Alpha as unavailable
+- [ ] User-provided account export, screenshot, or excerpt used when an authorized non-public provider route is otherwise unavailable
 - [ ] Provider, upstream source, fiscal basis, analyst population, statistic, lookback/horizon, as-of, retrieval time, and timezone captured for consensus/targets
 - [ ] Public web search used for discovery; each material result opened and tied to a direct primary or corroborating source
-- [ ] Failed, blocked, terms-blocked, stale, or empty routes logged with a separate fallback source ID
+- [ ] Failed direct-fetch, blocked, unauthorized, stale, or empty routes logged separately with a distinct source ID
 
 ## Decision Blockers
 
