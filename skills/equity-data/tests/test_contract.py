@@ -2,8 +2,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = ROOT / "skills" / "equity-data"
+SKILL_DIR = Path(__file__).resolve().parents[1]
 
 
 class EquityDataContractTest(unittest.TestCase):
@@ -60,6 +59,29 @@ class EquityDataContractTest(unittest.TestCase):
         self.assertIn("Ask SA recall followed by targeted structured data", self.checklist)
         self.assertIn("Ask SA recall first", (SKILL_DIR / "evals" / "behavior_cases.json").read_text(encoding="utf-8"))
         self.assertIn("Seeking Alpha scan", (SKILL_DIR / "evals" / "trigger_cases.json").read_text(encoding="utf-8"))
+
+    def test_owner_required_fields_survive_the_scan(self):
+        self.assertIn(
+            "or independently required by the owning workflow",
+            self.skill,
+        )
+
+    def test_multi_security_scan_does_not_expand_context_unnecessarily(self):
+        self.assertIn(
+            "record the selection rule and any material",
+            self.skill,
+        )
+        self.assertIn("not every unscanned name", self.skill)
+
+    def test_data_skill_does_not_own_decision_blockers(self):
+        self.assertIn(
+            "the owning workflow\ndetermines their effect",
+            self.source_map,
+        )
+        self.assertNotIn(
+            "Keep those as decision blockers",
+            self.source_map,
+        )
 
     def test_direct_http_403_is_not_mistaken_for_chat_unavailability(self):
         for phrase in (

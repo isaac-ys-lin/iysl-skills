@@ -1,6 +1,6 @@
 ---
 name: equity-data
-description: "Default evidence-intake support for substantive Public Equity Investing work and standalone evidence-pack requests covering filings, estimates, market data, transcripts, consensus, and provider reconciliation. For issuer- or security-specific work, run one bounded two-stage Seeking Alpha scan: use Ask SA for recall, retrieve only decision-relevant structured data, then verify load-bearing claims against the closest source and reconcile definitions and as-of date before returning the smallest source-backed handoff. Does not own thesis, valuation, models, recommendations, or portfolio actions."
+description: "Collect the smallest source-backed evidence pack for substantive Public Equity Investing or standalone filings, estimates, market data, transcript, consensus, and provider-reconciliation requests. For issuer/security work, run a bounded two-stage Seeking Alpha scan as evidence intake: Ask SA recall, targeted structured data, and verification of load-bearing claims. Does not own investment judgment."
 ---
 
 # Equity Data
@@ -28,8 +28,9 @@ must not be inspected.
 
 For every substantive issuer- or security-specific workflow, run one bounded
 two-stage Seeking Alpha scan before investor judgment. For a multi-security
-screen, scan only priority names, outliers, and decision-critical securities;
-record what was not scanned and why.
+screen, scan only priority names, outliers, and decision-critical securities
+selected by the owning workflow; record the selection rule and any material
+exclusions, not every unscanned name.
 
 Skip it only when the task is purely mechanical, the user excludes it, no
 relevant security or coverage exists, or no authorized route is available.
@@ -39,9 +40,10 @@ Use two stages:
 
 1. Use Ask SA to identify developments that may change the thesis, estimates,
    valuation, catalyst path, market setup, or risk.
-2. Retrieve only the relevant Seeking Alpha structured fields needed to
-   measure or clarify those signals, such as ratings, estimates, revisions,
-   valuation, factor grades, momentum, short interest, or peer data.
+2. Retrieve only the relevant Seeking Alpha structured fields surfaced by the
+   scan or independently required by the owning workflow, such as ratings,
+   estimates, revisions, valuation, factor grades, momentum, short interest,
+   or peer data.
 
 Require the Ask SA response to separate provider facts, analyst
 interpretation, and source leads. The second stage is the targeted retrieval

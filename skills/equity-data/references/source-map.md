@@ -61,7 +61,12 @@ The delivery surface does not change the claim type. For example, a user-supplie
 | Peers | Provider peer set and relative metrics | `provider_comparison` | Validate the peer universe and business-model comparability before downstream use |
 | Articles / transcript or filing indexes | Research interpretation and document leads | `analyst_interpretation` or discovery | Do not reproduce article bodies or index summaries; follow links to the primary document. An opened full transcript may support attributed management commentary; prefer issuer disclosures for reported figures and guidance |
 
-Seeking Alpha can materially strengthen consensus coherence, estimate revisions, valuation cross-checks, and positioning context. It cannot close undisclosed transaction financing, final dilution, purchase accounting, synergy, capex, tax, or technical-execution gaps. Keep those as decision blockers until the issuer or regulator publishes them.
+Seeking Alpha can materially strengthen consensus coherence, estimate
+revisions, valuation cross-checks, and positioning context, but it cannot by
+itself resolve undisclosed financing, dilution, purchase accounting, synergy,
+capex, tax, or technical-execution gaps. Preserve those as unresolved gaps
+until an authoritative primary source addresses them; the owning workflow
+determines their effect on underwriting and participation readiness.
 
 ### Consensus And Target Integrity
 
