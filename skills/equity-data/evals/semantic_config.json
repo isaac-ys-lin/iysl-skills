@@ -10,9 +10,9 @@
     "seeking_alpha_scan": {"weight": 0.35, "phrases": ["seeking alpha", "ask sa", "structured data", "estimate revisions", "bounded scan"]}
   },
   "negative_concepts": {
-    "routine_question": {"weight": 0.7, "exclusive": true, "phrases": ["最新一季營收多少", "股價為什麼跌"]},
+    "routine_question": {"weight": 0.7, "exclusive": true, "phrases": ["最新一季營收多少"]},
     "provider_explanation": {"weight": 0.7, "exclusive": true, "phrases": ["quant rating 是什麼意思", "explain seeking alpha rating"]},
-    "owner_decision": {"weight": 0.7, "exclusive": true, "phrases": ["投資 thesis", "做 dcf", "建倉比例", "推薦一個"]}
+    "owner_decision": {"weight": 0.7, "exclusive": true, "phrases": ["投資 thesis", "做 dcf", "建倉比例", "推薦一個", "股價為什麼跌", "是否改變投資論點"]}
   },
   "exclusive_negative_concepts": ["routine_question", "provider_explanation", "owner_decision"]
 }

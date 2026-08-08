@@ -15,8 +15,18 @@
     {
       "id": "substantive-analysis-default-seeking-alpha-scan",
       "kind": "simple",
-      "prompt": "以 initiating-coverage 分析 RKLB；先做一輪 bounded Seeking Alpha/Ask SA 掃描，再針對重要訊號收集 structured data 並驗證重大主張。",
-      "expected": {"max_questions": 0, "must_do": ["run bounded Seeking Alpha scan", "target decision-relevant structured fields", "verify material claims", "pass only decision-relevant findings"], "must_not_do": ["use a fixed metric checklist", "treat Ask SA as direct proof"]}
+      "prompt": "以 initiating-coverage 分析 RKLB；先做一輪 bounded two-stage Seeking Alpha scan：先用 Ask SA 做 recall，再收集 decision-relevant structured data，最後驗證重大主張。",
+      "expected": {"max_questions": 0, "must_do": ["run Ask SA recall first", "retrieve targeted structured data second", "verify material claims", "pass only decision-relevant findings"], "must_not_do": ["use a fixed metric checklist", "treat Ask SA as direct proof"]}
+    },
+    {
+      "id": "stock-move-owner-evidence-pass",
+      "kind": "simple",
+      "prompt": "Public Equity Investing owner 正在復盤 RKLB 今日大漲及其投資論點影響；請先做 bounded Ask SA scan，讀取相關 Seeking Alpha structured data，並驗證重大主張。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": ["collect decision-relevant stock-move evidence", "separate company-specific evidence from market and positioning context", "verify load-bearing claims", "return the evidence pack to the owning workflow"],
+        "must_not_do": ["make the final investment judgment", "treat price appreciation as thesis proof", "pass the raw Ask SA response as the final answer"]
+      }
     },
     {
       "id": "ask-sa-failure-does-not-disable-structured-data",

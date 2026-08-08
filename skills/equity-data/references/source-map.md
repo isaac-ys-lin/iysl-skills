@@ -18,18 +18,6 @@ For non-US, dual-listed, or ADR issuers, prefer the home regulator, home exchang
 
 Search results, snippets, cached previews, and AI summaries are discovery aids, not evidence for material financial, transaction, guidance, consensus, or target-price claims. Open the underlying source and record its direct locator before marking a claim verified.
 
-## Plugin Source Categories
-
-| Category | Typical content |
-|---|---|
-| `company_filings_ir` | Filings, IR materials, reported financials, governance, and disclosures |
-| `earnings_transcripts_presentations` | Earnings calls, investor events, presentations, and management commentary |
-| `market_data_estimates` | Price, estimates, ownership, positioning, factors, and comparable-company data |
-| `portfolio_models_trackers` | Models, workbooks, watchlists, trackers, positions, and analyst workpapers |
-| `internal_research` | Notes, saved theses, meetings, expert context, email, and team research |
-
-Resolve only the categories needed by the owning workflow. When embedded, the plugin router owns category mapping, the concrete provider route, and any provider guide. Follow that route and use additional sources only when they materially improve recency, confidence, or the investment decision. For standalone collection, prefer a user-named source, then an authorized and callable provider, file, export, pasted input, or public fallback.
-
 ## Provider And Public-Web Route
 
 Use this order unless the owning workflow specifies a stronger route:
@@ -42,9 +30,16 @@ Use this order unless the owning workflow specifies a stronger route:
 
 ### Seeking Alpha
 
-Treat Seeking Alpha as a provider/aggregator, not a primary issuer source. Its public methodology states that quotes come from Quodd/Cboe/Nasdaq feeds and that fundamentals, estimates, and Wall Street ratings come from S&P Global Market Intelligence. Its standardized financial statements may differ from issuer-reported statements.
+Treat Seeking Alpha as a timestamped provider or aggregator, not a primary
+issuer source. Record the upstream provider when disclosed; do not hard-code or
+assume it. Standardized financials, estimates, ratings, and peer data may
+differ from issuer-reported or other provider definitions, so preserve the
+provider basis and reconcile load-bearing values when necessary.
 
-Use account-only fields through an account route, including Seeking Alpha Chat, and retain the returned evidence artifact. Record `provider=Seeking Alpha`, `upstream_provider` when disclosed, `access_mode=account_route`, and the page field/date. Use public Seeking Alpha help pages only for methodology or provenance.
+Use account-only fields through an authorized account route, including Ask SA,
+and retain the returned evidence artifact. Record `provider=Seeking Alpha`,
+`upstream_provider` when disclosed, `access_mode=account_route`, and the
+relevant page, field, and as-of date.
 
 When the account route is available in the in-app browser, attempt it before
 classifying Seeking Alpha Chat as unavailable. A `403` from direct HTTP,
@@ -64,7 +59,7 @@ The delivery surface does not change the claim type. For example, a user-supplie
 | Valuation / Growth / Profitability | Multiples, forward growth, margins, returns, sector medians | `derived_provider_metric` | Retain formulas/definitions where available; recompute decisive multiples from cited inputs |
 | Momentum / Options | Returns, technicals, IV, volume, open interest, implied move | `market_positioning_context` | Treat as high-frequency context with strict cutoff; never as fundamental proof |
 | Peers | Provider peer set and relative metrics | `provider_comparison` | Validate the peer universe and business-model comparability before downstream use |
-| Articles / transcripts / filings index | Research interpretation and document leads | `analyst_interpretation` or discovery | Do not reproduce article bodies; follow filing/IR links to the primary document |
+| Articles / transcript or filing indexes | Research interpretation and document leads | `analyst_interpretation` or discovery | Do not reproduce article bodies or index summaries; follow links to the primary document. An opened full transcript may support attributed management commentary; prefer issuer disclosures for reported figures and guidance |
 
 Seeking Alpha can materially strengthen consensus coherence, estimate revisions, valuation cross-checks, and positioning context. It cannot close undisclosed transaction financing, final dilution, purchase accounting, synergy, capex, tax, or technical-execution gaps. Keep those as decision blockers until the issuer or regulator publishes them.
 
@@ -83,22 +78,6 @@ Seeking Alpha can materially strengthen consensus coherence, estimate revisions,
 - Open and cite the actual page or document. A search snippet, cached result, or generative summary cannot satisfy a required source.
 - Record publication time, data as-of time, retrieval time, and timezone separately when material.
 - If a primary source is not yet public, state what filing or disclosure would close the gap and continue with a clearly labeled proxy only when the owner permits it.
-
-## Minimum Handoff By Workflow
-
-| Owning workflow | Minimum useful evidence pack |
-|---|---|
-| `company-tearsheet` / `initiating-coverage` | Verified issuer identity, fiscal calendar, business/KPI baseline, financial history, current market snapshot, material gaps |
-| `financials-normalizer` / `three-statement-model-builder` | Source statements, periods, units, currency, accounting definitions, KPIs, reconciliation issues |
-| `dcf-model-builder` | Historical cash-flow inputs, forecast drivers, net debt, diluted shares, current price, WACC/terminal support, explicit blockers |
-| `comps-valuation` | Verified peers, metric definitions, fiscal periods, current EV/equity inputs, estimates, outlier and conflict notes |
-| `earnings-preview` | Event date, expectation baseline, guidance, KPI watch items, scenarios, and source cut-off |
-| `earnings-deep-dive` / `equity-model-update` | Release, filing, transcript, reported-vs-expected bridge, guidance changes, price reaction, source-to-model inputs |
-| `scenario-sensitivity-generator` / `event-driven-analyzer` / `economic-impact-report` | Base case, key drivers, dated event or policy inputs, probability/payoff anchors, current price, missing evidence |
-| `thesis-tracker` / `catalyst-calendar` / `meeting-prep` | Thesis proof points and falsifiers, dated events, monitoring triggers, recent developments, open questions |
-| `long-short-pitch` / `memo-builder` | Source-backed thesis evidence, variant perception, catalysts, valuation support, disconfirmers, unresolved gaps |
-| `portfolio-risk-management` | Explicitly authorized position context, price/liquidity, ADV, borrow/options when relevant, benchmark and risk constraints |
-| `model-audit-tieout` / `deck-report-qc` | Source IDs, source-to-output mapping, calculation/assumption gaps, stale or conflicting evidence |
 
 ## Conflict And Inference
 

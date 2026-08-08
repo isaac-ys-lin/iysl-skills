@@ -19,7 +19,7 @@ Request only inputs that materially improve or unblock the owning Public Equity 
 ## Provider And Web Route
 
 - [ ] Callable licensed provider checked when the owning workflow requires estimates or standardized data
-- [ ] One bounded Seeking Alpha or Ask SA scan completed for substantive issuer/security work, or the skip reason recorded
+- [ ] One bounded two-stage Seeking Alpha intake completed for substantive issuer/security work: Ask SA recall followed by targeted structured data, or the skip reason recorded
 - [ ] Structured Seeking Alpha fields targeted only to material signals found by the scan or required by the owning workflow
 - [ ] Authorized account or in-app browser route attempted before classifying Seeking Alpha as unavailable
 - [ ] User-provided account export, screenshot, or excerpt used when an authorized non-public provider route is otherwise unavailable
@@ -38,6 +38,7 @@ Request only inputs that materially improve or unblock the owning Public Equity 
 ## Handoff
 
 - [ ] Owning workflow
-- [ ] Evidence cut-off and readiness posture
+- [ ] Evidence cut-off
 - [ ] Decision impact of remaining gaps
 - [ ] Next smallest source request
+- [ ] Owner-defined readiness or artifact metadata, if required

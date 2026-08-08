@@ -1,18 +1,20 @@
 ---
 name: equity-data
-description: Default evidence intake for substantive Public Equity Investing work, including filings, estimates, market data, transcripts, research inputs, and a bounded Seeking Alpha or Ask SA scan. Run one decision-shaped scan, then collect and verify the smallest source-backed evidence pack required by the owning workflow. Does not own thesis, valuation, models, recommendations, or portfolio actions.
+description: "Default evidence-intake support for substantive Public Equity Investing work and standalone evidence-pack requests covering filings, estimates, market data, transcripts, consensus, and provider reconciliation. For issuer- or security-specific work, run one bounded two-stage Seeking Alpha scan: use Ask SA for recall, retrieve only decision-relevant structured data, then verify load-bearing claims against the closest source and reconcile definitions and as-of date before returning the smallest source-backed handoff. Does not own thesis, valuation, models, recommendations, or portfolio actions."
 ---
 
 # Equity Data
 
 ## Role
 
-Maximize early information recall without lowering evidentiary quality.
+Maximize early information recall without lowering evidentiary quality or
+crowding out the owning workflow's decision context.
 
 Use Seeking Alpha and Ask SA to surface important developments, provider
 signals, market expectations, and source leads quickly. Use the source closest
 to each material claim for verification. The owning Public Equity Investing
-workflow retains all investor judgment.
+workflow retains all investor judgment. The owner defines the decision,
+required inputs, and analytical standard; this skill returns evidence only.
 Keep the evidence pack subordinate to the owner's investor-facing artifact.
 
 Pair with `$public-equity-investing:public-equity-investing` for substantive
@@ -25,7 +27,9 @@ must not be inspected.
 ## Default Seeking Alpha scan
 
 For every substantive issuer- or security-specific workflow, run one bounded
-Seeking Alpha scan before investor judgment.
+two-stage Seeking Alpha scan before investor judgment. For a multi-security
+screen, scan only priority names, outliers, and decision-critical securities;
+record what was not scanned and why.
 
 Skip it only when the task is purely mechanical, the user excludes it, no
 relevant security or coverage exists, or no authorized route is available.
@@ -38,6 +42,10 @@ Use two stages:
 2. Retrieve only the relevant Seeking Alpha structured fields needed to
    measure or clarify those signals, such as ratings, estimates, revisions,
    valuation, factor grades, momentum, short interest, or peer data.
+
+Require the Ask SA response to separate provider facts, analyst
+interpretation, and source leads. The second stage is the targeted retrieval
+leg; do not treat the two stages as interchangeable.
 
 Shape the lookback and fields from the owning workflow and evidence cut-off.
 Do not use a fixed metric checklist when a metric is not decision-relevant.
@@ -68,9 +76,13 @@ Pass only decision-relevant findings to the owning workflow.
   agreement as independent confirmation.
 - Verify load-bearing company, financial, transaction, guidance, regulatory,
   or technical claims against the closest available primary source.
-- Treat articles, news summaries, transcripts, filing indexes, search snippets,
-  cached previews, and AI summaries as discovery or interpretation until the
-  underlying material is opened and tied to a direct source.
+- Treat articles, news summaries, transcript indexes or summaries, filing
+  indexes, search snippets, cached previews, and AI summaries as discovery or
+  interpretation until the underlying material is opened and tied to a direct
+  source.
+- Once a full transcript is opened and its provenance is recorded, it may
+  support attributed management commentary. Prefer formal issuer disclosures
+  for reported figures, guidance, and other load-bearing financial claims.
 - Preserve material conflicts and incompatible vintages or definitions rather
   than blending them into a synthetic consensus.
 
@@ -86,10 +98,9 @@ Pass only decision-relevant findings to the owning workflow.
 5. Stop when every required input is traceably supported or explicitly labeled
    as an unresolved gap.
 
-Read `references/source-map.md` only when selecting sources for standalone
-collection or resolving provider, provenance, or conflict details not supplied
-by the embedded plugin route. Use the templates only for fields material to
-the owning workflow.
+Read `references/source-map.md` only for standalone collection or when the
+embedded plugin route does not supply provider, provenance, or conflict
+details. Use the templates only for fields material to the owning workflow.
 
 ## Handoff
 
@@ -101,19 +112,19 @@ For each material finding, include only:
 - `evidence_nature`
 - `source_id`
 - `as_of`
-- `retrieved_at`
 - `verification_status`
 - `conflict_or_gap`
 
-Record `provider`, `upstream_provider`, `definition`, `permission`, and
-`route_status` when they materially affect interpretation. Keep raw provider
-artifacts and source plumbing hidden from reader-facing output unless
-requested.
+Record `retrieved_at`, `provider`, `upstream_provider`, `definition`,
+`permission`, and `route_status` when they materially affect interpretation or
+route auditability. Keep raw provider artifacts and source plumbing hidden
+from reader-facing output unless requested.
 
-For embedded work, preserve the owner's canonical fields:
-`owning_workflow`, `decision_impact`, `readiness_effect`,
-`artifact_role=embedded_support_artifact`, and
-`hidden_unless_requested=true`.
+For embedded work, include the owner's `owning_workflow` and
+`decision_impact`. When required by the owner, preserve its canonical
+`readiness_effect`, `artifact_role=embedded_support_artifact`, and
+`hidden_unless_requested=true` metadata without inventing readiness or an
+investor-facing conclusion.
 
 For standalone requests, use
 `owning_workflow=standalone_support_request` and
