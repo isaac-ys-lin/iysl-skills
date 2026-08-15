@@ -8,7 +8,7 @@ IGNORED_NAMES = {".DS_Store", "__pycache__"}
 IGNORED_SUFFIXES = {".pyc", ".pyo"}
 
 
-def included_files(root: Path) -> dict[str, str]:
+def included_files(root: Path) -> dict[str, tuple[str, bool]]:
     files = {}
     for path in sorted(root.rglob("*")):
         if not path.is_file():
@@ -18,7 +18,10 @@ def included_files(root: Path) -> dict[str, str]:
         if path.suffix in IGNORED_SUFFIXES:
             continue
         rel = path.relative_to(root).as_posix()
-        files[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+        files[rel] = (
+            hashlib.sha256(path.read_bytes()).hexdigest(),
+            bool(path.stat().st_mode & 0o111),
+        )
     return files
 
 

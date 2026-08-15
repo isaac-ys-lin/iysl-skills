@@ -16,12 +16,8 @@ if [[ -z "$python_bin" ]]; then
   fi
 fi
 
-"$python_bin" -m unittest \
-  tests.test_skill_inventory \
-  tests.test_package_contract \
-  tests.test_skill_dependencies \
-  tests.test_skill_compatibility \
-  tests.test_behavior_eval_schema
+"$python_bin" -m pytest -q tests
+"$python_bin" tools/verify_behavior_evals.py
 
 for skill_dir in skills/*; do
   [[ -d "$skill_dir" ]] || continue

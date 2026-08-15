@@ -20,12 +20,39 @@ if [[ ! -f "$evaluator" ]]; then
   exit 1
 fi
 
+trigger_skills="$("$python_bin" - "$repo_root" <<'PY' | tr -d '\r'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root))
+from tools.skill_manifest import load_manifest
+
+manifest = load_manifest(root)
+for name, entry in sorted(manifest["skills"].items()):
+    if "trigger" in entry.get("required_gates", []):
+        print(name)
+PY
+)"
+
+if [[ -z "$trigger_skills" ]]; then
+  echo "no manifest skills require trigger evals" >&2
+  exit 1
+fi
+
 evaluated=0
-for skill_dir in "$repo_root"/skills/*; do
+while IFS= read -r skill_name; do
+  [[ -n "$skill_name" ]] || continue
+  skill_dir="$repo_root/skills/$skill_name"
   cases="$skill_dir/evals/trigger_cases.json"
   config="$skill_dir/evals/semantic_config.json"
-  if [[ ! -f "$cases" || ! -f "$config" ]]; then
-    continue
+  if [[ ! -f "$cases" ]]; then
+    echo "$skill_name: missing required trigger cases: $cases" >&2
+    exit 1
+  fi
+  if [[ ! -f "$config" ]]; then
+    echo "$skill_name: missing required semantic config: $config" >&2
+    exit 1
   fi
 
   "$python_bin" "$evaluator" \
@@ -33,10 +60,11 @@ for skill_dir in "$repo_root"/skills/*; do
     --cases "$cases" \
     --semantic-config "$config" >/dev/null
   evaluated=$((evaluated + 1))
-done
+done <<< "$trigger_skills"
 
-if [[ $evaluated -eq 0 ]]; then
-  echo "no trigger eval packages found" >&2
+expected=$(printf '%s\n' "$trigger_skills" | sed '/^$/d' | wc -l | tr -d ' ')
+if [[ $evaluated -ne $expected ]]; then
+  echo "trigger eval coverage mismatch: expected=$expected evaluated=$evaluated" >&2
   exit 1
 fi
 

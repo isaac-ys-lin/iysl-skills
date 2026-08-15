@@ -108,6 +108,7 @@ class SubtitleSelectionTest(unittest.TestCase):
                     self.assertEqual(actual["kind"], expected["kind"])
                     self.assertEqual(actual["isFallbackLanguage"], expected["fallback"])
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake yt-dlp fixture requires chmod and shebang execution")
     def test_extractor_records_selected_language_kind_and_fallback_from_metadata(self):
         scenarios = [
             ("zh-TW", {"zh-TW": FORMATS}, {}, "zh-TW", "manual", False),
@@ -139,6 +140,7 @@ class SubtitleSelectionTest(unittest.TestCase):
                 other_flag = "--write-auto-subs" if selected_kind == "manual" else "--write-subs"
                 self.assertNotIn(other_flag, download_args)
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake yt-dlp fixture requires chmod and shebang execution")
     def test_no_subtitles_persists_manifest_and_prepare_source_enters_asr_boundary(self):
         no_subtitles = metadata("ja")
         result, run_dir, log_path = self._run_extractor(no_subtitles)
@@ -158,6 +160,7 @@ class SubtitleSelectionTest(unittest.TestCase):
         self.assertIn("未配置 ASR backend", prepare_result.stderr)
         self.assertTrue((prepare_dir / "demo123.manifest.json").is_file())
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake yt-dlp fixture requires chmod and shebang execution")
     def test_prepare_source_forwards_explicit_lang_override(self):
         result, run_dir, _ = self._run_extractor(
             metadata("en", {"en": FORMATS, "zh-TW": FORMATS}),

@@ -115,6 +115,7 @@ class YtdlpReportContractTest(unittest.TestCase):
                     offenders.append(f"{path.relative_to(ROOT).as_posix()}::{needle}")
         self.assertEqual(offenders, [], offenders)
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake CLI fixture requires chmod and shebang execution")
     def test_local_qwen_wrapper_passes_model_language_context_and_writes_transcript(self):
         helper = ROOT / "scripts" / "transcribe_local_qwen.mjs"
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -210,6 +211,7 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertIn("找不到 mlx-qwen3-asr CLI", result.stderr)
             self.assertFalse((temp / "transcript.md").exists())
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake CLI fixture requires chmod and shebang execution")
     def test_local_qwen_wrapper_fails_cleanly_when_opencc_is_missing(self):
         helper = ROOT / "scripts" / "transcribe_local_qwen.mjs"
         with tempfile.TemporaryDirectory() as temp_dir:
