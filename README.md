@@ -60,6 +60,14 @@ tools/
   verify-npx-install.sh
 ```
 
+skills-manifest.json is the single package inventory. It records ownership,
+visibility, license location (`repository` or `skill`), and required release
+gates; license text stays in the referenced `LICENSE`, while skill names and descriptions
+remain sourced from each `SKILL.md`. The release gate also runs
+`tools/verify_behavior_evals.py` for deterministic trigger/behavior contract
+checks. Semantic model or human judgment is intentionally outside that CI
+gate.
+
 ## Maintainer Source Of Truth
 
 - This repo is the source of truth for its skills.
@@ -93,6 +101,36 @@ Run all portable repository release gates:
 ```bash
 tools/verify-release.sh
 ```
+
+The behavior evaluator's default mode is a deterministic, blocking contract
+check:
+
+```bash
+tools/verify_behavior_evals.py
+```
+
+To hand cases to a human or model evaluator, emit a JSON packet. The packet
+contains each prompt and its declared checks, but this command does not call a
+model:
+
+```bash
+tools/verify_behavior_evals.py --emit-case-packet /tmp/behavior-cases.json
+```
+
+After an external evaluator records one structured result for every case, run
+the blocking result gate. `must_do`, `must_not_do`, and `required_validation`
+are maps of item to a boolean satisfied verdict; for `must_not_do`, `true`
+means the prohibited action was not observed. Results must copy the emitted
+`packet_sha256` and record evaluator `kind`, `name`, and `evaluated_at`; this
+binds the verdicts to the current cases and preserves provenance, but it still
+does not independently prove that a human or model evaluated honestly.
+
+```bash
+tools/verify_behavior_evals.py --results /tmp/behavior-results.json
+```
+
+CI runs only the deterministic contract mode. It never presents an external
+model or human semantic review as automated evidence.
 
 Run an isolated local `npx skills` copy-install and source parity check:
 

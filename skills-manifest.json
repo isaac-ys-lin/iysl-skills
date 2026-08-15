@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "name_policy": {
+    "required_prefix": "iysl-",
+    "allowed_unprefixed": [
+      "equity-data",
+      "writing-great-skills"
+    ]
+  },
+  "skills": {
+    "equity-data": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-anidiagram": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "skill",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-clarify": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-deckab": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-sync": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-ytdlp-html-report": {
+      "ownership": "repo",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "writing-great-skills": {
+      "ownership": "third_party",
+      "visibility": "explicit",
+      "license": "skill",
+      "required_gates": []
+    }
+  }
+}

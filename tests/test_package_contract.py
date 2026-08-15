@@ -3,37 +3,55 @@ import re
 import unittest
 from pathlib import Path
 
+from tools.skill_manifest import load_manifest, openai_policy, parse_frontmatter
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
+MANIFEST = load_manifest(ROOT)
+SKILL_ENTRIES = MANIFEST["skills"]
 REPO_OWNED_SKILLS = {
-    "equity-data",
-    "iysl-anidiagram",
-    "iysl-clarify",
-    "iysl-deckab",
-    "iysl-sync",
-    "iysl-ytdlp-html-report",
+    name for name, entry in SKILL_ENTRIES.items() if entry["ownership"] == "repo"
 }
-THIRD_PARTY_SKILLS = {"writing-great-skills"}
-EXPECTED_SKILLS = REPO_OWNED_SKILLS | THIRD_PARTY_SKILLS
+THIRD_PARTY_SKILLS = {
+    name
+    for name, entry in SKILL_ENTRIES.items()
+    if entry["ownership"] == "third_party"
+}
+EXPECTED_SKILLS = set(SKILL_ENTRIES)
 # .DS_Store is ignored at the repository and skill levels, so Finder metadata
 # cannot enter the published package. Keep this gate focused on generated files
 # that can affect a checkout or release artifact.
 RESIDUE_NAMES = {"__pycache__", ".pytest_cache"}
 
 
-def frontmatter_value(body: str, key: str):
-    match = re.search(rf"^{re.escape(key)}:\s*(.+?)\s*$", body, re.MULTILINE)
-    return match.group(1).strip().strip("\"'") if match else None
-
-
 class PackageContractTest(unittest.TestCase):
+    def test_manifest_is_the_single_inventory_and_has_valid_gate_metadata(self):
+        self.assertEqual(MANIFEST["schema_version"], 1)
+        self.assertEqual(
+            set(MANIFEST["name_policy"]["allowed_unprefixed"]),
+            {name for name in EXPECTED_SKILLS if not name.startswith(MANIFEST["name_policy"]["required_prefix"])},
+        )
+        self.assertEqual(REPO_OWNED_SKILLS | THIRD_PARTY_SKILLS, EXPECTED_SKILLS)
+        for name, entry in SKILL_ENTRIES.items():
+            self.assertIn(entry["ownership"], {"repo", "third_party"}, name)
+            self.assertIn(entry["visibility"], {"implicit", "explicit"}, name)
+            self.assertIn(entry["license"], {"repository", "skill"}, name)
+            self.assertIsInstance(entry["required_gates"], list, name)
+            if entry["ownership"] == "repo" and entry["visibility"] == "implicit":
+                self.assertEqual(set(entry["required_gates"]), {"trigger", "behavior"}, name)
+            if entry["license"] == "repository":
+                self.assertEqual(entry["ownership"], "repo", name)
+                self.assertFalse((SKILLS / name / "LICENSE").exists(), name)
+            else:
+                self.assertTrue((SKILLS / name / "LICENSE").is_file(), name)
+
     def test_repository_license_is_mit_and_owned_by_iysl(self):
         licenses = [ROOT / "LICENSE"]
         licenses.extend(
             SKILLS / name / "LICENSE"
-            for name in REPO_OWNED_SKILLS
-            if (SKILLS / name / "LICENSE").is_file()
+            for name, entry in SKILL_ENTRIES.items()
+            if entry["ownership"] == "repo" and entry["license"] == "skill"
         )
         for path in licenses:
             self.assertTrue(path.is_file(), path)
@@ -44,6 +62,7 @@ class PackageContractTest(unittest.TestCase):
     def test_third_party_skills_retain_license_and_provenance(self):
         for name in THIRD_PARTY_SKILLS:
             skill_dir = SKILLS / name
+            self.assertEqual(SKILL_ENTRIES[name]["license"], "skill", name)
             license_body = (skill_dir / "LICENSE").read_text(encoding="utf-8")
             upstream_body = (skill_dir / "UPSTREAM.md").read_text(encoding="utf-8")
             self.assertTrue(license_body.startswith("MIT License"), name)
@@ -65,22 +84,24 @@ class PackageContractTest(unittest.TestCase):
     def test_required_metadata_and_prompt_identity(self):
         for name in EXPECTED_SKILLS:
             skill_dir = SKILLS / name
-            body = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-            self.assertEqual(frontmatter_value(body, "name"), name)
-            self.assertTrue(frontmatter_value(body, "description"), name)
+            metadata = parse_frontmatter(skill_dir / "SKILL.md")
+            self.assertEqual(metadata.get("name"), name)
+            self.assertTrue(metadata.get("description"), name)
 
             openai = (skill_dir / "agents" / "openai.yaml").read_text(
                 encoding="utf-8"
             )
             self.assertIn("display_name:", openai, name)
+            policy = openai_policy(skill_dir / "agents" / "openai.yaml")
+            expected_implicit = SKILL_ENTRIES[name]["visibility"] == "implicit"
+            self.assertEqual(policy.get("allow_implicit_invocation"), str(expected_implicit).lower(), name)
 
-            if name in THIRD_PARTY_SKILLS:
+            if SKILL_ENTRIES[name]["visibility"] == "explicit":
                 self.assertEqual(
-                    frontmatter_value(body, "disable-model-invocation"),
+                    metadata.get("disable-model-invocation"),
                     "true",
                     name,
                 )
-                self.assertIn("allow_implicit_invocation: false", openai, name)
                 continue
 
             interface = (skill_dir / "agents" / "interface.yaml").read_text(
@@ -93,6 +114,11 @@ class PackageContractTest(unittest.TestCase):
             self.assertIn("activation:", interface, name)
             self.assertIn('mode: "implicit"', interface, name)
             self.assertIn('openai: "native-implicit-skill"', interface, name)
+
+    def test_readme_lists_exact_manifest_inventory(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        listed = set(re.findall(r"^- `([^`]+)`\s+—", readme, re.MULTILINE))
+        self.assertEqual(listed, EXPECTED_SKILLS)
 
     def test_declared_relative_resources_exist(self):
         resource_pattern = re.compile(
