@@ -11,16 +11,19 @@ called by this tool.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
+import math
+import stat
 import sys
 from pathlib import Path
 from typing import Any
 
 try:
-    from tools.skill_manifest import load_manifest, implicit_repo_skill_names
+    from tools.skill_manifest import load_manifest
 except ModuleNotFoundError:  # direct execution from a checkout
-    from skill_manifest import load_manifest, implicit_repo_skill_names
+    from skill_manifest import load_manifest
 
 
 ALLOWED_KINDS = {
@@ -53,6 +56,9 @@ OBSERVATION_FIELDS = {
     "source_fidelity",
 }
 VERDICT_FIELDS = {"must_do", "must_not_do", "required_validation"}
+MAX_RESULTS_BYTES = 10 * 1024 * 1024
+MAX_CASE_PACKET_BYTES = 2 * 1024 * 1024
+SUPPORTED_GATES = {"trigger", "behavior"}
 
 
 def _load_json(path: Path, errors: list[str]) -> Any:
@@ -63,15 +69,55 @@ def _load_json(path: Path, errors: list[str]) -> Any:
         return None
 
 
+def _skill_source_sha256(skill_dir: Path) -> str:
+    """Hash packaged runtime inputs while excluding eval and test evidence."""
+
+    digest = hashlib.sha256()
+    excluded_parts = {"evals", "tests", "__pycache__", ".pytest_cache"}
+    excluded_names = {"LICENSE", "UPSTREAM.md"}
+    paths = sorted(
+        path
+        for path in skill_dir.rglob("*")
+        if (path.is_file() or path.is_symlink())
+        and not (set(path.relative_to(skill_dir).parts) & excluded_parts)
+        and path.name not in excluded_names
+        and path.suffix not in {".pyc", ".pyo"}
+    )
+    for path in paths:
+        relative = path.relative_to(skill_dir).as_posix().encode("utf-8")
+        mode = path.lstat().st_mode
+        digest.update(relative)
+        digest.update(b"\0")
+        digest.update(f"{stat.S_IFMT(mode):o}:{mode & 0o777:o}".encode("ascii"))
+        digest.update(b"\0")
+        if path.is_symlink():
+            digest.update(path.readlink().as_posix().encode("utf-8"))
+        else:
+            digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _validate_trigger(path: Path, errors: list[str]) -> None:
     payload = _load_json(path, errors)
     if not isinstance(payload, dict):
         errors.append(f"{path}: expected an object")
         return
+    threshold = payload.get("recommended_threshold")
+    if threshold is not None and (
+        not isinstance(threshold, (int, float))
+        or isinstance(threshold, bool)
+        or not 0 <= threshold <= 1
+    ):
+        errors.append(f"{path}: recommended_threshold must be between 0 and 1")
+
     seen: dict[str, str] = {}
-    for key in ("should_trigger", "should_not_trigger"):
+    for key in ("should_trigger", "should_not_trigger", "near_neighbor"):
         cases = payload.get(key)
-        if not isinstance(cases, list) or not cases:
+        required = key != "near_neighbor"
+        if cases is None and not required:
+            continue
+        if not isinstance(cases, list) or (required and not cases):
             errors.append(f"{path}: {key} must be a non-empty list")
             continue
         for index, case in enumerate(cases):
@@ -99,6 +145,97 @@ def _validate_trigger(path: Path, errors: list[str]) -> None:
                 )
             else:
                 seen[normalized] = key
+
+
+def _validate_semantic_config(path: Path, errors: list[str]) -> None:
+    payload = _load_json(path, errors)
+    if not isinstance(payload, dict) or not payload:
+        errors.append(f"{path}: semantic config must be a non-empty object")
+        return
+
+    threshold = payload.get("recommended_threshold")
+    if threshold is not None and (
+        not isinstance(threshold, (int, float))
+        or isinstance(threshold, bool)
+        or not 0 <= threshold <= 1
+    ):
+        errors.append(f"{path}: recommended_threshold must be between 0 and 1")
+
+    positive = payload.get("positive_concepts")
+    negative = payload.get("negative_concepts")
+    fallback = payload.get("fallback_positive_concepts")
+    if not isinstance(positive, dict) or not positive:
+        errors.append(f"{path}: positive_concepts must be a non-empty object")
+        positive = {}
+    if not isinstance(negative, dict) or not negative:
+        errors.append(f"{path}: negative_concepts must be a non-empty object")
+        negative = {}
+    if not isinstance(fallback, list) or not fallback or any(
+        not isinstance(item, str) or not item.strip() for item in fallback
+    ):
+        errors.append(
+            f"{path}: fallback_positive_concepts must be a non-empty string list"
+        )
+        fallback = []
+    unknown_fallback = set(fallback) - set(positive)
+    if unknown_fallback:
+        errors.append(
+            f"{path}: fallback_positive_concepts reference unknown concepts "
+            f"{sorted(unknown_fallback)}"
+        )
+
+    exclusive = payload.get("exclusive_negative_concepts")
+    if exclusive is not None:
+        if (
+            not isinstance(exclusive, list)
+            or not exclusive
+            or any(not isinstance(item, str) or item != item.strip() or not item for item in exclusive)
+            or len(exclusive) != len(set(exclusive))
+        ):
+            errors.append(
+                f"{path}: exclusive_negative_concepts must be a unique non-empty string list"
+            )
+        else:
+            unknown_exclusive = set(exclusive) - set(negative)
+            if unknown_exclusive:
+                errors.append(
+                    f"{path}: exclusive_negative_concepts reference unknown concepts "
+                    f"{sorted(unknown_exclusive)}"
+                )
+
+    for group_name, concepts in (("positive_concepts", positive), ("negative_concepts", negative)):
+        for name, spec in concepts.items():
+            prefix = f"{path}: {group_name}.{name}"
+            if not isinstance(spec, dict):
+                errors.append(f"{prefix} must be an object")
+                continue
+            weight = spec.get("weight")
+            if (
+                not isinstance(weight, (int, float))
+                or isinstance(weight, bool)
+                or not math.isfinite(weight)
+                or not 0 <= weight <= 1
+            ):
+                errors.append(f"{prefix}.weight must be between 0 and 1")
+            phrases = spec.get("phrases")
+            if not isinstance(phrases, list) or not phrases or any(
+                not isinstance(item, str) or not item.strip() for item in phrases
+            ):
+                errors.append(f"{prefix}.phrases must be a non-empty string list")
+            if "exclusive" in spec and not isinstance(spec["exclusive"], bool):
+                errors.append(f"{prefix}.exclusive must be boolean")
+
+    if isinstance(exclusive, list):
+        inline_exclusive = {
+            name
+            for name, spec in negative.items()
+            if isinstance(spec, dict) and spec.get("exclusive") is True
+        }
+        if set(exclusive) != inline_exclusive:
+            errors.append(
+                f"{path}: exclusive_negative_concepts must exactly match "
+                "negative concepts with exclusive true"
+            )
 
 
 def _validate_behavior(path: Path, errors: list[str]) -> None:
@@ -147,9 +284,31 @@ def _validate_behavior(path: Path, errors: list[str]) -> None:
         for field in ("must_do", "must_not_do", "required_validation"):
             if field in expected and (
                 not isinstance(expected[field], list)
+                or not expected[field]
                 or any(not isinstance(item, str) or not item.strip() for item in expected[field])
             ):
-                errors.append(f"{prefix}.expected.{field} must be a list of non-empty strings")
+                errors.append(
+                    f"{prefix}.expected.{field} must be a non-empty list of non-empty strings"
+                )
+            elif field in expected:
+                if any(item != item.strip() for item in expected[field]):
+                    errors.append(
+                        f"{prefix}.expected.{field} items must not have outer whitespace"
+                    )
+                normalized = [item.strip() for item in expected[field]]
+                if len(normalized) != len(set(normalized)):
+                    errors.append(f"{prefix}.expected.{field} must not contain duplicates")
+        if isinstance(expected.get("must_do"), list) and isinstance(
+            expected.get("must_not_do"), list
+        ):
+            contradictory = {item.strip() for item in expected["must_do"]} & {
+                item.strip() for item in expected["must_not_do"]
+            }
+            if contradictory:
+                errors.append(
+                    f"{prefix}.expected has contradictory must_do/must_not_do items: "
+                    f"{sorted(contradictory)}"
+                )
         for field in ("max_questions", "max_subagents"):
             if field in expected and (
                 not isinstance(expected[field], int) or isinstance(expected[field], bool) or expected[field] < 0
@@ -171,9 +330,13 @@ def validate_repository(root: Path) -> list[str]:
     errors: list[str] = []
     manifest = load_manifest(root)
     skills = manifest["skills"]
-    for name in sorted(implicit_repo_skill_names(manifest)):
-        entry = skills[name]
+    for name, entry in sorted(skills.items()):
         required = set(entry.get("required_gates", []))
+        unknown_gates = required - SUPPORTED_GATES
+        if unknown_gates:
+            errors.append(f"{name}: unsupported required gates {sorted(unknown_gates)}")
+        if not required:
+            continue
         skill_dir = root / "skills" / name
         if not skill_dir.is_dir():
             errors.append(f"{name}: manifest skill directory is missing")
@@ -184,6 +347,13 @@ def validate_repository(root: Path) -> list[str]:
                 errors.append(f"{name}: required trigger eval is missing ({path})")
             else:
                 _validate_trigger(path, errors)
+            config = skill_dir / "evals" / "semantic_config.json"
+            if not config.is_file():
+                errors.append(
+                    f"{name}: required trigger semantic config is missing ({config})"
+                )
+            else:
+                _validate_semantic_config(config, errors)
         if "behavior" in required:
             path = skill_dir / "evals" / "behavior_cases.json"
             if not path.is_file():
@@ -201,13 +371,17 @@ def _behavior_cases(root: Path) -> tuple[list[dict[str, Any]], list[str]]:
         return [], errors
     manifest = load_manifest(root)
     cases: list[dict[str, Any]] = []
-    for name in sorted(implicit_repo_skill_names(manifest)):
+    for name, entry in sorted(manifest["skills"].items()):
+        if "behavior" not in set(entry.get("required_gates", [])):
+            continue
         path = root / "skills" / name / "evals" / "behavior_cases.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
+        source_sha256 = _skill_source_sha256(root / "skills" / name)
         for case in payload["cases"]:
             cases.append(
                 {
                     "skill": name,
+                    "skill_source_sha256": source_sha256,
                     "case_id": case["id"],
                     "kind": case["kind"],
                     "prompt": case["prompt"],
@@ -247,6 +421,14 @@ def build_case_packet(root: Path) -> tuple[dict[str, Any] | None, list[str]]:
         },
         "cases": cases,
     }
+    packet_bytes = len(
+        json.dumps(packet, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    )
+    if packet_bytes > MAX_CASE_PACKET_BYTES:
+        return None, [
+            f"behavior case packet is {packet_bytes} bytes; "
+            f"maximum is {MAX_CASE_PACKET_BYTES}"
+        ]
     packet["packet_sha256"] = _packet_sha256(packet)
     return packet, []
 
@@ -266,6 +448,11 @@ def _packet_sha256(packet: dict[str, Any]) -> str:
 
 def _is_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _brief(value: Any, limit: int = 200) -> str:
+    rendered = repr(value)
+    return rendered if len(rendered) <= limit else rendered[: limit - 3] + "..."
 
 
 def _check_observation(
@@ -377,9 +564,21 @@ def evaluate_results(root: Path, payload: Any) -> list[str]:
     for field in ("kind", "name", "evaluated_at"):
         if not isinstance(evaluator.get(field), str) or not evaluator[field].strip():
             return [f"results.evaluator.{field} must be a non-empty string"]
+    try:
+        evaluated_at = datetime.fromisoformat(
+            evaluator["evaluated_at"].replace("Z", "+00:00")
+        )
+    except ValueError:
+        return ["results.evaluator.evaluated_at must be an ISO 8601 timestamp"]
+    if evaluated_at.tzinfo is None:
+        return ["results.evaluator.evaluated_at must include a timezone"]
     results = payload.get("results")
     if not isinstance(results, list):
         return ["results.results must be a list"]
+    if len(results) > len(cases):
+        return [
+            f"results.results has {len(results)} entries; expected at most {len(cases)}"
+        ]
 
     expected_by_key = {(case["skill"], case["case_id"]): case for case in cases}
     seen: set[tuple[str, str]] = set()
@@ -396,7 +595,9 @@ def evaluate_results(root: Path, payload: Any) -> list[str]:
             continue
         key = (skill, case_id)
         if key not in expected_by_key:
-            result_errors.append(f"{prefix}: unknown case {skill}/{case_id}")
+            result_errors.append(
+                f"{prefix}: unknown case {_brief(skill)}/{_brief(case_id)}"
+            )
             continue
         if key in seen:
             result_errors.append(f"{prefix}: duplicate case {skill}/{case_id}")
@@ -411,8 +612,14 @@ def evaluate_results(root: Path, payload: Any) -> list[str]:
 
 def _read_json(path: str) -> Any:
     if path == "-":
-        return json.load(sys.stdin)
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+        raw = sys.stdin.buffer.read(MAX_RESULTS_BYTES + 1)
+    else:
+        source = Path(path)
+        with source.open("rb") as handle:
+            raw = handle.read(MAX_RESULTS_BYTES + 1)
+    if len(raw) > MAX_RESULTS_BYTES:
+        raise ValueError(f"results input exceeds {MAX_RESULTS_BYTES} bytes")
+    return json.loads(raw)
 
 
 def _write_json(path: str, payload: Any) -> None:
@@ -473,9 +680,12 @@ def main() -> int:
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    implicit = len(implicit_repo_skill_names(load_manifest(root)))
+    gated = sum(
+        bool(entry.get("required_gates"))
+        for entry in load_manifest(root)["skills"].values()
+    )
     print(
-        f"deterministic behavior eval contract passed for {implicit} implicit repo skill(s); "
+        f"deterministic behavior eval contract passed for {gated} skill(s) with required gates; "
         "semantic model/human judgment was not executed"
     )
     return 0

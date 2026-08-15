@@ -34,6 +34,7 @@ installs are copied snapshots; they do not follow local source changes.
 
 - `iysl-anidiagram` — turn a supported claim or relation into a source-faithful animated SVG, MP4, and PNG, with render checks.
 - `iysl-clarify` — resolve only material intent, scope, authority, safety, or success-criteria ambiguity before an actionable change.
+- `iysl-grill` — run a user-invoked, stateless decision-tree interview that works through frontier rounds before any action.
 - `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
@@ -122,8 +123,10 @@ the blocking result gate. `must_do`, `must_not_do`, and `required_validation`
 are maps of item to a boolean satisfied verdict; for `must_not_do`, `true`
 means the prohibited action was not observed. Results must copy the emitted
 `packet_sha256` and record evaluator `kind`, `name`, and `evaluated_at`; this
-binds the verdicts to the current cases and preserves provenance, but it still
-does not independently prove that a human or model evaluated honestly.
+binds the verdicts to the current cases and packaged skill runtime inputs and
+preserves provenance. It does not bind a model, host, system prompt, or tool
+policy version, and it still does not independently prove that a human or model
+evaluated honestly.
 
 ```bash
 tools/verify_behavior_evals.py --results /tmp/behavior-results.json

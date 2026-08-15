@@ -38,6 +38,8 @@ class PackageContractTest(unittest.TestCase):
             self.assertIn(entry["visibility"], {"implicit", "explicit"}, name)
             self.assertIn(entry["license"], {"repository", "skill"}, name)
             self.assertIsInstance(entry["required_gates"], list, name)
+            self.assertEqual(len(entry["required_gates"]), len(set(entry["required_gates"])), name)
+            self.assertTrue(set(entry["required_gates"]) <= {"trigger", "behavior"}, name)
             if entry["ownership"] == "repo" and entry["visibility"] == "implicit":
                 self.assertEqual(set(entry["required_gates"]), {"trigger", "behavior"}, name)
             if entry["license"] == "repository":
@@ -62,13 +64,29 @@ class PackageContractTest(unittest.TestCase):
     def test_third_party_skills_retain_license_and_provenance(self):
         for name in THIRD_PARTY_SKILLS:
             skill_dir = SKILLS / name
-            self.assertEqual(SKILL_ENTRIES[name]["license"], "skill", name)
+            entry = SKILL_ENTRIES[name]
+            self.assertEqual(entry["license"], "skill", name)
+            upstream = entry.get("upstream")
+            self.assertIsInstance(upstream, dict, name)
+            self.assertRegex(upstream["repository"], r"^https://github\.com/[^/]+/[^/]+$", name)
+            self.assertRegex(upstream["snapshot_commit"], r"^[0-9a-f]{40}$", name)
+            self.assertEqual(upstream["license"], "MIT", name)
+            self.assertTrue(upstream["copyright"].strip(), name)
             license_body = (skill_dir / "LICENSE").read_text(encoding="utf-8")
             upstream_body = (skill_dir / "UPSTREAM.md").read_text(encoding="utf-8")
-            self.assertTrue(license_body.startswith("MIT License"), name)
-            self.assertIn("Copyright (c) 2026 Matt Pocock", license_body, name)
-            self.assertIn("https://github.com/mattpocock/skills", upstream_body, name)
-            self.assertRegex(upstream_body, r"\b[0-9a-f]{40}\b")
+            self.assertTrue(license_body.startswith(f"{upstream['license']} License\n"), name)
+            self.assertIn(f"Copyright (c) 2026 {upstream['copyright']}", license_body, name)
+            self.assertIn(f"- Repository: {upstream['repository']}", upstream_body, name)
+            self.assertIn(
+                f"- Snapshot commit: `{upstream['snapshot_commit']}`",
+                upstream_body,
+                name,
+            )
+            self.assertIn(
+                f"- License: {upstream['license']}; copyright {upstream['copyright']}",
+                upstream_body,
+                name,
+            )
 
     def test_exact_top_level_skill_inventory(self):
         actual = {path.name for path in SKILLS.iterdir() if path.is_dir()}
@@ -103,6 +121,8 @@ class PackageContractTest(unittest.TestCase):
                     name,
                 )
                 continue
+
+            self.assertNotIn("disable-model-invocation", metadata, name)
 
             interface = (skill_dir / "agents" / "interface.yaml").read_text(
                 encoding="utf-8"
@@ -144,6 +164,14 @@ class PackageContractTest(unittest.TestCase):
             if path.name in RESIDUE_NAMES or path.suffix in {".pyc", ".pyo"}
         ]
         self.assertEqual(residue, [])
+
+    def test_packaged_skills_do_not_depend_on_symlinks(self):
+        symlinks = [
+            path.relative_to(ROOT).as_posix()
+            for path in SKILLS.rglob("*")
+            if path.is_symlink()
+        ]
+        self.assertEqual(symlinks, [])
 
 
 if __name__ == "__main__":

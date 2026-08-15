@@ -103,6 +103,7 @@
   "negative_concepts": {
     "deck_export_only": {
       "weight": 0.45,
+      "exclusive": true,
       "phrases": [
         "PowerPoint 檔",
         "pptx",
@@ -114,6 +115,7 @@
     },
     "single_image_only": {
       "weight": 0.4,
+      "exclusive": true,
       "phrases": [
         "單張圖片",
         "產品海報",
@@ -124,6 +126,7 @@
     },
     "writing_only": {
       "weight": 0.35,
+      "exclusive": true,
       "phrases": [
         "潤稿",
         "rewrite this paragraph",
@@ -133,6 +136,7 @@
     },
     "asset_search_only": {
       "weight": 0.35,
+      "exclusive": true,
       "phrases": [
         "找三張",
         "免費商用圖片",
@@ -142,6 +146,7 @@
     },
     "review_only": {
       "weight": 0.35,
+      "exclusive": true,
       "phrases": [
         "審查",
         "critique",
