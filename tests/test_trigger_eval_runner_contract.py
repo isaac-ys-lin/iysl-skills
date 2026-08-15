@@ -11,3 +11,4 @@ def test_trigger_runner_is_manifest_driven_and_fails_missing_companions():
     assert "missing required trigger cases" in body
     assert "missing required semantic config" in body
     assert "continue\n  fi" not in body
+    assert "tr -d '\\r'" in body

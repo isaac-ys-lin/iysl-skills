@@ -20,7 +20,7 @@ if [[ ! -f "$evaluator" ]]; then
   exit 1
 fi
 
-trigger_skills="$($python_bin - "$repo_root" <<'PY'
+trigger_skills="$("$python_bin" - "$repo_root" <<'PY' | tr -d '\r'
 import sys
 from pathlib import Path
 
