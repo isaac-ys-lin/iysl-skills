@@ -29,6 +29,24 @@
       "kind": "negative",
       "prompt": "舊 plan 還在，但現在只修一個無關的拼字。",
       "expected": {"max_questions": 0, "must_not_do": ["let the old plan expand current scope"]}
+    },
+    {
+      "id": "completed-plan-covered-delete",
+      "kind": "simple",
+      "prompt": "工作已驗證完成，而且 commit 與 ADR 已完整記錄最終契約、結果、驗證和必要決策。請清理 plan。",
+      "expected": {"max_questions": 0, "must_do": ["delete the working plan"], "must_not_do": ["create a duplicate archive"]}
+    },
+    {
+      "id": "completed-plan-uncovered-archive",
+      "kind": "simple",
+      "prompt": "工作已驗證完成，但沒有其他文件完整記錄結果與驗證。請清理 plan。",
+      "expected": {"max_questions": 0, "must_do": ["archive a concise final-state record"], "must_not_do": ["delete the only durable record"]}
+    },
+    {
+      "id": "unfinished-plan-remains-active",
+      "kind": "failure",
+      "prompt": "工作還沒完成，也還有下一步要做；請同步目前進度。",
+      "expected": {"max_questions": 0, "must_do": ["keep the active plan in place"], "must_not_do": ["delete the plan", "archive the plan"]}
     }
   ]
 }

@@ -43,14 +43,27 @@ class SyncContractTest(unittest.TestCase):
     def test_completed_plan_lifecycle_stays_concise(self):
         normalized_skill = re.sub(r"\s+", " ", self.skill)
         for phrase in (
-            "At completion, replace the working plan with a concise final-state record",
+            "Keep unfinished, still-active work in its active plan; do not delete or archive it",
+            "After verifying completion, delete the working plan when a commit, spec, ADR, or other durable artifact fully records",
+            "If the completed work lacks such complete coverage, replace the plan with a concise final-state record",
             "remove superseded content, stale execution detail, and resolved blockers",
             "docs/plans/archive/<original-filename>.md",
             "Keep only active plans in the active-plan location",
-            "Archive superseded or abandoned plans by the same rule",
+            "Apply the same durable-record test to explicitly superseded or abandoned plans",
         ):
             self.assertIn(phrase, normalized_skill)
         self.assertNotIn("Keep completed plans at their original paths", normalized_skill)
+        self.assertNotIn("Archive superseded or abandoned plans by the same rule", normalized_skill)
+
+    def test_behavior_corpus_covers_completed_plan_cleanup_paths(self):
+        behavior = json.loads((ROOT / "evals" / "behavior_cases.json").read_text(encoding="utf-8"))
+        cases = {case["id"]: case for case in behavior["cases"]}
+        self.assertIn("completed-plan-covered-delete", cases)
+        self.assertIn("completed-plan-uncovered-archive", cases)
+        self.assertIn("unfinished-plan-remains-active", cases)
+        self.assertIn("delete the working plan", cases["completed-plan-covered-delete"]["expected"]["must_do"])
+        self.assertIn("archive a concise final-state record", cases["completed-plan-uncovered-archive"]["expected"]["must_do"])
+        self.assertIn("keep the active plan in place", cases["unfinished-plan-remains-active"]["expected"]["must_do"])
 
     def test_eval_corpus_covers_routes_and_hijack_guard(self):
         self.assertGreaterEqual(len(self.cases["should_trigger"]), 6)
