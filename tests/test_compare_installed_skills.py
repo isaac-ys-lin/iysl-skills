@@ -1,12 +1,16 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "tools" / "compare-installed-skills.py"
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Windows does not expose POSIX execute bits")
 def test_install_parity_detects_executable_mode_change(tmp_path):
     source = tmp_path / "source" / "example" / "scripts"
     installed = tmp_path / "installed" / "example" / "scripts"

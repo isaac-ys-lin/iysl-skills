@@ -1,10 +1,24 @@
 import shutil
 import subprocess
+import os
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFY_SKILL = ROOT / "tools" / "verify-skill.sh"
+
+
+def bash_executable():
+    if os.name != "nt":
+        return shutil.which("bash") or "bash"
+    git = shutil.which("git")
+    if git:
+        git_bash = Path(git).parent.parent / "bin" / "bash.exe"
+        if git_bash.is_file():
+            return str(git_bash)
+    pytest.skip("Git for Windows bash.exe is unavailable")
 
 
 def make_mixed_test_repo(tmp_path, bare_pytest_body):
@@ -29,7 +43,7 @@ def make_mixed_test_repo(tmp_path, bare_pytest_body):
 def test_mixed_framework_failure_cannot_be_skipped(tmp_path):
     repo = make_mixed_test_repo(tmp_path, "assert False, 'must be collected'")
     result = subprocess.run(
-        ["bash", str(repo / "tools" / "verify-skill.sh"), "mixed"],
+        [bash_executable(), str(repo / "tools" / "verify-skill.sh"), "mixed"],
         cwd=repo,
         capture_output=True,
         text=True,
@@ -41,7 +55,7 @@ def test_mixed_framework_failure_cannot_be_skipped(tmp_path):
 def test_mixed_framework_success_runs_both_tests(tmp_path):
     repo = make_mixed_test_repo(tmp_path, "assert True")
     result = subprocess.run(
-        ["bash", str(repo / "tools" / "verify-skill.sh"), "mixed"],
+        [bash_executable(), str(repo / "tools" / "verify-skill.sh"), "mixed"],
         cwd=repo,
         capture_output=True,
         text=True,

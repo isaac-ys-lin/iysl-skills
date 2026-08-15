@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -81,6 +82,7 @@ def test_skill_source_digest_changes_with_runtime_input(tmp_path):
     assert _skill_source_sha256(skill_dir) != before
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Windows does not expose POSIX execute bits")
 def test_skill_source_digest_changes_with_executable_mode(tmp_path):
     skill_dir = tmp_path / "example-skill"
     scripts = skill_dir / "scripts"
