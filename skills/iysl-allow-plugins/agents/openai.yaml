@@ -1,0 +1,6 @@
+interface:
+  display_name: "iysl-allow-plugins"
+  short_description: "Choose which available plugins this project may use."
+  default_prompt: "Use $iysl-allow-plugins to choose and preview which currently available plugins this project may use."
+policy:
+  allow_implicit_invocation: false

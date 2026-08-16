@@ -1,8 +1,17 @@
 # Public Equity Investing Source Map
 
-Optional source-selection notes. Read only when selecting sources for
-standalone collection or resolving provider, provenance, or conflict details
-not supplied by the embedded plugin route.
+Canonical coverage and source-selection notes for every substantive Seeking
+Alpha scan. For other collection, read only when working standalone or
+resolving provider, provenance, or conflict details not supplied by the
+embedded plugin route.
+
+## Contents
+
+- Source hierarchy and provider routing
+- Default evidence stack and claim-to-source defaults
+- Seeking Alpha coverage inventory and data completion
+- Provider-specific safeguards
+- Consensus, target, public-web, and conflict integrity
 
 ## Source Hierarchy
 
@@ -84,18 +93,44 @@ vintage, fiscal basis, listing, methodology, or forecast horizon.
 ### Data Completion Inside The Existing Workflow
 
 This is a coverage aid, not a new workflow stage or a mandatory metric
-checklist. At the existing first workflow step, select only the field groups
-needed for the owning decision. Fill those groups through the existing bounded
-Ask SA scan, targeted Seeking Alpha retrieval, primary-source verification, and
-smallest-sufficient handoff.
+dump. At the existing first workflow step, inventory all twelve Seeking Alpha
+groups below. Complete the seven core groups with evidence or an explicit route,
+coverage, permission, freshness, or fair-value-freeze gap. Retrieve conditional
+groups only when the owner requires them or they can change the decision. Fill
+selected groups through the existing bounded Ask SA scan, targeted Seeking
+Alpha retrieval, primary-source verification, and smallest-sufficient handoff.
+
+#### Seeking Alpha Coverage Inventory
+
+| Group | Minimum fields when exposed | Coverage rule |
+|---|---|---|
+| `market_snapshot` | timestamped price, volume, market cap, enterprise value, diluted-share context | Conditional; use exchange data for decisive price inputs |
+| `street_estimates` | annual and quarterly revenue/EPS, low/high, analyst count, forward growth | Core evidence-or-gap |
+| `estimate_revisions` | revenue/EPS revision direction and available history | Core evidence-or-gap |
+| `earnings_surprises` | recent actual versus consensus revenue/EPS and surprise history | Core evidence-or-gap |
+| `wall_street` | consensus rating, target, implied upside, analyst count, horizon, and target history | Core evidence-or-gap; target fields are post-freeze for embedded underwriting, but available directly for explicit standalone lookup or target-based screening |
+| `quant` | Quant rating; Value, Growth, Profitability, Momentum, and EPS Revisions grades; available rating history | Core evidence-or-gap |
+| `valuation` | decision-relevant forward/trailing multiples, sector median, and available historical average or percentile | Core evidence-or-gap |
+| `peer_comparison` | provider peer set, growth, profitability, valuation, and available factor grades | Conditional; validate comparability |
+| `analyst_views` | recent bull/bear views, dates, ratings, disputed assumptions, catalysts, and risks | Core evidence-or-gap |
+| `transcripts` | relevant opened transcript, Q&A, guidance changes, and management commentary | Conditional; use primary issuer disclosure for decisive figures |
+| `positioning` | ownership, short interest, momentum/performance, borrow/options when relevant | Conditional and cutoff-sensitive |
+| `normalized_financials` | standardized income statement, balance sheet, cash flow, growth, capital/share, and dividend fields when relevant | Conditional cross-check; reconcile to filings |
+
+Treat recent news and event feeds as discovery inputs across the relevant group,
+not a thirteenth evidence family. Within `normalized_financials`, collect
+dividend yield, growth, payout, and estimates only for income-relevant issuers.
+One inventory group may be marked not decision-relevant, but no core group may
+silently disappear: record why it was unavailable, unauthorized, uncovered,
+stale, or deferred.
 
 | Field group | Ask SA discovery | Targeted provider retrieval | Primary verification or supplement |
 |---|---|---|---|
 | Issuer actuals and guidance | Identify the periods, segments, KPIs, guidance changes, and accounting issues that matter | Standardized income statement, balance sheet, cash flow, actual/estimate surprise, and historical trends | Filing/XBRL, earnings release, presentation, regulator or exchange disclosure for reported values, guidance, segment/KPI definitions, capex, cash, debt, and non-GAAP reconciliation |
 | Capital structure and dilution | Surface financing, convertible, equity issuance, buyback, SBC, M&A, or balance-sheet developments | Shares outstanding, market cap, ownership or short-interest context when exposed | Period-end and weighted-average basic/diluted shares, options/RSUs, convertibles, warrants, ATM programs, private placements, buybacks, financing terms, and a mechanical fully diluted share bridge |
 | Market and positioning context | Identify unusual price action, sentiment shifts, event setup, or crowded debates | Timestamped price and volume, 52-week range, short interest, beta, relevant RSI, price-versus-SMA, options/implied-move, and momentum fields | Exchange or venue data when price, listing, currency, close time, or event-window precision is decisive |
-| Consensus and revisions | Identify material estimate divergence, recent upgrades/downgrades, target changes, and the expectation bar | Annual or quarterly revenue/EPS estimates, low/high where exposed, analyst count, revisions, surprise history, Wall Street rating, and target-price fields | Issuer guidance and reported actuals for calibration; preserve provider basis, fiscal period, currency, GAAP/normalized basis, horizon, and methodology limits |
-| Valuation and peer context | Identify the valuation debate, rerating assumptions, and disputed peer choices | Forward and trailing multiples, including decision-relevant P/E, PEG, EV/revenue, EV/EBITDA, FCF yield, sector medians, growth/profitability metrics, and provider peer sets | Recompute decisive multiples from cited inputs and validate peer business models, fiscal alignment, capital intensity, and accounting definitions |
+| Consensus and revisions | Identify material estimate divergence, recent upgrades/downgrades, and the expectation bar; seek target changes only after owner FV freeze or for an explicit standalone target request | Annual or quarterly revenue/EPS estimates, low/high where exposed, analyst count, revisions, surprise history, Wall Street rating, and permitted target, implied-upside, and target-history fields | Issuer guidance and reported actuals for calibration; preserve provider basis, fiscal period, currency, GAAP/normalized basis, horizon, and methodology limits |
+| Valuation and peer context | Identify the valuation debate, rerating assumptions, and disputed peer choices | Forward and trailing multiples, including decision-relevant P/E, PEG, EV/revenue, EV/EBITDA, FCF yield, sector medians, available historical averages/percentiles, growth/profitability metrics, and provider peer sets | Recompute decisive multiples from cited inputs and validate peer business models, fiscal alignment, capital intensity, and accounting definitions |
 | Management commentary and catalysts | Surface the latest earnings-call insights, guidance drivers, investor-day claims, catalysts, and falsifiers as source leads | Opened transcript, event index, recent company news, press-release, filing, and article leads | Prefer formal issuer disclosure for reported figures and guidance; preserve speaker, event, publication date, event date, and direct source locator for attributed commentary |
 | External debate and source leads | Request the strongest bull and bear arguments, recent articles, news, press releases, filing leads, and meaningful rating disagreement | SA Author research and other authorized interpretation, kept separate from Quant and Wall Street signals | Verify every load-bearing factual premise at the underlying filing, issuer document, regulator, exchange, or executed counterparty source |
 
@@ -158,14 +193,16 @@ The delivery surface does not change the claim type. For example, a user-supplie
 | Seeking Alpha area | Useful evidence | Evidence nature | Required treatment |
 |---|---|---|---|
 | Ask SA | Bounded search and synthesis of recent coverage, signals, and source leads | `provider_synthesis` | Use for recall and prioritization; verify load-bearing claims at the underlying source |
-| Summary / market data | Price, volume, market cap, 52-week range, short interest, beta | `fact_provider_standardized` | Timestamp and timezone; prefer exchange data for decisive market inputs |
-| Ratings | SA author, Wall Street, and Quant ratings | `analyst_interpretation`, `estimate_consensus`, `provider_proprietary_score` | Keep all three separate; retain lookback and analyst count |
+| Summary / market data | Price, volume, market cap, enterprise value, diluted-share context, 52-week range, short interest, beta | `fact_provider_standardized` | Timestamp and timezone; prefer exchange data for decisive market inputs |
+| Ratings | SA author and Wall Street ratings; Quant rating, five factor grades, and available rating history | `analyst_interpretation`, `estimate_consensus`, `provider_proprietary_score` | Keep all three families separate; retain lookback and analyst count |
 | Financials | Standardized income statement, balance sheet, cash flow | `fact_provider_standardized` | Reconcile material values to filing/XBRL; preserve reclassification differences |
 | Earnings | Actual/estimate surprise, annual and quarterly estimates, revisions, analyst counts | actuals as standardized facts; estimates as `estimate_consensus` | Retain GAAP/normalized basis, period, low/high, and provider as-of |
-| Valuation / Growth / Profitability | Multiples, forward growth, margins, returns, sector medians | `derived_provider_metric` | Retain formulas/definitions where available; recompute decisive multiples from cited inputs |
+| Valuation / Growth / Profitability | Multiples, forward growth, margins, returns, sector medians, available historical averages or percentiles | `derived_provider_metric` | Retain formulas/definitions where available; recompute decisive multiples from cited inputs |
 | Momentum / Options | Returns, technicals, IV, volume, open interest, implied move | `market_positioning_context` | Treat as high-frequency context with strict cutoff; never as fundamental proof |
 | Peers | Provider peer set and relative metrics | `provider_comparison` | Validate the peer universe and business-model comparability before downstream use |
 | Articles / transcript or filing indexes | Research interpretation and document leads | `analyst_interpretation` or discovery | Do not reproduce article bodies or index summaries; follow links to the primary document. An opened full transcript may support attributed management commentary; prefer issuer disclosures for reported figures and guidance |
+| Dividends | Yield, payout, growth, and estimates when income relevance is material | standardized fact or `estimate_consensus` | Preserve period, basis, and payout definition; do not require for non-income decisions |
+| News / events | Guidance, financing, buyback, issuance, transaction, and rating-change leads | discovery or interpretation | Open the underlying issuer, filing, regulator, exchange, or provider source before using a material claim |
 
 Seeking Alpha can materially strengthen consensus coherence, estimate
 revisions, valuation cross-checks, and positioning context, but it cannot by
@@ -179,6 +216,7 @@ determines their effect on underwriting and participation readiness.
 - Keep each provider snapshot as a separate vintage. Never blend revenue from one provider, EBITDA from another, and targets from a third into a purported single consensus package.
 - Record provider, upstream provider when disclosed, security/listing, currency, fiscal basis, as-of and retrieval times, analyst population, statistic, lookback, forecast horizon, low/high, and GAAP/normalized basis.
 - Keep author ratings, Wall Street ratings, proprietary quant scores, and price targets in separate rows.
+- In embedded underwriting or valuation, before the owner freezes independent fair value, do not request or retrieve provider price targets, implied upside, or target history. Mark required target fields `deferred_until_owner_fv_freeze`; retrieve them afterward only for comparison, never as the owner's valuation anchor. For an explicit standalone target lookup or target-based screen with no independent underwriting, collect requested target evidence directly with full provenance and no fair-value or investment inference.
 - Mark methodology as `method_unknown` when the provider does not expose it. Do not infer mean, median, or a 12-month horizon.
 - When two providers disagree, preserve both and explain the likely universe/date/definition difference. Do not average them.
 

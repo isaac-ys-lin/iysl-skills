@@ -1,6 +1,6 @@
 ---
 name: equity-data
-description: "Collect the smallest source-backed evidence pack for substantive Public Equity Investing or standalone filings, estimates, market data, transcript, consensus, and provider-reconciliation requests. For issuer/security work, run a bounded two-stage Seeking Alpha scan as evidence intake: Ask SA recall, targeted structured data, and verification of load-bearing claims. Does not own investment judgment."
+description: "Collect the smallest source-backed evidence pack for substantive Public Equity Investing or standalone filings, estimates, market data, transcript, consensus, and provider-reconciliation requests. For issuer/security work, run a bounded two-stage Seeking Alpha scan with a core evidence-or-gap coverage gate, targeted structured data, and verification of load-bearing claims. Does not own investment judgment."
 ---
 
 # Equity Data
@@ -50,7 +50,35 @@ interpretation, and source leads. The second stage is the targeted retrieval
 leg; do not treat the two stages as interchangeable.
 
 Shape the lookback and fields from the owning workflow and evidence cut-off.
-Do not use a fixed metric checklist when a metric is not decision-relevant.
+Maintain a hidden twelve-group coverage inventory from
+`references/source-map.md`; use it as a completeness control, not as a
+reader-facing checklist. For each substantive single-security workflow, obtain
+evidence or record an explicit route, coverage, permission, or freshness gap
+for these seven core groups:
+
+- forward annual and quarterly revenue and EPS estimates;
+- revenue and EPS estimate revisions;
+- revenue and EPS earnings surprises;
+- Wall Street rating and target data, subject to the embedded-underwriting gate below;
+- Quant rating and Value, Growth, Profitability, Momentum, and EPS Revisions grades;
+- forward, trailing, sector-relative, and available historical valuation context;
+- recent bull and bear views and their disputed assumptions.
+
+Retrieve the remaining inventory groups only when required by the owner or
+material to the decision. Keep the complete inventory in supporting artifacts
+and pass only decision-relevant findings or gaps to the owning workflow.
+
+For embedded underwriting or valuation workflows, before the owner records an
+independent fair-value freeze, do not ask for or retrieve Wall Street target
+prices, implied upside, or target history. Record
+`deferred_until_owner_fv_freeze` as the gap when those fields are required but
+still gated. If Ask SA returns target data unsolicited, keep it out of the
+pre-freeze handoff. Retrieve and compare it only after the owner confirms the
+freeze; provider targets never set or revise the owner's fair value by default.
+This gate does not block an explicit standalone target lookup or a target-based
+screen with no independent underwriting; collect the requested provider fields
+with provenance, but do not turn them into fair value or investment judgment.
+
 Ask SA queries should request material developments, relevant transcript or
 filing leads, meaningful rating or estimate divergence, and the strongest
 bull and bear debates while separating provider facts, analyst interpretation,
@@ -100,9 +128,11 @@ Pass only decision-relevant findings to the owning workflow.
 5. Stop when every required input is traceably supported or explicitly labeled
    as an unresolved gap.
 
-Read `references/source-map.md` only for standalone collection or when the
-embedded plugin route does not supply provider, provenance, or conflict
-details. Use the templates only for fields material to the owning workflow.
+Read `references/source-map.md` for every substantive Seeking Alpha scan. For
+other collection, read it only for standalone work or when the embedded plugin
+route does not supply provider, provenance, or conflict details. Use the
+templates to audit coverage, but populate detailed fields only when material to
+the owning workflow.
 
 ## Handoff
 

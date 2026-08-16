@@ -1,0 +1,60 @@
+{
+  "recommended_threshold": 0.3,
+  "fallback_positive_concepts": [
+    "authorized_execution",
+    "material_implementation",
+    "verification_contract"
+  ],
+  "positive_concepts": {
+    "authorized_execution": {
+      "weight": 0.35,
+      "phrases": ["方案已確認", "approved plan", "已定案", "scope, owned files", "完成已核准"]
+    },
+    "material_implementation": {
+      "weight": 0.3,
+      "phrases": ["material refactor", "migration", "跨三個模組", "client、service", "concurrency"]
+    },
+    "verification_contract": {
+      "weight": 0.2,
+      "phrases": ["acceptance criteria", "acceptance tests", "驗證", "validators", "exact evidence"]
+    },
+    "independent_review": {
+      "weight": 0.15,
+      "phrases": ["fresh review", "獨立審閱", "未參與實作", "$iysl-execute"]
+    }
+  },
+  "negative_concepts": {
+    "trivial_edit": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": ["按鈕改成", "一個明確 assertion", "拼字"]
+    },
+    "unknown_root_cause": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": ["還不知道原因", "先找根因", "偶發 crash"]
+    },
+    "solution_planning": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["比較", "選架構", "先不要實作", "decision-complete plan"]
+    },
+    "review_only": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["review this existing pr", "report actionable findings"]
+    },
+    "read_or_release_only": {
+      "weight": 0.65,
+      "exclusive": true,
+      "phrases": ["讀這份", "整理重點", "commit、push", "發布"]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "trivial_edit",
+    "unknown_root_cause",
+    "solution_planning",
+    "review_only",
+    "read_or_release_only"
+  ]
+}

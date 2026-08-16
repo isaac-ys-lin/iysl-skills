@@ -1,5 +1,5 @@
 interface:
-  display_name: "IYSL Grill"
+  display_name: "iysl-grill"
   short_description: "Stress-test decisions through frontier rounds"
   default_prompt: "Use $iysl-grill to stress-test this plan before acting."
 policy:

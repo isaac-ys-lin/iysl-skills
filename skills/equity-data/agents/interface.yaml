@@ -1,7 +1,7 @@
 interface:
   display_name: "Equity Data"
   short_description: "Two-stage evidence intake for public-equity analysis"
-  default_prompt: "Pair $equity-data with the Public Equity Investing router; run one bounded Ask SA scan, retrieve only decision-relevant Seeking Alpha structured data, verify load-bearing claims, and return the smallest evidence handoff needed by the owning workflow."
+  default_prompt: "Pair $equity-data with the Public Equity Investing router; run bounded Ask SA recall, complete the core Seeking Alpha evidence-or-gap coverage gate, retrieve only decision-relevant extensions, defer Wall Street targets during embedded underwriting until the owner freezes independent fair value, verify load-bearing claims, and return the smallest evidence handoff."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:

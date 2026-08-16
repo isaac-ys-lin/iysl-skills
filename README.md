@@ -33,12 +33,14 @@ installs are copied snapshots; they do not follow local source changes.
 ## Included Skills
 
 - `iysl-anidiagram` — turn a supported claim or relation into a source-faithful animated SVG, MP4, and PNG, with render checks.
+- `iysl-allow-plugins` — explicitly choose which globally available plugin capabilities this project may use, with checkbox preview, confirmation, validation, and rollback.
 - `iysl-clarify` — resolve only material intent, scope, authority, safety, or success-criteria ambiguity before an actionable change.
 - `iysl-grill` — run a user-invoked, stateless decision-tree interview that works through frontier rounds before any action.
 - `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
+- `iysl-execute` — finish authorized software changes through proportional delegation, deterministic validation, and fresh independent review when risk warrants it.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
-- `equity-data` — run a bounded two-stage Seeking Alpha intake—Ask SA for recall and targeted structured data for measurement—then return the smallest verified evidence pack for substantive public-equity work, not routine issuer Q&A or investor judgment.
+- `equity-data` — run a bounded two-stage Seeking Alpha intake with a hidden twelve-group inventory and core evidence-or-gap gate, defer Wall Street targets during embedded underwriting until independent fair value is frozen, and return the smallest verified evidence pack rather than owning investor judgment.
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 
 ## Structure

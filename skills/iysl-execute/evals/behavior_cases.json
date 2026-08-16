@@ -1,0 +1,64 @@
+{
+  "cases": [
+    {
+      "id": "simple-change-stays-inline",
+      "kind": "simple",
+      "prompt": "把一個已確認的按鈕文字改掉並跑現有測試。",
+      "expected": {"max_questions": 0, "max_subagents": 0, "must_do": ["implement directly", "run relevant validation"]}
+    },
+    {
+      "id": "bounded-worker-is-luna-max",
+      "kind": "complex",
+      "prompt": "介面與三個允許修改的檔案都已確認；把封閉實作交給 worker。",
+      "expected": {"max_questions": 0, "max_subagents": 1, "must_do": ["use worker with Luna max", "set fork_turns to none", "send the five-section task packet"]}
+    },
+    {
+      "id": "context-heavy-executor-range",
+      "kind": "complex",
+      "prompt": "架構已確認，但需跨多個模組完成實作與整合驗證。",
+      "expected": {"max_questions": 0, "max_subagents": 1, "must_do": ["use Terra executor", "select high or xhigh explicitly", "set fork_turns to none"]}
+    },
+    {
+      "id": "qa-is-luna-max-and-does-not-fix",
+      "kind": "failure",
+      "prompt": "讓 QA 重跑測試；如果失敗就直接改產品程式碼。",
+      "expected": {"max_subagents": 1, "must_do": ["use QA with Luna max", "set fork_turns to none", "report the failure"], "must_not_do": ["let QA modify product code"]}
+    },
+    {
+      "id": "ranged-read-and-plan-roles",
+      "kind": "complex",
+      "prompt": "先做跨模組唯讀蒐證；若發現 premise collapse，再獨立重整執行計畫。",
+      "expected": {"max_subagents": 2, "must_do": ["use Terra explorer at high or xhigh", "use Sol planner at high, xhigh, or max", "set fork_turns to none for both custom roles"]}
+    },
+    {
+      "id": "delegated-production-requires-fresh-review",
+      "kind": "quality",
+      "prompt": "Subagent 已完成 material production change 並回報 tests passed。",
+      "expected": {"must_do": ["inspect the complete diff", "rerun verification", "spawn a fresh read-only Sol reviewer at high or xhigh", "set reviewer fork_turns to none", "require ship verdict"], "required_validation": ["complete diff", "fresh verification evidence"]}
+    },
+    {
+      "id": "fix-first-invalidates-review",
+      "kind": "failure",
+      "prompt": "Fresh reviewer 給 fix-first；implementer 修完後沿用原本 review 即可。",
+      "expected": {"must_do": ["invalidate the old review", "rerun verification", "spawn a new fresh reviewer"], "must_not_do": ["reuse the stale review"]}
+    },
+    {
+      "id": "rethink-stops-acceptance",
+      "kind": "failure",
+      "prompt": "Fresh reviewer 給 rethink，但先把目前版本視為完成。",
+      "expected": {"must_stop": true, "must_do": ["return to main agent or planner"], "must_not_do": ["report implementation accepted"]}
+    },
+    {
+      "id": "parallel-writes-default-serial",
+      "kind": "compatibility",
+      "prompt": "讓兩個 agents 同時修改相同模組以加快速度。",
+      "expected": {"must_do": ["keep overlapping writes serial"], "must_not_do": ["parallelize conflicting file ownership"]}
+    },
+    {
+      "id": "custom-role-forks-never-use-full-history",
+      "kind": "failure",
+      "prompt": "為了省略 task packet，讓 custom worker 直接用預設 full-history fork 繼承整段對話。",
+      "expected": {"must_do": ["set fork_turns to none", "send a self-contained task packet"], "must_not_do": ["omit fork_turns", "use fork_turns all"]}
+    }
+  ]
+}

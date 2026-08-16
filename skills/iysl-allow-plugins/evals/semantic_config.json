@@ -1,0 +1,45 @@
+{
+  "recommended_threshold": 0.4,
+  "fallback_positive_concepts": [
+    "explicit_skill_invocation",
+    "project_plugin_allowlist"
+  ],
+  "positive_concepts": {
+    "explicit_skill_invocation": {
+      "weight": 0.75,
+      "phrases": ["$iysl-allow-plugins", "use iysl-allow-plugins"]
+    },
+    "project_plugin_allowlist": {
+      "weight": 0.25,
+      "phrases": ["project plugin allowlist", "project 的 plugin 白名單", "專案的 plugin 限制"]
+    }
+  },
+  "negative_concepts": {
+    "ordinary_plugin_use": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": ["用 gmail plugin", "use the notion plugin", "用 plugin 找"]
+    },
+    "plugin_install_or_discovery": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": ["安裝 plugin", "install plugin", "有哪些 plugin", "plugin discovery"]
+    },
+    "global_management": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": ["全域關掉", "globally disable", "uninstall plugin"]
+    },
+    "design_only": {
+      "weight": 0.6,
+      "exclusive": true,
+      "phrases": ["先幫我分析", "不要改設定", "比較方法"]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "ordinary_plugin_use",
+    "plugin_install_or_discovery",
+    "global_management",
+    "design_only"
+  ]
+}

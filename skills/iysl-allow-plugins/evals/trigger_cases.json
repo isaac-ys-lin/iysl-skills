@@ -1,0 +1,23 @@
+{
+  "recommended_threshold": 0.4,
+  "should_trigger": [
+    {"text": "$iysl-allow-plugins", "family": "explicit_invocation", "expected_route": "iysl-allow-plugins"},
+    {"text": "Use $iysl-allow-plugins and let me choose which enabled plugins this repo may use.", "family": "explicit_create", "expected_route": "iysl-allow-plugins"},
+    {"text": "$iysl-allow-plugins 幫我修改這個 project 的 plugin 白名單。", "family": "explicit_update", "expected_route": "iysl-allow-plugins"},
+    {"text": "$iysl-allow-plugins 驗證新 task 現在只看得到我允許的 plugin skills。", "family": "explicit_validate", "expected_route": "iysl-allow-plugins"},
+    {"text": "$iysl-allow-plugins 移除這個專案的 plugin 限制。", "family": "explicit_remove", "expected_route": "iysl-allow-plugins"}
+  ],
+  "should_not_trigger": [
+    {"text": "幫我用 Gmail plugin 找今天的信。", "family": "ordinary_plugin_use", "expected_route": "plugin-capability"},
+    {"text": "有哪些 plugin 適合管理 Linear？", "family": "plugin_discovery", "expected_route": "plugin-management"},
+    {"text": "安裝 Notion plugin。", "family": "plugin_install", "expected_route": "plugin-management"},
+    {"text": "把 Chrome plugin 全域關掉。", "family": "global_plugin_management", "expected_route": "plugin-management"},
+    {"text": "這個專案有哪些 skills？", "family": "skill_inventory", "expected_route": "direct"},
+    {"text": "幫我設定 MCP server 權限。", "family": "mcp_configuration", "expected_route": "openai-docs"}
+  ],
+  "near_neighbor": [
+    {"text": "我想讓某些專案只用部分 plugins，先幫我分析有哪些方法，不要改設定。", "family": "design_only", "expected_route": "think"},
+    {"text": "檢查 plugin 安裝狀態但不要改任何檔案。", "family": "read_only_status", "expected_route": "plugin-management"},
+    {"text": "列出目前全域開啟的 plugins。", "family": "global_inventory", "expected_route": "plugin-management"}
+  ]
+}

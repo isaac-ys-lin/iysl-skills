@@ -1,4 +1,5 @@
 {
+  "iysl-allow-plugins": ["Python 3.11", "Codex CLI"],
   "iysl-anidiagram": ["Python", "browser", "ffmpeg"],
   "iysl-ytdlp-html-report": ["Node.js", "yt-dlp", "ffmpeg", "network"],
   "iysl-deckab": ["Python"]

@@ -18,6 +18,7 @@ class GrillContractTest(unittest.TestCase):
         match = re.search(r"^name:\s*([a-z0-9-]+)$", self.skill, re.MULTILINE)
         self.assertIsNotNone(match)
         self.assertEqual(match.group(1), ROOT.name)
+        self.assertIn('display_name: "iysl-grill"', self.openai)
         self.assertIn("disable-model-invocation: true", self.skill)
         self.assertIn("allow_implicit_invocation: false", self.openai)
 

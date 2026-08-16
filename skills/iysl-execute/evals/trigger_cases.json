@@ -1,0 +1,24 @@
+{
+  "recommended_threshold": 0.25,
+  "should_trigger": [
+    {"text": "方案已確認，請照 docs/plans/export-v2.md 完成跨三個模組的實作、驗證並做獨立審閱。", "family": "approved_material_plan", "expected_route": "iysl-execute"},
+    {"text": "Implement the approved migration plan, keep the schema compatibility boundary, run the repository validators, and obtain a fresh review.", "family": "approved_high_risk_change", "expected_route": "iysl-execute"},
+    {"text": "需求與 acceptance criteria 都已定案；完成這個 material refactor，必要時把封閉工作派給 subagent。", "family": "authorized_material_refactor", "expected_route": "iysl-execute"},
+    {"text": "用 $iysl-execute 完成已核准的 concurrency 修正，驗證後讓未參與實作的 reviewer 判定。", "family": "explicit_execution", "expected_route": "iysl-execute"},
+    {"text": "API contract 與 acceptance tests 已固定，請完成 client、service 與 tests 的修改；不要重新設計介面。", "family": "bounded_cross_module_implementation", "expected_route": "iysl-execute"},
+    {"text": "The implementation scope, owned files, and acceptance tests are final. Finish the change and return exact evidence.", "family": "complete_execution_contract", "expected_route": "iysl-execute"},
+    {"text": "根因已確認，跨多檔修法與驗證也已核准，現在完成修正。", "family": "diagnosed_material_then_execute", "expected_route": "iysl-execute"}
+  ],
+  "should_not_trigger": [
+    {"text": "把 Save 按鈕改成 Export。", "family": "trivial_edit", "expected_route": "direct"},
+    {"text": "匯出功能會卡住，還不知道原因，先找根因。", "family": "unknown_root_cause", "expected_route": "hunt"},
+    {"text": "比較 SQLite 和 JSON，幫我選架構但先不要實作。", "family": "solution_planning", "expected_route": "think"},
+    {"text": "Review this existing PR and report actionable findings only.", "family": "review_only", "expected_route": "check"},
+    {"text": "讀這份 API 文件並整理重點。", "family": "read_only_research", "expected_route": "read"},
+    {"text": "程式已完成，幫我 commit、push 並發布。", "family": "release_only", "expected_route": "check"}
+  ],
+  "near_neighbor": [
+    {"text": "請先把這個模糊需求變成 decision-complete plan。", "family": "execute_vs_plan", "expected_route": "think"},
+    {"text": "只需在既有測試加一個明確 assertion，直接做完即可。", "family": "execute_vs_direct", "expected_route": "direct"}
+  ]
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "iysl-execute"
+  short_description: "Execute approved changes with adaptive agents and fresh review."
+  default_prompt: "Use $iysl-execute to complete this approved software change with proportional delegation, verification, and fresh review."
+policy:
+  allow_implicit_invocation: true

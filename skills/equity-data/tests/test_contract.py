@@ -21,6 +21,18 @@ class EquityDataContractTest(unittest.TestCase):
         cls.checklist = (
             SKILL_DIR / "templates" / "data-request-checklist.md"
         ).read_text(encoding="utf-8")
+        cls.behavior = (SKILL_DIR / "evals" / "behavior_cases.json").read_text(
+            encoding="utf-8"
+        )
+        cls.openai_yaml = (SKILL_DIR / "agents" / "openai.yaml").read_text(
+            encoding="utf-8"
+        )
+        cls.interface_yaml = (SKILL_DIR / "agents" / "interface.yaml").read_text(
+            encoding="utf-8"
+        )
+        cls.readme = (SKILL_DIR.parents[1] / "README.md").read_text(
+            encoding="utf-8"
+        )
 
     def test_router_owns_embedded_provider_selection(self):
         self.assertIn("plugin router own", self.skill)
@@ -65,6 +77,81 @@ class EquityDataContractTest(unittest.TestCase):
             "or independently required by the owning workflow",
             self.skill,
         )
+
+    def test_core_seeking_alpha_coverage_gate_is_explicit(self):
+        for phrase in (
+            "seven core groups",
+            "forward annual and quarterly revenue and EPS estimates",
+            "revenue and EPS estimate revisions",
+            "revenue and EPS earnings surprises",
+            "Wall Street rating",
+            "Quant rating and Value",
+            "sector-relative",
+            "recent bull and bear views",
+        ):
+            self.assertIn(phrase, self.skill)
+        self.assertIn("Core evidence-or-gap gate completed", self.checklist)
+        self.assertIn(
+            "complete the core evidence-or-gap coverage gate",
+            self.behavior,
+        )
+
+    def test_twelve_group_inventory_is_canonical_but_hidden(self):
+        for group in (
+            "market_snapshot",
+            "street_estimates",
+            "estimate_revisions",
+            "earnings_surprises",
+            "wall_street",
+            "quant",
+            "valuation",
+            "peer_comparison",
+            "analyst_views",
+            "transcripts",
+            "positioning",
+            "normalized_financials",
+        ):
+            self.assertIn(f"`{group}`", self.source_map)
+        self.assertIn("Hidden Seeking Alpha coverage inventory", self.checklist)
+        self.assertIn("complete inventory remains hidden", self.checklist)
+        self.assertIn(
+            "force all twelve inventory groups into reader-facing output",
+            self.behavior,
+        )
+
+    def test_quant_valuation_and_dividend_gaps_are_closed(self):
+        for phrase in (
+            "Value, Growth, Profitability, Momentum, and EPS Revisions grades",
+            "available rating history",
+            "historical average or percentile",
+            "dividend yield, growth, payout, and estimates",
+        ):
+            self.assertIn(phrase, self.source_map)
+
+    def test_wall_street_targets_are_post_freeze_only(self):
+        for surface in (self.skill, self.source_map, self.checklist, self.behavior):
+            self.assertIn("deferred_until_owner_fv_freeze", surface)
+        self.assertIn("For embedded underwriting or valuation workflows", self.skill)
+        self.assertIn("do not request or retrieve provider price targets", self.source_map)
+        self.assertIn("provider targets never set or revise", self.skill)
+        self.assertIn("wall-street-target-post-freeze-comparison", self.behavior)
+        self.assertNotIn(
+            "recent upgrades/downgrades, target changes, and the expectation bar",
+            self.source_map,
+        )
+
+    def test_standalone_target_lookup_is_not_blocked_by_fv_gate(self):
+        for surface in (self.skill, self.source_map, self.checklist):
+            self.assertIn("standalone target", surface)
+        self.assertIn("standalone-wall-street-target-lookup", self.behavior)
+        self.assertIn("without requiring an owner FV freeze", self.behavior)
+
+    def test_interface_metadata_and_readme_match_new_contract(self):
+        for surface in (self.openai_yaml, self.interface_yaml):
+            self.assertIn("core Seeking Alpha evidence-or-gap coverage gate", surface)
+            self.assertIn("defer Wall Street targets during embedded underwriting", surface)
+        self.assertIn("hidden twelve-group inventory", self.readme)
+        self.assertIn("during embedded underwriting", self.readme)
 
     def test_multi_security_scan_does_not_expand_context_unnecessarily(self):
         self.assertIn(

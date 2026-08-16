@@ -1,0 +1,71 @@
+{
+  "cases": [
+    {
+      "id": "first-run-checkbox-picker",
+      "kind": "simple",
+      "prompt": "$iysl-allow-plugins",
+      "expected": {
+        "max_questions": 1,
+        "max_subagents": 0,
+        "must_do": ["inventory global, CLI, and current task plugin state", "show selectable plugins as native checkboxes when visualize is available", "precheck all selectable plugins on first use"],
+        "must_not_do": ["write project files before confirmation"]
+      }
+    },
+    {
+      "id": "preview-before-apply",
+      "kind": "quality",
+      "prompt": "$iysl-allow-plugins only allow browser and visualize in this project.",
+      "expected": {
+        "must_do": ["show the selection diff", "explain skill, tool suggestion, MCP, and app limitations", "request confirmation before apply"],
+        "must_not_do": ["write enabled true for selected plugins", "claim a security boundary"]
+      }
+    },
+    {
+      "id": "visualize-unavailable-fallback",
+      "kind": "compatibility",
+      "prompt": "$iysl-allow-plugins but visualize is unavailable in this task.",
+      "expected": {
+        "max_questions": 1,
+        "must_do": ["offer a grouped numbered multi-select fallback"],
+        "must_not_do": ["force-enable visualize", "stop solely because visualize is unavailable"]
+      }
+    },
+    {
+      "id": "conflicting-project-config",
+      "kind": "failure",
+      "prompt": "$iysl-allow-plugins apply this selection, but .codex/config.toml already controls the same skill path.",
+      "expected": {
+        "must_stop": true,
+        "must_do": ["report the exact config conflict"],
+        "must_not_do": ["partially write the allowlist", "overwrite unrelated project config"]
+      }
+    },
+    {
+      "id": "new-plugin-later",
+      "kind": "idempotence",
+      "prompt": "$iysl-allow-plugins after installing one more plugin globally.",
+      "expected": {
+        "must_do": ["precheck the saved allowlist", "leave newly discovered plugins unchecked"],
+        "must_not_do": ["silently add the new plugin", "run a background sync"]
+      }
+    },
+    {
+      "id": "fresh-task-validation",
+      "kind": "compatibility",
+      "prompt": "$iysl-allow-plugins validate the restrictions from a new Desktop task.",
+      "expected": {
+        "required_validation": ["validate allowlist and managed block deterministically", "distinguish CLI proof from fresh Desktop task visibility"],
+        "must_not_do": ["claim current-task capabilities were unloaded by the write"]
+      }
+    },
+    {
+      "id": "rollback",
+      "kind": "failure",
+      "prompt": "$iysl-allow-plugins remove project restrictions.",
+      "expected": {
+        "must_do": ["preview the exact rollback", "request confirmation", "remove only the allowlist and managed block"],
+        "must_not_do": ["remove unrelated config", "change global plugin state"]
+      }
+    }
+  ]
+}
