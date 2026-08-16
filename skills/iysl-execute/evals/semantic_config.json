@@ -12,7 +12,7 @@
     },
     "material_implementation": {
       "weight": 0.3,
-      "phrases": ["material refactor", "migration", "跨三個模組", "client、service", "concurrency"]
+      "phrases": ["material refactor", "migration", "跨三個模組", "跨多檔", "client、service", "concurrency"]
     },
     "verification_contract": {
       "weight": 0.2,

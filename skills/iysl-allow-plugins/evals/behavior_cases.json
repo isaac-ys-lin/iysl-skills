@@ -8,16 +8,16 @@
         "max_questions": 1,
         "max_subagents": 0,
         "must_do": ["inventory global, CLI, and current task plugin state", "show selectable plugins as native checkboxes when visualize is available", "precheck all selectable plugins on first use"],
-        "must_not_do": ["write project files before confirmation"]
+        "must_not_do": ["write project files before the selection submission that serves as confirmation"]
       }
     },
     {
-      "id": "preview-before-apply",
+      "id": "checkbox-submit-applies",
       "kind": "quality",
       "prompt": "$iysl-allow-plugins only allow browser and visualize in this project.",
       "expected": {
-        "must_do": ["show the selection diff", "explain skill, tool suggestion, MCP, and app limitations", "request confirmation before apply"],
-        "must_not_do": ["write enabled true for selected plugins", "claim a security boundary"]
+        "must_do": ["treat the submitted selection as the one apply confirmation", "regenerate live inventory and run fail-closed plan/preflight internally", "apply as a transaction that runtime-verifies skill and MCP masks with Desktop checked first", "rollback the two managed files and report structured evidence on any runtime mismatch", "validate and report the selection diff plus skill, tool suggestion, MCP, and app limitations"],
+        "must_not_do": ["ask for a second user-facing preview or confirmation after selection submission", "write enabled true for selected plugins", "call a file-only result valid when runtime enforcement fails", "claim a security boundary"]
       }
     },
     {
@@ -54,8 +54,8 @@
       "kind": "compatibility",
       "prompt": "$iysl-allow-plugins validate the restrictions from a new Desktop task.",
       "expected": {
-        "required_validation": ["validate allowlist and managed block deterministically", "distinguish CLI proof from fresh Desktop task visibility"],
-        "must_not_do": ["claim current-task capabilities were unloaded by the write"]
+        "required_validation": ["validate allowlist and managed block deterministically", "rerun the runtime skill and MCP gate against every discovered local Codex runtime", "report success only as runtime verified"],
+        "must_not_do": ["claim current-task capabilities were unloaded by the write", "alter files when validation finds a runtime mismatch"]
       }
     },
     {

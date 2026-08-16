@@ -1,6 +1,6 @@
 ---
 name: iysl-execute
-description: Execute an authorized and sufficiently specified software change through the smallest successful implementation path, proportional Codex subagent delegation, deterministic validation, and fresh independent Sol review for material delegated or high-risk production changes. Use after a plan is approved or the request already defines the observable outcome, scope, and acceptance criteria. Do not use for solution planning, unknown-root-cause diagnosis, read-only research, review-only work, release-only work, or trivial edits the active agent can complete directly.
+description: Execute an approved, decision-complete software change with proportional Codex subagent delegation, deterministic validation, and fresh independent Sol review when risk warrants. Use after planning or diagnosis is complete; exclude planning, unknown-root-cause debugging, research, review-only, release-only, and trivial edits.
 ---
 
 # Execution Orchestrator
