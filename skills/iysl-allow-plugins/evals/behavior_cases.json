@@ -16,8 +16,18 @@
       "kind": "quality",
       "prompt": "$iysl-allow-plugins only allow browser and visualize in this project.",
       "expected": {
-        "must_do": ["treat the submitted selection as the one apply confirmation", "regenerate live inventory and run fail-closed plan/preflight internally", "apply as a transaction that runtime-verifies skill and MCP masks with Desktop checked first", "rollback the two managed files and report structured evidence on any runtime mismatch", "validate and report the selection diff plus skill, tool suggestion, MCP, and app limitations"],
-        "must_not_do": ["ask for a second user-facing preview or confirmation after selection submission", "write enabled true for selected plugins", "call a file-only result valid when runtime enforcement fails", "claim a security boundary"]
+        "must_do": ["treat the submitted selection as the one apply confirmation", "regenerate live inventory and run fail-closed scope plan/preflight internally", "report excluded apps/connectors as unsupported project scope without writing", "conditionally apply a transaction that runtime-verifies skill and MCP masks with Desktop checked first", "rollback the two managed files and report structured evidence on any runtime mismatch"],
+        "must_not_do": ["ask for a second user-facing preview or confirmation after selection submission", "write enabled true for selected plugins", "call a file-only result valid when runtime enforcement fails", "claim a security boundary or universal project allowlist"]
+      }
+    },
+    {
+      "id": "unsupported-project-scope",
+      "kind": "failure",
+      "prompt": "$iysl-allow-plugins exclude a plugin that exposes an app or connector from this Project.",
+      "expected": {
+        "must_stop": true,
+        "must_do": ["report the unsupported app or connector capability", "leave both managed project files unchanged"],
+        "must_not_do": ["attempt a partial Project mask", "change global installation or enabled state"]
       }
     },
     {

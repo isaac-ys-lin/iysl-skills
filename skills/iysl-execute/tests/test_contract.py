@@ -32,13 +32,25 @@ class ExecuteContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.skill)
 
-    def test_role_ranges_and_fixed_luna_max_are_explicit(self):
+    def test_role_efforts_are_fixed_and_luna_remains_max(self):
         for phrase in (
             "Luna `max`, fixed",
-            "Terra `high` to `xhigh`",
-            "Sol `high` to `max`",
-            "Fresh Sol `high` to `xhigh`",
-            "explicitly select the effort",
+            "Terra `medium`, fixed",
+            "Terra `high`, fixed",
+            "Sol `high`, fixed",
+            "Fresh Sol `high`, fixed",
+            "automatic routing never raises it to `xhigh` or `max`",
+        ):
+            self.assertIn(phrase, self.routing_text)
+
+    def test_routes_are_selective_and_bounded(self):
+        for phrase in (
+            "`solo` (default)",
+            "One auxiliary is the default maximum",
+            "Only `full` may use an implementer and reviewer",
+            "Delegation, file count, or a `material` label alone does not trigger review",
+            "start one new fresh reviewer",
+            "do not add another reviewer or automatically increase effort",
         ):
             self.assertIn(phrase, self.routing_text)
 
@@ -57,7 +69,7 @@ class ExecuteContractTest(unittest.TestCase):
         self.assertIn("omit fork_turns", custom_fork["must_not_do"])
         self.assertIn("use fork_turns all", custom_fork["must_not_do"])
 
-        review = by_id["delegated-production-requires-fresh-review"]["expected"]
+        review = by_id["high-risk-production-requires-fresh-review"]["expected"]
         self.assertIn("set reviewer fork_turns to none", review["must_do"])
 
     def test_fresh_review_lifecycle_is_complete(self):
@@ -78,8 +90,10 @@ class ExecuteContractTest(unittest.TestCase):
                 "simple-change-stays-inline",
                 "bounded-worker-is-luna-max",
                 "qa-is-luna-max-and-does-not-fix",
-                "delegated-production-requires-fresh-review",
-                "fix-first-invalidates-review",
+                "material-delegation-does-not-auto-review",
+                "high-risk-production-requires-fresh-review",
+                "fix-first-allows-one-fresh-rereview",
+                "second-non-ship-stops-review-loop",
                 "rethink-stops-acceptance",
                 "parallel-writes-default-serial",
                 "custom-role-forks-never-use-full-history",

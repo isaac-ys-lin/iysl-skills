@@ -3,6 +3,7 @@ import importlib.util
 import io
 import json
 import os
+import signal
 import stat
 import tempfile
 import tomllib
@@ -60,7 +61,6 @@ class AllowPluginsTest(unittest.TestCase):
                     "version": "1.0.0",
                     "skills": "./skills/",
                     "mcpServers": "./.mcp.json",
-                    "apps": "./.app.json",
                 }
             ),
             encoding="utf-8",
@@ -69,7 +69,6 @@ class AllowPluginsTest(unittest.TestCase):
             json.dumps({"mcpServers": {"alpha-server": {"command": "alpha"}}}),
             encoding="utf-8",
         )
-        (self.plugin / ".app.json").write_text("{}\n", encoding="utf-8")
         self.global_config = self.root / "config.toml"
         self.global_config.write_text(
             f'[projects.{json.dumps(str(self.project.resolve()))}]\ntrust_level = "trusted"\n\n'
@@ -187,7 +186,7 @@ class AllowPluginsTest(unittest.TestCase):
         self.assertTrue(plugin["canonical_known"])
         self.assertEqual(plugin["group"], "confirmed_globally_enabled")
         self.assertEqual(plugin["mcp_servers"], ["alpha-server"])
-        self.assertTrue(plugin["apps"])
+        self.assertFalse(plugin["apps"])
         self.assertEqual(
             plugin["skills"],
             [str((self.plugin / "skills" / "one" / "SKILL.md").resolve())],
@@ -227,8 +226,8 @@ class AllowPluginsTest(unittest.TestCase):
         self.assertIn(" checked", picker)
         self.assertIn("window.openai.sendFollowUpMessage", picker)
         self.assertIn("$iysl-allow-plugins", picker)
-        self.assertIn(">套用設定</button>", picker)
-        self.assertIn("title: '套用設定'", picker)
+        self.assertIn(">檢查並套用</button>", picker)
+        self.assertIn("title: '檢查並套用'", picker)
         self.assertIn("這則訊息是唯一確認", picker)
         self.assertIn("selected_plugins = ' + JSON.stringify(selected)", picker)
         self.assertIn(str(self.project.resolve()), picker)
@@ -255,8 +254,104 @@ class AllowPluginsTest(unittest.TestCase):
             '[plugins."alpha@market".mcp_servers."alpha-server"]', block
         )
         self.assertNotIn("enabled = true", block)
-        self.assertTrue(plan["effects"][0]["apps_not_project_scopeable"])
-        self.assertTrue(any("apps/connectors" in item for item in plan["warnings"]))
+        self.assertFalse(plan["effects"][0]["apps_not_project_scopeable"])
+        self.assertTrue(plan["scope_enforceable"])
+        self.assertEqual(plan["unsupported_capabilities"], [])
+
+    def test_disabled_app_capability_blocks_apply_without_writes(self):
+        manifest_path = self.plugin / ".codex-plugin" / "plugin.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["apps"] = "./.app.json"
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        (self.plugin / ".app.json").write_text("{}\n", encoding="utf-8")
+        inventory = self.inventory()
+        plan = allow_plugins.build_plan(inventory, [])
+        captured = []
+        original_write_output = allow_plugins._write_output
+        allow_plugins._write_output = lambda _path, payload: captured.append(payload)
+        try:
+            self.assertEqual(
+                allow_plugins.main(
+                    [
+                        "plan",
+                        "--project",
+                        str(self.project),
+                        "--global-config",
+                        str(self.global_config),
+                        "--plugin-list-json",
+                        str(self.plugin_list),
+                    ]
+                ),
+                0,
+            )
+        finally:
+            allow_plugins._write_output = original_write_output
+        public_plan = captured[0]
+        self.assertFalse(public_plan["scope_enforceable"])
+        self.assertEqual(
+            public_plan["unsupported_capabilities"],
+            [
+                {
+                    "plugin": "alpha@market",
+                    "capability": "apps/connectors",
+                    "reason": "plugin apps/connectors cannot be project-scoped",
+                }
+            ],
+        )
+
+        result = allow_plugins.apply_plan(
+            plan, runtime_gate=lambda _plan: self.fail("runtime gate must not run")
+        )
+        self.assertEqual(result["status"], "unsupported_project_scope")
+        self.assertFalse(result["scope_enforceable"])
+        self.assertEqual(result["allowed_plugins"], [])
+        self.assertEqual(result["unsupported_capabilities"], public_plan["unsupported_capabilities"])
+        self.assertFalse((self.project / allow_plugins.CONFIG_REL).exists())
+        self.assertFalse((self.project / allow_plugins.ALLOWLIST_REL).exists())
+
+    def test_cli_unsupported_app_scope_precedes_project_config_conflict(self):
+        manifest_path = self.plugin / ".codex-plugin" / "plugin.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["apps"] = "./.app.json"
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        (self.plugin / ".app.json").write_text("{}\n", encoding="utf-8")
+        config_path = self.project / allow_plugins.CONFIG_REL
+        config_path.parent.mkdir()
+        config_path.write_bytes(b"[tool_suggest]\ndisabled_tools = []\n")
+        config_path.chmod(0o600)
+        before = allow_plugins._snapshot_managed_files(self.project)
+        captured = []
+        original_write_output = allow_plugins._write_output
+        allow_plugins._write_output = lambda _path, payload: captured.append(payload)
+        try:
+            code = allow_plugins.main(
+                [
+                    "apply",
+                    "--project",
+                    str(self.project),
+                    "--global-config",
+                    str(self.global_config),
+                    "--plugin-list-json",
+                    str(self.plugin_list),
+                    "--confirm-apply",
+                ]
+            )
+        finally:
+            allow_plugins._write_output = original_write_output
+        self.assertEqual(code, 1)
+        self.assertEqual(captured[0]["status"], "unsupported_project_scope")
+        self.assertEqual(allow_plugins._snapshot_managed_files(self.project), before)
+
+    def test_selected_app_capability_does_not_block_enforceable_mask(self):
+        inventory = self.inventory()
+        alpha = next(item for item in inventory["plugins"] if item["id"] == "alpha@market")
+        alpha["apps"] = True
+        plan = allow_plugins.build_plan(inventory, ["alpha@market"])
+        self.assertTrue(plan["scope_enforceable"])
+        self.assertEqual(plan["unsupported_capabilities"], [])
+        result = allow_plugins.apply_plan(plan, runtime_gate=self.runtime_ok)
+        self.assertEqual(result["status"], "applied_runtime_verified")
+        self.assertTrue(result["scope_enforceable"])
 
     def test_inventory_aggregates_capabilities_across_observed_roots(self):
         second = self.root / "plugin-second"
@@ -333,6 +428,7 @@ class AllowPluginsTest(unittest.TestCase):
         result = allow_plugins.apply_plan(plan, runtime_gate=self.runtime_ok)
         self.assertEqual(result["status"], "applied_runtime_verified")
         self.assertTrue(result["runtime_verified"])
+        self.assertTrue(result["scope_enforceable"])
         tomllib.loads(config_path.read_text(encoding="utf-8"))
         tomllib.loads(
             (self.project / allow_plugins.ALLOWLIST_REL).read_text(encoding="utf-8")
@@ -558,6 +654,7 @@ class AllowPluginsTest(unittest.TestCase):
         plan = allow_plugins.build_plan(self.inventory(), [])
         first = allow_plugins.apply_plan(plan, runtime_gate=self.runtime_failure)
         self.assertEqual(first["status"], "rolled_back_runtime_mismatch")
+        self.assertFalse(first["scope_enforceable"])
         self.assertFalse((self.project / allow_plugins.CONFIG_REL).exists())
         self.assertFalse((self.project / allow_plugins.ALLOWLIST_REL).exists())
         self.assertTrue((self.project / ".codex").is_dir())
@@ -598,6 +695,18 @@ class AllowPluginsTest(unittest.TestCase):
         self.assertFalse((self.project / allow_plugins.CONFIG_REL).exists())
         self.assertFalse((self.project / allow_plugins.ALLOWLIST_REL).exists())
 
+    def test_apply_rolls_back_transaction_termination_from_runtime_probe(self):
+        plan = allow_plugins.build_plan(self.inventory(), [])
+        with self.assertRaises(allow_plugins.TransactionTerminated):
+            allow_plugins.apply_plan(
+                plan,
+                runtime_gate=lambda _plan: (_ for _ in ()).throw(
+                    allow_plugins.TransactionTerminated()
+                ),
+            )
+        self.assertFalse((self.project / allow_plugins.CONFIG_REL).exists())
+        self.assertFalse((self.project / allow_plugins.ALLOWLIST_REL).exists())
+
     def test_apply_rolls_back_keyboard_interrupt_after_first_atomic_write(self):
         plan = allow_plugins.build_plan(self.inventory(), [])
         config_path = self.project / allow_plugins.CONFIG_REL
@@ -620,6 +729,33 @@ class AllowPluginsTest(unittest.TestCase):
         self.assertFalse(config_path.exists())
         self.assertFalse((self.project / allow_plugins.ALLOWLIST_REL).exists())
 
+    def test_sigterm_after_first_write_restores_preimage_and_handler(self):
+        config_path = self.project / allow_plugins.CONFIG_REL
+        config_path.parent.mkdir()
+        config_path.write_bytes(b"[features]\nweb_search = true\n")
+        config_path.chmod(0o600)
+        plan = allow_plugins.build_plan(self.inventory(), [])
+        before = allow_plugins._snapshot_managed_files(self.project)
+        previous_handler = signal.getsignal(signal.SIGTERM)
+        original_write = allow_plugins._atomic_write
+        writes = 0
+
+        def terminate_after_config(path, text, *, mode=None, expected=None):
+            nonlocal writes
+            original_write(path, text, mode=mode, expected=expected)
+            writes += 1
+            if writes == 1:
+                signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+
+        allow_plugins._atomic_write = terminate_after_config
+        try:
+            with self.assertRaises(allow_plugins.TransactionTerminated):
+                allow_plugins.apply_plan(plan, runtime_gate=self.runtime_ok)
+        finally:
+            allow_plugins._atomic_write = original_write
+        self.assertEqual(allow_plugins._snapshot_managed_files(self.project), before)
+        self.assertIs(signal.getsignal(signal.SIGTERM), previous_handler)
+
     def test_validate_runtime_mismatch_is_read_only(self):
         plan = allow_plugins.build_plan(self.inventory(), [])
         allow_plugins.apply_plan(plan, runtime_gate=self.runtime_ok)
@@ -630,6 +766,25 @@ class AllowPluginsTest(unittest.TestCase):
         self.assertEqual(result["status"], "runtime_mismatch")
         self.assertFalse(result["runtime_verified"])
         self.assertEqual((config_path.read_bytes(), allow_path.read_bytes()), before)
+
+    def test_validate_rejects_post_probe_managed_file_drift_without_writes(self):
+        plan = allow_plugins.build_plan(self.inventory(), [])
+        allow_plugins.apply_plan(plan, runtime_gate=self.runtime_ok)
+        config_path = self.project / allow_plugins.CONFIG_REL
+        allow_path = self.project / allow_plugins.ALLOWLIST_REL
+        external = b"# changed during runtime probe\n"
+        original_allow = allow_path.read_bytes()
+
+        def runtime_ok_then_change_config(_plan):
+            config_path.write_bytes(external)
+            return self.runtime_ok(_plan)
+
+        result = allow_plugins.validate_state(self.inventory(), runtime_gate=runtime_ok_then_change_config)
+        self.assertEqual(result["status"], "runtime_mismatch")
+        self.assertEqual(result["stage"], "post_probe_state")
+        self.assertFalse(result["runtime_verified"])
+        self.assertEqual(config_path.read_bytes(), external)
+        self.assertEqual(allow_path.read_bytes(), original_allow)
 
     def test_runtime_discovery_deduplicates_samefile_and_preserves_order(self):
         desktop = self.root / "desktop-codex"
@@ -930,6 +1085,38 @@ class AllowPluginsTest(unittest.TestCase):
             allow_plugins.subprocess.Popen = original_popen
             allow_plugins.threading.Thread = original_thread
 
+    def test_transaction_sigterm_guard_raises_termination_and_restores_handler(self):
+        class Signals:
+            SIGTERM = 15
+
+            def __init__(self):
+                self.previous = object()
+                self.current = self.previous
+                self.calls = []
+
+            def getsignal(self, signum):
+                if signum != self.SIGTERM:
+                    raise AssertionError("unexpected signal")
+                return self.current
+
+            def signal(self, signum, handler):
+                if signum != self.SIGTERM:
+                    raise AssertionError("unexpected signal")
+                self.calls.append(handler)
+                self.current = handler
+
+        signals = Signals()
+        main_thread = object()
+        with allow_plugins._transaction_sigterm_guard(
+            signal_api=signals,
+            current_thread=lambda: main_thread,
+            main_thread=lambda: main_thread,
+        ):
+            with self.assertRaises(allow_plugins.TransactionTerminated):
+                signals.current(signals.SIGTERM, None)
+        self.assertIs(signals.current, signals.previous)
+        self.assertEqual(len(signals.calls), 2)
+
     def test_apply_compare_and_swap_rejects_preapply_drift(self):
         plan = allow_plugins.build_plan(self.inventory(), [])
         config_path = self.project / allow_plugins.CONFIG_REL
@@ -1164,6 +1351,9 @@ class SkillContractTest(unittest.TestCase):
         self.assertIn("native `.form-check` controls", skill)
         self.assertIn("window.openai.sendFollowUpMessage", skill)
         self.assertIn("not access control", skill)
+        self.assertIn("Project Plugin Scope Compatibility Gate", skill)
+        self.assertIn("unsupported Project scope", skill)
+        self.assertIn("CODEX_HOME", skill)
         self.assertIn("explicit apply confirmation", skill)
         self.assertIn("fail-closed preflight", skill)
         self.assertIn("second user-facing preview or confirmation", skill)

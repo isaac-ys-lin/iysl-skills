@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import html
 import json
@@ -62,6 +63,33 @@ class ConcurrentModificationError(AllowPluginsError):
     def __init__(self, path: Path):
         self.path = path
         super().__init__(f"managed target changed before atomic replace: {path}")
+
+
+class TransactionTerminated(KeyboardInterrupt):
+    """SIGTERM received while a managed-file transaction is probing runtimes."""
+
+
+@contextmanager
+def _transaction_sigterm_guard(
+    *,
+    signal_api: Any = signal,
+    current_thread: Any = threading.current_thread,
+    main_thread: Any = threading.main_thread,
+) -> Iterable[None]:
+    """Turn SIGTERM into a rollback-triggering interruption in the main thread only."""
+    if current_thread() is not main_thread():
+        yield
+        return
+    previous = signal_api.getsignal(signal_api.SIGTERM)
+
+    def interrupt(_signum: int, _frame: Any) -> None:
+        raise TransactionTerminated()
+
+    signal_api.signal(signal_api.SIGTERM, interrupt)
+    try:
+        yield
+    finally:
+        signal_api.signal(signal_api.SIGTERM, previous)
 
 
 def _json_string(value: str) -> str:
@@ -696,6 +724,40 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
         raise AllowPluginsError(f"selection contains unavailable plugin IDs: {unknown}")
     selected_items = [item for plugin_id, item in selectable.items() if plugin_id in selected]
     disabled = [item for plugin_id, item in selectable.items() if plugin_id not in selected]
+    unsupported_capabilities = [
+        {
+            "plugin": item["id"],
+            "capability": "apps/connectors",
+            "reason": "plugin apps/connectors cannot be project-scoped",
+        }
+        for item in disabled
+        if item.get("apps") is True
+    ]
+    previous = inventory.get("previous_allowlist")
+    added = sorted(set(selected) - set(previous or []))
+    removed = sorted(set(previous or []) - set(selected))
+    if unsupported_capabilities:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "project": str(project),
+            "allowed_plugins": selected,
+            "disabled_plugins": [item["id"] for item in disabled],
+            "selection_diff": {"added": added, "removed": removed},
+            "scope_enforceable": False,
+            "unsupported_capabilities": unsupported_capabilities,
+            "effects": [
+                {
+                    "id": item["id"],
+                    "skills_disabled": 0,
+                    "tool_suggestion_disabled": False,
+                    "mcp_servers_disabled": [],
+                    "apps_not_project_scopeable": bool(item.get("apps")),
+                }
+                for item in disabled
+            ],
+            "warnings": ["excluded plugin apps/connectors prevent project-scope enforcement"],
+            "files": [str(project / ALLOWLIST_REL), str(project / CONFIG_REL)],
+        }
     selectable_name_counts: dict[str, int] = {}
     for item in selectable.values():
         name = item.get("name")
@@ -769,7 +831,6 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
     base, base_data, existing_managed = _read_project_config(project)
     if _snapshot_managed_files(project) != managed_preimage:
         raise AllowPluginsError("managed files changed while building the plan; rebuild inventory and plan")
-    previous = inventory.get("previous_allowlist")
     if previous is None:
         config_preexisting = managed_preimage[project / CONFIG_REL][0]
     else:
@@ -778,8 +839,6 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
             raise AllowPluginsError("saved allowlist has no valid config_preexisting metadata")
     _check_conflicts(base_data, skill_paths, tools, mcp)
     block = _managed_block(skill_paths, tools, mcp)
-    added = sorted(set(selected) - set(previous or []))
-    removed = sorted(set(previous or []) - set(selected))
     if _tracked(project, CONFIG_REL):
         warnings.append(f"{CONFIG_REL.as_posix()} is tracked by Git")
     if _tracked(project, ALLOWLIST_REL):
@@ -787,13 +846,15 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
     if skill_paths:
         warnings.append("generated absolute skill paths are machine- and plugin-version-specific")
     if app_limits:
-        warnings.append("plugin apps/connectors are not project-scopeable by this workaround")
+        warnings.append("disabled plugin apps/connectors prevent project-scope enforcement")
     return {
         "schema_version": SCHEMA_VERSION,
         "project": str(project),
         "allowed_plugins": selected,
         "disabled_plugins": [item["id"] for item in disabled],
         "selection_diff": {"added": added, "removed": removed},
+        "scope_enforceable": not unsupported_capabilities,
+        "unsupported_capabilities": unsupported_capabilities,
         "effects": effects,
         "warnings": warnings,
         "files": [str(project / ALLOWLIST_REL), str(project / CONFIG_REL)],
@@ -1395,6 +1456,7 @@ def _runtime_failure_result(
         "status": "rolled_back_runtime_mismatch" if rollback_error is None else "rollback_failed_runtime_mismatch",
         "project": str(project),
         "runtime_verified": False,
+        "scope_enforceable": False,
         "allowed_plugins": plan["allowed_plugins"],
         "rollback_restored": rollback_error is None,
         "stage": evidence.get("stage", "runtime_mismatch"),
@@ -1408,6 +1470,17 @@ def _runtime_failure_result(
         if key in evidence:
             result[key] = evidence[key]
     return result
+
+
+def _unsupported_scope_result(project: Path, plan: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "unsupported_project_scope",
+        "project": str(project),
+        "allowed_plugins": plan["allowed_plugins"],
+        "runtime_verified": False,
+        "scope_enforceable": False,
+        "unsupported_capabilities": plan["unsupported_capabilities"],
+    }
 
 
 def _plan_preimage(project: Path, plan: dict[str, Any]) -> dict[Path, ManagedFileState]:
@@ -1429,6 +1502,8 @@ def _plan_preimage(project: Path, plan: dict[str, Any]) -> dict[Path, ManagedFil
 
 def apply_plan(plan: dict[str, Any], *, runtime_gate: Any = verify_runtime_gate) -> dict[str, Any]:
     project = Path(plan["project"])
+    if plan.get("scope_enforceable") is False:
+        return _unsupported_scope_result(project, plan)
     base = plan["base_config"]
     config_preexisting = plan.get("config_preexisting")
     if not isinstance(config_preexisting, bool):
@@ -1447,71 +1522,68 @@ def apply_plan(plan: dict[str, Any], *, runtime_gate: Any = verify_runtime_gate)
     allow_path = project / ALLOWLIST_REL
     allow_text = _allowlist_text(plan["allowed_plugins"], config_preexisting=config_preexisting)
     generated = dict(snapshots)
-    try:
-        config_mode = snapshots[config_path][2] if snapshots[config_path][0] else 0o644
-        generated[config_path] = (True, config_text.encode("utf-8"), config_mode)
-        _atomic_write(config_path, config_text, mode=config_mode, expected=snapshots[config_path])
-        allow_mode = snapshots[allow_path][2] if snapshots[allow_path][0] else 0o644
-        generated[allow_path] = (True, allow_text.encode("utf-8"), allow_mode)
-        _atomic_write(allow_path, allow_text, mode=allow_mode, expected=snapshots[allow_path])
-    except KeyboardInterrupt:
+    with _transaction_sigterm_guard():
         try:
-            _restore_managed_files(snapshots, expected_current=generated)
-        except Exception as rollback_error:
-            raise AllowPluginsError(f"apply interrupted and rollback failed: {rollback_error}") from None
-        raise
-    except Exception as exc:
-        try:
-            _restore_managed_files(snapshots, expected_current=generated)
-        except Exception as rollback_error:
-            raise AllowPluginsError(f"apply write failed and rollback failed: {rollback_error}") from exc
-        raise
-    try:
-        evidence = runtime_gate(plan)
-    except KeyboardInterrupt:
-        try:
-            _restore_managed_files(snapshots, expected_current=generated)
-        except Exception as rollback_error:
-            raise AllowPluginsError(f"apply interrupted and rollback failed: {rollback_error}") from None
-        raise
-    except Exception as exc:
-        evidence = {"ok": False, "stage": "runtime_gate_exception", "probe_error": str(exc)}
-    if isinstance(evidence, dict) and evidence.get("ok") is True:
-        try:
-            final_state = _snapshot_managed_files(project)
-        except Exception as exc:
-            evidence = {
-                "ok": False,
-                "stage": "post_probe_state",
-                "probe_error": f"cannot read managed files after runtime verification: {exc}",
-            }
-        else:
-            if final_state == generated:
-                return {
-                    "status": "applied_runtime_verified",
-                    "project": str(project),
-                    "allowed_plugins": plan["allowed_plugins"],
-                    "runtime_verified": True,
-                    "runtimes": evidence.get("runtimes", []),
-                }
-            evidence = {
-                "ok": False,
-                "stage": "post_probe_state",
-                "probe_error": "managed files changed after runtime verification",
-            }
-    if not isinstance(evidence, dict) or evidence.get("ok") is not True:
-        if not isinstance(evidence, dict):
-            evidence = {
-                "ok": False,
-                "stage": "runtime_gate_schema",
-                "probe_error": "runtime gate did not return an object",
-        }
-        try:
-            _restore_managed_files(snapshots, expected_current=generated)
-        except Exception as exc:
-            return _runtime_failure_result(project, plan, evidence, rollback_error=exc)
-        return _runtime_failure_result(project, plan, evidence)
-    raise AllowPluginsError("runtime gate returned an unsupported success state")
+            try:
+                config_mode = snapshots[config_path][2] if snapshots[config_path][0] else 0o644
+                generated[config_path] = (True, config_text.encode("utf-8"), config_mode)
+                _atomic_write(config_path, config_text, mode=config_mode, expected=snapshots[config_path])
+                allow_mode = snapshots[allow_path][2] if snapshots[allow_path][0] else 0o644
+                generated[allow_path] = (True, allow_text.encode("utf-8"), allow_mode)
+                _atomic_write(allow_path, allow_text, mode=allow_mode, expected=snapshots[allow_path])
+            except Exception as exc:
+                try:
+                    _restore_managed_files(snapshots, expected_current=generated)
+                except Exception as rollback_error:
+                    raise AllowPluginsError(f"apply write failed and rollback failed: {rollback_error}") from exc
+                raise
+            try:
+                evidence = runtime_gate(plan)
+            except Exception as exc:
+                evidence = {"ok": False, "stage": "runtime_gate_exception", "probe_error": str(exc)}
+            if isinstance(evidence, dict) and evidence.get("ok") is True:
+                try:
+                    final_state = _snapshot_managed_files(project)
+                except Exception as exc:
+                    evidence = {
+                        "ok": False,
+                        "stage": "post_probe_state",
+                        "probe_error": f"cannot read managed files after runtime verification: {exc}",
+                    }
+                else:
+                    if final_state == generated:
+                        return {
+                            "status": "applied_runtime_verified",
+                            "project": str(project),
+                            "allowed_plugins": plan["allowed_plugins"],
+                            "runtime_verified": True,
+                            "scope_enforceable": True,
+                            "runtimes": evidence.get("runtimes", []),
+                        }
+                    evidence = {
+                        "ok": False,
+                        "stage": "post_probe_state",
+                        "probe_error": "managed files changed after runtime verification",
+                    }
+            if not isinstance(evidence, dict) or evidence.get("ok") is not True:
+                if not isinstance(evidence, dict):
+                    evidence = {
+                        "ok": False,
+                        "stage": "runtime_gate_schema",
+                        "probe_error": "runtime gate did not return an object",
+                    }
+                try:
+                    _restore_managed_files(snapshots, expected_current=generated)
+                except Exception as exc:
+                    return _runtime_failure_result(project, plan, evidence, rollback_error=exc)
+                return _runtime_failure_result(project, plan, evidence)
+            raise AllowPluginsError("runtime gate returned an unsupported success state")
+        except KeyboardInterrupt:
+            try:
+                _restore_managed_files(snapshots, expected_current=generated)
+            except Exception as rollback_error:
+                raise AllowPluginsError(f"apply interrupted and rollback failed: {rollback_error}") from None
+            raise
 
 
 def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runtime_gate) -> dict[str, Any]:
@@ -1519,6 +1591,8 @@ def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runt
     if allowed is None:
         return {"status": "not_configured", "project": inventory["project"]}
     plan = build_plan(inventory, allowed)
+    if plan["scope_enforceable"] is False:
+        return _unsupported_scope_result(Path(inventory["project"]), plan)
     _, _, actual = _read_project_config(Path(inventory["project"]))
     if actual != plan["managed_block"]:
         raise AllowPluginsError("managed block does not match the saved allowlist and live inventory")
@@ -1526,6 +1600,22 @@ def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runt
         evidence = runtime_gate(plan)
     except Exception as exc:
         evidence = {"ok": False, "stage": "runtime_gate_exception", "probe_error": str(exc)}
+    if isinstance(evidence, dict) and evidence.get("ok") is True:
+        try:
+            final_state = _snapshot_managed_files(Path(inventory["project"]))
+        except Exception as exc:
+            evidence = {
+                "ok": False,
+                "stage": "post_probe_state",
+                "probe_error": f"cannot read managed files after runtime verification: {exc}",
+            }
+        else:
+            if final_state != _plan_preimage(Path(inventory["project"]), plan):
+                evidence = {
+                    "ok": False,
+                    "stage": "post_probe_state",
+                    "probe_error": "managed files changed during runtime verification",
+                }
     if not isinstance(evidence, dict) or evidence.get("ok") is not True:
         if not isinstance(evidence, dict):
             evidence = {
@@ -1538,6 +1628,7 @@ def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runt
             "project": inventory["project"],
             "allowed_plugins": allowed,
             "runtime_verified": False,
+            "scope_enforceable": False,
             "stage": evidence.get("stage", "runtime_mismatch"),
             "probe_error": evidence.get("probe_error"),
         }
@@ -1550,6 +1641,7 @@ def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runt
         "project": inventory["project"],
         "allowed_plugins": allowed,
         "runtime_verified": True,
+        "scope_enforceable": True,
         "runtimes": evidence.get("runtimes", []),
     }
 
@@ -1658,7 +1750,7 @@ def render_picker(inventory: dict[str, Any]) -> str:
     chunks.extend(
         [
             '<div class="viz-controls">',
-            '<button class="btn btn-primary" type="button" data-apply>套用設定</button>',
+            '<button class="btn btn-primary" type="button" data-apply>檢查並套用</button>',
             '<span class="text-small text-muted" role="status" data-status></span>',
             "</div>",
             "<script>",
@@ -1675,10 +1767,10 @@ def render_picker(inventory: dict[str, Any]) -> str:
             "    status.textContent = '正在送出…';",
             "    try {",
             "      await window.openai.sendFollowUpMessage({",
-            f"        prompt: '$iysl-allow-plugins 對 Project ' + {_json_string(inventory['project'])} + ' 套用這份選擇；這則訊息是唯一確認。重新 inventory、預檢，乾淨即套用並驗證。\\nselected_plugins = ' + JSON.stringify(selected),",
-            "        title: '套用設定'",
+            f"        prompt: '$iysl-allow-plugins 對 Project ' + {_json_string(inventory['project'])} + ' 檢查並套用這份選擇；這則訊息是唯一確認。重新 inventory，僅對可驗證 scope 套用並驗證。\\nselected_plugins = ' + JSON.stringify(selected),",
+            "        title: '檢查並套用'",
             "      });",
-            "      status.textContent = '已送出；會安全預檢、套用並驗證。';",
+            "      status.textContent = '已送出；會檢查 scope，必要時才套用並驗證。';",
             "    } catch (error) { status.textContent = '無法送出，請改用文字列出勾選項目。'; }",
             "  });",
             "})();",
@@ -1767,6 +1859,9 @@ def main(argv: list[str] | None = None) -> int:
     except AllowPluginsError as exc:
         sys.stderr.write(f"error: {exc}\n")
         return 2
+    except TransactionTerminated:
+        sys.stderr.write("error: terminated; transaction rollback was attempted\n")
+        return 128 + signal.SIGTERM
     except KeyboardInterrupt:
         sys.stderr.write("error: interrupted; transaction rollback was attempted\n")
         return 130

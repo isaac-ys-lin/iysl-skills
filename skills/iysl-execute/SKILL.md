@@ -56,8 +56,9 @@ requesting independent QA, or opening a fresh review.
 4. Use `qa` when independent test execution or evidence collection adds value.
    QA reports defects and never repairs product code.
 5. Apply the fresh-review gate defined in the routing reference. A required
-   review must return `ship`; otherwise continue the specified correction or
-   rethink path.
+   review must return `ship`. Allow one bounded fix-and-fresh-review cycle;
+   unresolved findings then return to the main agent instead of recursively
+   adding agents or effort.
 6. Re-read the final diff after every correction. Stop when the authorized
    outcome and all required gates are satisfied; do not add cleanup or follow-up
    work outside scope.

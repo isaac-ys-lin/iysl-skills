@@ -1,6 +1,6 @@
 interface:
   display_name: "iysl-allow-plugins"
-  short_description: "Choose and runtime-verify this project's plugin mask."
-  default_prompt: "Use $iysl-allow-plugins to choose and runtime-verify which currently available plugin skills and MCP servers this project may use."
+  short_description: "Audit and conditionally verify this Project's plugin scope."
+  default_prompt: "Use $iysl-allow-plugins to audit a desired Project plugin set, report unsupported scope, and conditionally runtime-verify skill and MCP masks."
 policy:
   allow_implicit_invocation: false

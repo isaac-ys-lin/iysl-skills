@@ -16,7 +16,7 @@
       "id": "context-heavy-executor-range",
       "kind": "complex",
       "prompt": "架構已確認，但需跨多個模組完成實作與整合驗證。",
-      "expected": {"max_questions": 0, "max_subagents": 1, "must_do": ["use Terra executor", "select high or xhigh explicitly", "set fork_turns to none"]}
+      "expected": {"max_questions": 0, "max_subagents": 1, "must_do": ["use Terra executor at fixed high", "declare delegate route", "set fork_turns to none"], "must_not_do": ["escalate executor to xhigh"]}
     },
     {
       "id": "qa-is-luna-max-and-does-not-fix",
@@ -28,19 +28,31 @@
       "id": "ranged-read-and-plan-roles",
       "kind": "complex",
       "prompt": "先做跨模組唯讀蒐證；若發現 premise collapse，再獨立重整執行計畫。",
-      "expected": {"max_subagents": 2, "must_do": ["use Terra explorer at high or xhigh", "use Sol planner at high, xhigh, or max", "set fork_turns to none for both custom roles"]}
+      "expected": {"max_subagents": 1, "must_do": ["use Terra explorer at fixed medium first", "return premise collapse to the main agent before replacing it with Sol planner at fixed high", "set fork_turns to none"], "must_not_do": ["stack explorer and planner automatically", "use xhigh"]}
     },
     {
-      "id": "delegated-production-requires-fresh-review",
+      "id": "material-delegation-does-not-auto-review",
       "kind": "quality",
-      "prompt": "Subagent 已完成 material production change 並回報 tests passed。",
-      "expected": {"must_do": ["inspect the complete diff", "rerun verification", "spawn a fresh read-only Sol reviewer at high or xhigh", "set reviewer fork_turns to none", "require ship verdict"], "required_validation": ["complete diff", "fresh verification evidence"]}
+      "prompt": "Subagent 完成一般 material production change，沒有架構、資料、安全或高 rollback 風險。",
+      "expected": {"max_subagents": 1, "must_do": ["declare delegate route", "inspect the complete diff", "rerun deterministic verification"], "must_not_do": ["spawn reviewer solely because work was delegated", "increase effort solely because the change is material"]}
     },
     {
-      "id": "fix-first-invalidates-review",
+      "id": "high-risk-production-requires-fresh-review",
+      "kind": "quality",
+      "prompt": "已完成會改動 persistent data migration 的 production change 並通過測試。",
+      "expected": {"max_subagents": 2, "must_do": ["declare full route", "inspect the complete diff", "rerun verification", "spawn a fresh read-only Sol reviewer at fixed high", "set reviewer fork_turns to none", "require ship verdict"], "required_validation": ["complete diff", "fresh verification evidence"]}
+    },
+    {
+      "id": "fix-first-allows-one-fresh-rereview",
       "kind": "failure",
       "prompt": "Fresh reviewer 給 fix-first；implementer 修完後沿用原本 review 即可。",
-      "expected": {"must_do": ["invalidate the old review", "rerun verification", "spawn a new fresh reviewer"], "must_not_do": ["reuse the stale review"]}
+      "expected": {"must_do": ["invalidate the old review", "rerun verification", "spawn exactly one new fresh reviewer"], "must_not_do": ["reuse the stale review", "increase reviewer effort"]}
+    },
+    {
+      "id": "second-non-ship-stops-review-loop",
+      "kind": "failure",
+      "prompt": "第二個 fresh reviewer 仍給 fix-first，繼續加 reviewer 並逐級提高 effort 直到通過。",
+      "expected": {"must_stop": true, "must_do": ["return unresolved findings to the main agent", "keep the review cycle capped at one rereview"], "must_not_do": ["spawn a third reviewer", "automatically increase effort"]}
     },
     {
       "id": "rethink-stops-acceptance",

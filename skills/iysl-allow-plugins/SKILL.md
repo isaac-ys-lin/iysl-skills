@@ -1,19 +1,19 @@
 ---
 name: iysl-allow-plugins
-description: Interactively choose and runtime-verify which globally enabled or current-task-visible Codex plugin skills and MCP servers may contribute capabilities in the current project. Use only when the user explicitly invokes $iysl-allow-plugins to create, inspect, change, validate, or remove a per-project plugin allowlist; do not trigger for ordinary plugin use, installation, discovery, or global plugin management.
+description: Audit a desired Project plugin set, report capabilities known to be incompatible with Project scope, and conditionally apply only runtime-verifiable skill and MCP masks. Use only when the user explicitly invokes $iysl-allow-plugins to inspect, change, validate, or remove this compatibility-gated Project scope; do not trigger for ordinary plugin use, installation, discovery, or global plugin management.
 disable-model-invocation: true
 compatibility: Requires Python 3.11 or later and the Codex CLI; Visualize is optional because a numbered text fallback is built in. No network access is required.
 ---
 
-# Project Plugin Allowlist
+# Project Plugin Scope Compatibility Gate
 
 ## Intent
 
-Treat global plugin enablement as the supply of available plugins and the
-project allowlist as a reversible, runtime-verified mask for bundled skills and
-canonical MCP servers. Do not claim access control, security isolation, or
-project scoping of apps, connectors, account permissions, or host-owned
-capabilities.
+Treat selection as the desired Project set. Audit what can be masked: bundled
+skills and canonical MCP servers may be transactionally runtime-verified;
+apps/connectors are known incompatible with Project scope. Report unsupported
+capabilities without writing. Do not claim access control, security isolation,
+or a universal allowlist.
 
 Use `scripts/allow_plugins.py` for inventory, picker generation, internal
 preflight, writes, rollback, and validation. It uses only the Python standard
@@ -35,6 +35,9 @@ library.
 - Never write project `enabled = true` for a selected plugin. Selection inherits
   global state; this workflow cannot reliably re-enable a globally disabled
   plugin.
+- If a plugin excluded by the desired set exposes apps/connectors, report an
+  unsupported Project scope result before any write. Apps on a selected plugin
+  do not block the mask for the remaining disabled plugins.
 - Treat the picker submission, or an apply-language text fallback, as the one
   explicit apply confirmation. Regenerate live inventory and run the internal
   fail-closed preflight before applying; never ask for a second user-facing
@@ -48,8 +51,9 @@ library.
   `skills.config.path` entries must target those files, not their directories.
 - Modify only `.codex/allow-plugins.toml` and the marked managed block in
   `.codex/config.toml`. Preserve every unrelated byte.
-- Treat apply as a transaction. Snapshot both managed files, write atomically,
-  then probe every discovered executable runtime in this order: Desktop Codex,
+- For an enforceable plan, treat apply as a transaction. Snapshot both managed
+  files, write atomically, then probe every discovered executable runtime in
+  this order: Desktop Codex,
   then PATH Codex after same-file deduplication. Use a fresh App Server
   `skills/list(forceReload=true)` catalog and that binary's `mcp list --json`.
   If a skill/MCP leak, protocol/process/schema failure, or timeout occurs,
@@ -100,7 +104,7 @@ python3 scripts/allow_plugins.py picker \
 ```
 
 Show the returned fragment with the visualization content reference. The picker
-uses native `.form-check` controls, a concise `套用設定` button, and
+uses native `.form-check` controls, a concise `檢查並套用` button, and
 `window.openai.sendFollowUpMessage`. It preserves the exact project path and
 `selected_plugins` JSON; the picker itself never edits project files.
 
@@ -135,7 +139,8 @@ check the exact selection, capability effects, warnings, and file changes:
 - unselected canonical plugins enter `tool_suggest.disabled_tools` when no
   config conflict exists;
 - unselected bundled MCP servers receive plugin-scoped `enabled = false`;
-- apps/connectors are reported as not project-scopeable by this workaround;
+- excluded apps/connectors produce `unsupported_project_scope`; no files are
+  written for that desired set;
 - selected plugins receive no project `enabled = true` override.
 
 If preflight is clean, invoke `apply --confirm-apply` immediately; that CLI flag
@@ -154,12 +159,13 @@ python3 scripts/allow_plugins.py apply \
   --confirm-apply
 ```
 
-`apply` snapshots the exact two managed files, writes them, then checks every
-discovered local runtime with a fresh App Server skill catalog and the same
-binary's MCP configuration. Desktop is checked first. A matching enabled skill,
-an enabled MCP config row, or a runtime-ready MCP row with tools causes an
-automatic exact rollback and nonzero structured result. Do not retry by
-weakening the mask.
+`apply` first reports known unsupported excluded apps/connectors without any
+write. Otherwise it snapshots the exact two managed files, writes them, then
+checks every discovered local runtime with a fresh App Server skill catalog and
+the same binary's MCP configuration. Desktop is checked first. A matching
+enabled skill, an enabled MCP config row, or a runtime-ready MCP row with tools
+causes an automatic exact rollback and nonzero structured result. Do not retry
+by weakening the mask.
 
 Validate file consistency and the same runtime gate immediately:
 
@@ -192,9 +198,14 @@ report that a fresh task is required.
 
 ## Scope limits
 
-- This is a project convenience layer, not access control. Plugin apps,
+- This is a Project compatibility gate, not access control. Plugin apps,
   connectors, external account permissions, host-owned capability routing, and
   other host capabilities remain out of scope.
+- Do not add, remove, install, or globally enable/disable plugins. Codex plugin
+  installation and enablement belong to the surrounding ChatGPT/Codex
+  environment; new chats may be required for changes to take effect. For true
+  isolation, let the user choose a separate environment or `CODEX_HOME`; never
+  create one automatically.
 - New plugins are not processed in the background. They appear unchecked the
   next time this skill runs.
 - Generated absolute skill paths can drift when plugin versions or machines
