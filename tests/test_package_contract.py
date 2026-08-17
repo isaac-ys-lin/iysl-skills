@@ -115,11 +115,9 @@ class PackageContractTest(unittest.TestCase):
             self.assertEqual(policy.get("allow_implicit_invocation"), str(expected_implicit).lower(), name)
 
             if SKILL_ENTRIES[name]["visibility"] == "explicit":
-                self.assertEqual(
-                    metadata.get("disable-model-invocation"),
-                    "true",
-                    name,
-                )
+                legacy_disable = metadata.get("disable-model-invocation")
+                if legacy_disable is not None:
+                    self.assertEqual(legacy_disable, "true", name)
                 continue
 
             self.assertNotIn("disable-model-invocation", metadata, name)

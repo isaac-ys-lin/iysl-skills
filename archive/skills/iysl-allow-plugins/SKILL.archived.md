@@ -1,19 +1,19 @@
 ---
 name: iysl-allow-plugins
-description: Audit a desired Project plugin set, report capabilities known to be incompatible with Project scope, and conditionally apply only runtime-verifiable skill and MCP masks. Use only when the user explicitly invokes $iysl-allow-plugins to inspect, change, validate, or remove this compatibility-gated Project scope; do not trigger for ordinary plugin use, installation, discovery, or global plugin management.
+description: Build, validate, or remove a macOS Codex Desktop Project capability profile for globally available plugins across Apps, Skills, MCP, and tool suggestions. Use only when the user explicitly invokes $iysl-allow-plugins to inspect, change, validate, or remove this profile; do not trigger for ordinary plugin use, installation, discovery, or global plugin management.
 disable-model-invocation: true
-compatibility: Requires Python 3.11 or later and the Codex CLI; Visualize is optional because a numbered text fallback is built in. No network access is required.
+compatibility: Requires macOS, Python 3.11 or later, Codex Desktop at /Applications/ChatGPT.app, and its bundled Codex runtime; Visualize is optional because a numbered text fallback is built in. No network access is required.
 ---
 
-# Project Plugin Scope Compatibility Gate
+# Project Plugin Capability Profile
 
 ## Intent
 
-Treat selection as the desired Project set. Audit what can be masked: bundled
-skills and canonical MCP servers may be transactionally runtime-verified;
-apps/connectors are known incompatible with Project scope. Report unsupported
-capabilities without writing. Do not claim access control, security isolation,
-or a universal allowlist.
+Treat selection as the desired Project capability profile. Apply default-deny
+Apps plus explicit app IDs, bundled skill masks, canonical MCP masks, and tool
+suggestion suppression for excluded plugins. This is not a native plugin toggle,
+security boundary, provenance isolation, or a guarantee that global state can
+be re-enabled.
 
 Use `scripts/allow_plugins.py` for inventory, picker generation, internal
 preflight, writes, rollback, and validation. It uses only the Python standard
@@ -35,9 +35,10 @@ library.
 - Never write project `enabled = true` for a selected plugin. Selection inherits
   global state; this workflow cannot reliably re-enable a globally disabled
   plugin.
-- If a plugin excluded by the desired set exposes apps/connectors, report an
-  unsupported Project scope result before any write. Apps on a selected plugin
-  do not block the mask for the remaining disabled plugins.
+- Parse every declared app manifest as a top-level `apps` object. Use each
+  canonical nonempty `id`, never its display alias. Fail closed for malformed,
+  escaping, or ambiguous declarations. A shared ID is one shared capability:
+  selected wins and must be warned; do not claim provenance isolation.
 - Treat the picker submission, or an apply-language text fallback, as the one
   explicit apply confirmation. Regenerate live inventory and run the internal
   fail-closed preflight before applying; never ask for a second user-facing
@@ -55,7 +56,9 @@ library.
   files, write atomically, then probe every discovered executable runtime in
   this order: Desktop Codex,
   then PATH Codex after same-file deduplication. Use a fresh App Server
-  `skills/list(forceReload=true)` catalog and that binary's `mcp list --json`.
+  ephemeral project `thread/start`, `config/read(includeLayers=true)`, paged
+  `app/list`, `app/installed`, `skills/list(forceReload=true)` catalog and that
+  binary's `mcp list --json`.
   If a skill/MCP leak, protocol/process/schema failure, or timeout occurs,
   restore the two files exactly and report the runtime evidence. Never call a
   file-only result applied or valid.
@@ -139,8 +142,9 @@ check the exact selection, capability effects, warnings, and file changes:
 - unselected canonical plugins enter `tool_suggest.disabled_tools` when no
   config conflict exists;
 - unselected bundled MCP servers receive plugin-scoped `enabled = false`;
-- excluded apps/connectors produce `unsupported_project_scope`; no files are
-  written for that desired set;
+- `[apps._default]` is false; selected canonical IDs are explicitly true and
+  known excluded IDs explicitly false; existing non-managed Project `apps`
+  config is a conflict and is never overwritten;
 - selected plugins receive no project `enabled = true` override.
 
 If preflight is clean, invoke `apply --confirm-apply` immediately; that CLI flag
@@ -159,13 +163,12 @@ python3 scripts/allow_plugins.py apply \
   --confirm-apply
 ```
 
-`apply` first reports known unsupported excluded apps/connectors without any
-write. Otherwise it snapshots the exact two managed files, writes them, then
-checks every discovered local runtime with a fresh App Server skill catalog and
-the same binary's MCP configuration. Desktop is checked first. A matching
-enabled skill, an enabled MCP config row, or a runtime-ready MCP row with tools
-causes an automatic exact rollback and nonzero structured result. Do not retry
-by weakening the mask.
+`apply` requires macOS and `/Applications/ChatGPT.app/Contents/Resources/codex`.
+It snapshots the exact two managed files, writes them, then checks Desktop first
+and a distinct PATH Codex second. Effective app config must prove default false,
+selected true, and excluded false. Any app schema, timeout, process, config, or
+enabled/callable mismatch causes exact rollback. Do not retry by weakening the
+mask.
 
 Validate file consistency and the same runtime gate immediately:
 
@@ -196,11 +199,24 @@ python3 scripts/allow_plugins.py remove \
 Remove only the allowlist file and managed block. Revalidate remaining TOML and
 report that a fresh task is required.
 
+### Automatic drift warning
+
+Apply writes one async project `SessionStart` hook inside the managed block for
+`startup|resume|clear`. It invokes the current script through an absolute path,
+performs a fast read-only fingerprint check without App Server, stays silent
+when unchanged, and emits hook JSON asking the user to rerun
+`$iysl-allow-plugins` on change or check failure. It never repairs files or
+blocks work. It saves the exact task-visible `--host-plugin` roots needed to
+reconstruct the profile; a missing root, changed declared capability content,
+or a new cache version warns without treating cache metadata as installation
+proof. Non-managed hooks need one-time trust; changed hook definitions need
+review and trust again. Do not add launchd, a service, or a user-facing sync
+command.
+
 ## Scope limits
 
-- This is a Project compatibility gate, not access control. Plugin apps,
-  connectors, external account permissions, host-owned capability routing, and
-  other host capabilities remain out of scope.
+- This is a Project compatibility profile, not access control. Plugin external
+  account permissions and host-owned routing remain out of scope.
 - Do not add, remove, install, or globally enable/disable plugins. Codex plugin
   installation and enablement belong to the surrounding ChatGPT/Codex
   environment; new chats may be required for changes to take effect. For true

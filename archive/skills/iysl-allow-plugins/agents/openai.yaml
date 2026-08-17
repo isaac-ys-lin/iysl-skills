@@ -1,0 +1,6 @@
+interface:
+  display_name: "iysl-allow-plugins"
+  short_description: "Build and verify this macOS Project plugin capability profile."
+  default_prompt: "Use $iysl-allow-plugins to select globally available plugin capabilities for this macOS Project and runtime-verify Apps, Skills, MCP, and tool suggestions."
+policy:
+  allow_implicit_invocation: false

@@ -38,13 +38,18 @@ disable_model_invocation="$(
   sed -n 's/^disable-model-invocation:[[:space:]]*//p' "$skill_dir/SKILL.md" \
     | head -1
 )"
-if [[ "$disable_model_invocation" == "true" ]]; then
-  if ! grep -F "allow_implicit_invocation: false" \
-    "$skill_dir/agents/openai.yaml" >/dev/null; then
+implicit_disabled=false
+if grep -F "allow_implicit_invocation: false" \
+  "$skill_dir/agents/openai.yaml" >/dev/null; then
+  implicit_disabled=true
+fi
+
+if [[ "$disable_model_invocation" == "true" && "$implicit_disabled" != "true" ]]; then
     echo "explicit-only metadata mismatch: $skill_dir" >&2
     exit 1
-  fi
+fi
 
+if [[ "$implicit_disabled" == "true" ]]; then
   echo "live install metadata parity only (explicit-only; verify invocation in a fresh task): $skill_name -> $live_dir"
   exit 0
 fi

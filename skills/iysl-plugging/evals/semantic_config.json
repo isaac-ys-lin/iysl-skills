@@ -1,0 +1,45 @@
+{
+  "recommended_threshold": 0.4,
+  "fallback_positive_concepts": [
+    "explicit_skill_invocation",
+    "complete_plugin_skill_catalog"
+  ],
+  "positive_concepts": {
+    "explicit_skill_invocation": {
+      "weight": 0.8,
+      "phrases": ["$iysl-plugging", "use iysl-plugging"]
+    },
+    "complete_plugin_skill_catalog": {
+      "weight": 0.2,
+      "phrases": ["read every plugin skill description", "完整讀 plugin skills", "read all SKILL.md bodies"]
+    }
+  },
+  "negative_concepts": {
+    "ordinary_plugin_use": {
+      "weight": 0.85,
+      "exclusive": true,
+      "phrases": ["use the data analytics plugin", "用 github plugin", "用 plugin 做"]
+    },
+    "plugin_install_or_discovery": {
+      "weight": 0.85,
+      "exclusive": true,
+      "phrases": ["install plugin", "安裝 plugin", "which plugins", "有哪些 plugin"]
+    },
+    "plugin_management": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": ["disable plugin", "enable plugin", "uninstall plugin", "移除 plugin"]
+    },
+    "single_skill_read": {
+      "weight": 0.7,
+      "exclusive": true,
+      "phrases": ["read this SKILL.md", "讀這個 skill 檔"]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "ordinary_plugin_use",
+    "plugin_install_or_discovery",
+    "plugin_management",
+    "single_skill_read"
+  ]
+}

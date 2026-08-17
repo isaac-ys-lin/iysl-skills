@@ -1,0 +1,45 @@
+{
+  "should_trigger": [
+    {
+      "text": "$iysl-plugging data-analytics@openai-curated-remote",
+      "family": "explicit_plugin_id",
+      "expected_route": "iysl-plugging"
+    },
+    {
+      "text": "Use $iysl-plugging to read every skill description in the GitHub plugin before choosing one.",
+      "family": "explicit_catalog",
+      "expected_route": "iysl-plugging"
+    },
+    {
+      "text": "$iysl-plugging 完整讀取這個 plugin 的所有 SKILL.md 全文。",
+      "family": "explicit_full_bodies",
+      "expected_route": "iysl-plugging"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "text": "Use the data analytics plugin to diagnose this metric.",
+      "family": "ordinary_plugin_use"
+    },
+    {
+      "text": "Install the Notion plugin.",
+      "family": "plugin_installation"
+    },
+    {
+      "text": "Which plugins are available?",
+      "family": "plugin_discovery"
+    },
+    {
+      "text": "Disable GitHub globally.",
+      "family": "plugin_management"
+    }
+  ],
+  "near_neighbor": [
+    {
+      "text": "Read this one local SKILL.md file.",
+      "family": "single_skill_read",
+      "expected_route": "not_iysl_plugging"
+    }
+  ],
+  "recommended_threshold": 0.4
+}

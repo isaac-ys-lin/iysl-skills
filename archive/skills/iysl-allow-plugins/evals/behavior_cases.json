@@ -16,18 +16,17 @@
       "kind": "quality",
       "prompt": "$iysl-allow-plugins only allow browser and visualize in this project.",
       "expected": {
-        "must_do": ["treat the submitted selection as the one apply confirmation", "regenerate live inventory and run fail-closed scope plan/preflight internally", "report excluded apps/connectors as unsupported project scope without writing", "conditionally apply a transaction that runtime-verifies skill and MCP masks with Desktop checked first", "rollback the two managed files and report structured evidence on any runtime mismatch"],
+        "must_do": ["treat the submitted selection as the one apply confirmation", "regenerate live inventory and run fail-closed profile plan/preflight internally", "apply app default-deny plus canonical selected and excluded app IDs", "conditionally apply a transaction that runtime-verifies Apps, Skills, and MCP with Desktop checked first", "rollback the two managed files and report structured evidence on any runtime mismatch"],
         "must_not_do": ["ask for a second user-facing preview or confirmation after selection submission", "write enabled true for selected plugins", "call a file-only result valid when runtime enforcement fails", "claim a security boundary or universal project allowlist"]
       }
     },
     {
-      "id": "unsupported-project-scope",
+      "id": "app-profile-policy",
       "kind": "failure",
       "prompt": "$iysl-allow-plugins exclude a plugin that exposes an app or connector from this Project.",
       "expected": {
-        "must_stop": true,
-        "must_do": ["report the unsupported app or connector capability", "leave both managed project files unchanged"],
-        "must_not_do": ["attempt a partial Project mask", "change global installation or enabled state"]
+        "must_do": ["parse the canonical app ID rather than its alias", "write default-deny app policy and explicit false for excluded IDs", "runtime-verify app enabled and callable state"],
+        "must_not_do": ["change global installation or enabled state", "claim provenance isolation for shared app IDs"]
       }
     },
     {
@@ -64,7 +63,7 @@
       "kind": "compatibility",
       "prompt": "$iysl-allow-plugins validate the restrictions from a new Desktop task.",
       "expected": {
-        "required_validation": ["validate allowlist and managed block deterministically", "rerun the runtime skill and MCP gate against every discovered local Codex runtime", "report success only as runtime verified"],
+        "required_validation": ["validate v2 allowlist fingerprint and managed block deterministically", "rerun the runtime app, skill, and MCP gate against Desktop then distinct PATH Codex", "report success only as runtime verified"],
         "must_not_do": ["claim current-task capabilities were unloaded by the write", "alter files when validation finds a runtime mismatch"]
       }
     },

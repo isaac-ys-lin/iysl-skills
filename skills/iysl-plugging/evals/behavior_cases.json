@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "id": "missing-target",
+      "kind": "ambiguity",
+      "prompt": "$iysl-plugging",
+      "expected": {
+        "max_questions": 1,
+        "must_do": ["ask for exactly one plugin ID, explicit plugin mention, or absolute plugin root"],
+        "must_not_do": ["inventory unrelated plugins", "change plugin or model configuration"]
+      }
+    },
+    {
+      "id": "task-visible-complete-catalog",
+      "kind": "quality",
+      "prompt": "$iysl-plugging data-analytics@openai-curated-remote; read every description, then diagnose why this metric changed.",
+      "expected": {
+        "must_do": ["prefer the matching task-visible plugin root", "read the manifest-declared skills tree in stable order", "read every complete frontmatter name and description", "report an exact read/discovered completeness receipt", "compare the task against all descriptions before loading the smallest relevant full SKILL.md set"],
+        "must_not_do": ["load only the first matching description", "invoke plugin tools before catalog completion", "write configuration"]
+      }
+    },
+    {
+      "id": "exact-cli-fallback",
+      "kind": "compatibility",
+      "prompt": "$iysl-plugging browser@openai-bundled when no task-visible path is supplied.",
+      "expected": {
+        "must_do": ["accept only an exact pluginId match reported installed by codex plugin list", "use the reported source path and validate the manifest identity"],
+        "must_not_do": ["select a similarly named plugin", "treat cache presence as installation proof"]
+      }
+    },
+    {
+      "id": "ambiguous-cache-versions",
+      "kind": "failure",
+      "prompt": "$iysl-plugging target a plugin with two cache versions and no task-visible or CLI source path.",
+      "expected": {
+        "must_stop": true,
+        "must_do": ["list the exact unresolved candidates", "request an authoritative plugin path or version"],
+        "must_not_do": ["choose the newest cache version", "claim the plugin is current or installed"]
+      }
+    },
+    {
+      "id": "partial-frontmatter-failure",
+      "kind": "failure",
+      "prompt": "$iysl-plugging finds 18 SKILL.md files but one description is malformed.",
+      "expected": {
+        "must_do": ["report 17/18 and identify the malformed file", "label the catalog incomplete"],
+        "must_not_do": ["report complete", "start the downstream task as if every description was read"]
+      }
+    },
+    {
+      "id": "explicit-full-bodies",
+      "kind": "complex",
+      "prompt": "$iysl-plugging 完整讀取指定 plugin 的所有 SKILL.md 全文，再回答我的任務。",
+      "expected": {
+        "must_do": ["read all discovered full bodies in stable batches", "report a second exact body read/discovered receipt", "finish the full-body pass before starting the downstream task"],
+        "must_not_do": ["silently summarize unread bodies", "stop after reading descriptions only"]
+      }
+    },
+    {
+      "id": "read-only-and-adaptive",
+      "kind": "idempotence",
+      "prompt": "$iysl-plugging run again after the plugin updates.",
+      "expected": {
+        "must_do": ["resolve the current root and reread the manifest on every invocation", "report the observed plugin version"],
+        "must_not_do": ["reuse a persistent index", "add a hook, service, or background refresh", "modify context or compaction settings"]
+      }
+    }
+  ]
+}

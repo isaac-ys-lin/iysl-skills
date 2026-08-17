@@ -1,6 +1,0 @@
-interface:
-  display_name: "iysl-allow-plugins"
-  short_description: "Audit and conditionally verify this Project's plugin scope."
-  default_prompt: "Use $iysl-allow-plugins to audit a desired Project plugin set, report unsupported scope, and conditionally runtime-verify skill and MCP masks."
-policy:
-  allow_implicit_invocation: false

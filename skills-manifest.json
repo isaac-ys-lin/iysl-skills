@@ -26,15 +26,6 @@
         "behavior"
       ]
     },
-    "iysl-allow-plugins": {
-      "ownership": "repo",
-      "visibility": "explicit",
-      "license": "repository",
-      "required_gates": [
-        "trigger",
-        "behavior"
-      ]
-    },
     "iysl-clarify": {
       "ownership": "repo",
       "visibility": "implicit",
@@ -68,6 +59,15 @@
     "iysl-execute": {
       "ownership": "repo",
       "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
+    "iysl-plugging": {
+      "ownership": "repo",
+      "visibility": "explicit",
       "license": "repository",
       "required_gates": [
         "trigger",

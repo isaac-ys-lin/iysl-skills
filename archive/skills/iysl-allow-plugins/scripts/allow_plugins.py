@@ -9,7 +9,9 @@ import hashlib
 import html
 import json
 import os
+import platform
 import queue
+import shlex
 import shutil
 import signal
 import stat
@@ -28,9 +30,9 @@ BEGIN_MARKER = "# BEGIN iysl-allow-plugins managed block"
 END_MARKER = "# END iysl-allow-plugins managed block"
 ALLOWLIST_REL = Path(".codex/allow-plugins.toml")
 CONFIG_REL = Path(".codex/config.toml")
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DESKTOP_CODEX = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
-RUNTIME_TIMEOUT_SECONDS = 12
+RUNTIME_TIMEOUT_SECONDS = 30
 RUNTIME_SHUTDOWN_SECONDS = 3
 MCP_PAGE_LIMIT = 100
 MAX_MCP_PAGES = 100
@@ -180,12 +182,13 @@ def _read_project_config(project: Path) -> tuple[str, dict[str, Any], str | None
     return base, base_data, managed
 
 
-def _load_allowlist(project: Path) -> tuple[list[str], bool] | None:
+def _load_allowlist(project: Path) -> dict[str, Any] | None:
     path = project / ALLOWLIST_REL
     if not path.exists():
         return None
     data = _read_toml(path)
-    if data.get("schema_version") != SCHEMA_VERSION:
+    version = data.get("schema_version")
+    if version not in (1, SCHEMA_VERSION):
         raise AllowPluginsError(f"unsupported allowlist schema at {path}")
     values = data.get("allowed_plugins")
     if (
@@ -199,7 +202,19 @@ def _load_allowlist(project: Path) -> tuple[list[str], bool] | None:
         raise AllowPluginsError(
             f"allowlist lacks config_preexisting metadata at {path}; refuse ambiguous removal"
         )
-    return values, config_preexisting
+    fingerprint = data.get("fingerprint")
+    if version == SCHEMA_VERSION and (not isinstance(fingerprint, str) or len(fingerprint) != 64):
+        raise AllowPluginsError(f"allowlist lacks a valid v2 fingerprint: {path}")
+    host_plugins = data.get("host_plugins", [])
+    if not isinstance(host_plugins, list) or any(not isinstance(item, str) or not item for item in host_plugins) or len(host_plugins) != len(set(host_plugins)):
+        raise AllowPluginsError(f"allowlist has malformed host_plugins metadata: {path}")
+    return {
+        "allowed_plugins": values,
+        "config_preexisting": config_preexisting,
+        "schema_version": version,
+        "fingerprint": fingerprint,
+        "host_plugins": host_plugins,
+    }
 
 
 def _trust_state(project: Path, global_data: dict[str, Any]) -> str:
@@ -213,26 +228,28 @@ def _trust_state(project: Path, global_data: dict[str, Any]) -> str:
     return trust if isinstance(trust, str) else "unverified"
 
 
-def _plugin_list(path: str | None) -> list[dict[str, Any]]:
+def _plugin_list(path: str | None, *, desktop_path: Path = DESKTOP_CODEX) -> list[dict[str, Any]]:
     if path:
         try:
             payload = json.loads(Path(path).read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise AllowPluginsError(f"invalid plugin-list JSON at {path}: {exc}") from exc
     else:
+        if not desktop_path.is_file() or not os.access(desktop_path, os.X_OK):
+            raise AllowPluginsError(f"Codex Desktop runtime is required for plugin inventory: {desktop_path}")
         try:
             result = subprocess.run(
-                ["codex", "plugin", "list", "--json"],
+                [str(desktop_path), "plugin", "list", "--json"],
                 check=False,
                 capture_output=True,
                 text=True,
                 timeout=30,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
-            raise AllowPluginsError(f"cannot run codex plugin list --json: {exc}") from exc
+            raise AllowPluginsError(f"cannot run Desktop codex plugin list --json: {exc}") from exc
         if result.returncode != 0:
             detail = result.stderr.strip() or f"exit {result.returncode}"
-            raise AllowPluginsError(f"codex plugin list --json failed: {detail}")
+            raise AllowPluginsError(f"Desktop codex plugin list --json failed: {detail}")
         try:
             payload = json.loads(result.stdout)
         except json.JSONDecodeError as exc:
@@ -352,9 +369,43 @@ def _is_within_root(root: Path, path: Path) -> bool:
         return False
 
 
+def _parse_apps(root: Path, declared: str) -> list[dict[str, Any]]:
+    """Read canonical connector IDs.  Aliases are descriptive, never policy keys."""
+    app_path = (root / declared).resolve()
+    if not _is_within_root(root, app_path) or not app_path.is_file():
+        raise AllowPluginsError(f"declared apps file is missing: {app_path}")
+    try:
+        data = json.loads(app_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise AllowPluginsError(f"invalid declared apps file {app_path}: {exc}") from exc
+    entries = data.get("apps") if isinstance(data, dict) else None
+    if not isinstance(entries, dict):
+        raise AllowPluginsError(f"declared apps file must have a top-level apps object: {app_path}")
+    output: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for alias, entry in entries.items():
+        if not isinstance(alias, str) or not alias or not isinstance(entry, dict):
+            raise AllowPluginsError(f"declared apps file has malformed app entry: {app_path}")
+        app_id = entry.get("id")
+        if not isinstance(app_id, str) or not app_id.strip() or app_id != app_id.strip():
+            raise AllowPluginsError(f"declared apps file app {alias!r} has no canonical nonempty id: {app_path}")
+        if app_id in seen:
+            raise AllowPluginsError(f"declared apps file repeats canonical app id {app_id!r}: {app_path}")
+        seen.add(app_id)
+        metadata: dict[str, Any] = {"id": app_id, "alias": alias}
+        for key in ("required", "optional"):
+            if key in entry:
+                if not isinstance(entry[key], bool):
+                    raise AllowPluginsError(f"declared app {app_id!r} has non-boolean {key}: {app_path}")
+                metadata[key] = entry[key]
+        output.append(metadata)
+    return sorted(output, key=lambda item: item["id"])
+
+
 def _capabilities(root: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     root = root.resolve()
     skills: list[str] = []
+    fingerprint_paths: list[Path] = [root / ".codex-plugin/plugin.json"]
     skills_declared = manifest.get("skills")
     if skills_declared is not None:
         if not isinstance(skills_declared, str):
@@ -368,6 +419,7 @@ def _capabilities(root: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         if any(not _is_within_root(root, path) for path in skill_files):
             raise AllowPluginsError(f"declared skill escapes plugin root: {skills_root}")
         skills = sorted(str(path) for path in skill_files)
+        fingerprint_paths.extend(skill_files)
         if not skills:
             raise AllowPluginsError(f"declared skills directory has no skills: {skills_root}")
 
@@ -387,27 +439,51 @@ def _capabilities(root: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(mcp_servers, dict) or not mcp_servers:
             raise AllowPluginsError(f"declared MCP file has no mcpServers: {mcp_path}")
         servers = sorted(mcp_servers)
+        fingerprint_paths.append(mcp_path)
 
     apps_declared = manifest.get("apps")
-    apps = False
+    apps: list[dict[str, Any]] = []
     if apps_declared is not None:
         if not isinstance(apps_declared, str):
             raise AllowPluginsError(f"unsupported apps declaration in {root}")
-        app_path = (root / apps_declared).resolve()
-        if not _is_within_root(root, app_path) or not app_path.is_file():
-            raise AllowPluginsError(f"declared apps file is missing: {app_path}")
-        apps = True
+        apps = _parse_apps(root, apps_declared)
+        fingerprint_paths.append((root / apps_declared).resolve())
 
-    return {"skills": skills, "mcp_servers": servers, "apps": apps}
+    digest = hashlib.sha256()
+    for path in sorted(set(fingerprint_paths), key=lambda item: str(item)):
+        try:
+            digest.update(str(path.relative_to(root)).encode("utf-8") + b"\0")
+            digest.update(hashlib.sha256(path.read_bytes()).digest())
+        except OSError as exc:
+            raise AllowPluginsError(f"cannot fingerprint declared capability {path}: {exc}") from exc
+    return {
+        "skills": skills, "mcp_servers": servers, "apps": apps,
+        "manifest_version": manifest.get("version"), "capability_digest": digest.hexdigest(),
+    }
 
 
 def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
     project = _project_path(args.project)
     global_path = _global_config_path(args.global_config)
     global_data = _read_toml(global_path)
-    cli_items = _plugin_list(args.plugin_list_json)
+    desktop_path = Path(getattr(args, "desktop_codex", None) or DESKTOP_CODEX).expanduser().resolve()
+    cli_items = _plugin_list(args.plugin_list_json, desktop_path=desktop_path)
     hosts = _host_entries(args.host_plugin)
     codex_home = global_path.parent
+    cache_snapshot: list[dict[str, Any]] = []
+    cache_roots = _all_cache_roots(codex_home)
+    for root in cache_roots:
+        entry: dict[str, Any] = {"root": str(root), "catalog": _catalog_name(root)}
+        try:
+            manifest = _manifest(root)
+            observed = _capabilities(root, manifest)
+            entry.update({
+                "name": manifest["name"], "manifest_version": observed["manifest_version"],
+                "capability_digest": observed["capability_digest"],
+            })
+        except AllowPluginsError as exc:
+            entry["error"] = str(exc)
+        cache_snapshot.append(entry)
 
     plugins_config = global_data.get("plugins", {})
     if not isinstance(plugins_config, dict):
@@ -503,26 +579,29 @@ def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
 
     # Surface cache-only bundles for reporting, but never make them selectable
     # or attach their capability roots to a canonical record by manifest name.
-    for root in _all_cache_roots(codex_home):
+    for root in cache_roots:
         try:
             data = _manifest(root)
         except AllowPluginsError:
             continue
         name = data["name"]
         plugin_id = f"{name}@{_catalog_name(root)}"
-        if plugin_id in records:
+        if plugin_id in records and records[plugin_id].get("sources") != ["cache_metadata"]:
             continue
-        records[plugin_id] = {
-            "id": plugin_id,
-            "name": name,
-            "canonical_known": False,
-            "global_enabled": None,
-            "cli_enabled": None,
-            "cli_installed": False,
-            "host_visible": False,
-            "roots": [root],
-            "sources": ["cache_metadata"],
-        }
+        if plugin_id in records:
+            records[plugin_id]["roots"].append(root)
+        else:
+            records[plugin_id] = {
+                "id": plugin_id,
+                "name": name,
+                "canonical_known": False,
+                "global_enabled": None,
+                "cli_enabled": None,
+                "cli_installed": False,
+                "host_visible": False,
+                "roots": [root],
+                "sources": ["cache_metadata"],
+            }
 
     output_records: list[dict[str, Any]] = []
     for plugin_id, record in sorted(records.items()):
@@ -551,7 +630,8 @@ def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
         manifest_errors: list[str] = []
         capability_errors: list[str] = []
         manifest_roots: list[Path] = []
-        capabilities = {"skills": [], "mcp_servers": [], "apps": False}
+        capabilities = {"skills": [], "mcp_servers": [], "apps": []}
+        capability_digests: list[dict[str, Any]] = []
         for root in roots:
             try:
                 candidate = _manifest(root)
@@ -570,10 +650,23 @@ def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
                 continue
             capabilities["skills"].extend(observed["skills"])
             capabilities["mcp_servers"].extend(observed["mcp_servers"])
-            capabilities["apps"] = capabilities["apps"] or observed["apps"]
+            capabilities["apps"].extend(observed["apps"])
+            capability_digests.append({
+                "root": str(root), "manifest_version": observed["manifest_version"],
+                "digest": observed["capability_digest"],
+            })
 
         capabilities["skills"] = sorted(set(capabilities["skills"]))
         capabilities["mcp_servers"] = sorted(set(capabilities["mcp_servers"]))
+        app_by_id: dict[str, dict[str, Any]] = {}
+        for app in capabilities["apps"]:
+            previous_app = app_by_id.get(app["id"])
+            if previous_app is not None and previous_app != app and "cache_metadata" not in record["sources"]:
+                raise AllowPluginsError(
+                    f"ambiguous app declaration for {app['id']!r} across roots of {plugin_id}"
+                )
+            app_by_id[app["id"]] = app
+        capabilities["apps"] = [app_by_id[key] for key in sorted(app_by_id)]
         manifest_root = manifest_roots[0] if manifest_roots else None
         manifest_error = "; ".join(manifest_errors + capability_errors) or None
 
@@ -594,13 +687,14 @@ def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
                 "skills": capabilities["skills"],
                 "mcp_servers": capabilities["mcp_servers"],
                 "apps": capabilities["apps"],
+                "capability_digests": sorted(capability_digests, key=lambda item: item["root"]),
                 "sources": sorted(set(record["sources"])),
             }
         )
 
     allowlist_state = _load_allowlist(project)
-    previous = allowlist_state[0] if allowlist_state is not None else None
-    config_preexisting = allowlist_state[1] if allowlist_state is not None else None
+    previous = allowlist_state["allowed_plugins"] if allowlist_state is not None else None
+    config_preexisting = allowlist_state["config_preexisting"] if allowlist_state is not None else None
     _, _, managed = _read_project_config(project)
     if (previous is None) != (managed is None):
         raise AllowPluginsError("allowlist file and managed config block are out of sync")
@@ -613,6 +707,10 @@ def build_inventory(args: argparse.Namespace) -> dict[str, Any]:
         "trust_state": trust,
         "previous_allowlist": previous,
         "config_preexisting": config_preexisting,
+        "allowlist_schema_version": allowlist_state["schema_version"] if allowlist_state else None,
+        "saved_fingerprint": allowlist_state["fingerprint"] if allowlist_state else None,
+        "host_plugins": sorted(f"{entry['supplied']}={entry['root']}" for entry in hosts),
+        "cache_snapshot": sorted(cache_snapshot, key=lambda item: item["root"]),
         "plugins": output_records,
     }
 
@@ -632,6 +730,7 @@ def _check_conflicts(
     skill_paths: list[str],
     tools: list[str],
     mcp: list[tuple[str, str]],
+    app_ids: list[str],
 ) -> None:
     existing_skills = base_data.get("skills", {})
     configs = existing_skills.get("config", []) if isinstance(existing_skills, dict) else []
@@ -651,6 +750,8 @@ def _check_conflicts(
 
     if tools and "tool_suggest" in base_data:
         raise AllowPluginsError("existing tool_suggest config conflicts with managed disabled_tools")
+    if "apps" in base_data:
+        raise AllowPluginsError("existing Project apps config conflicts with managed app policy")
 
     plugins = base_data.get("plugins", {})
     if plugins and not isinstance(plugins, dict):
@@ -666,7 +767,10 @@ def _check_conflicts(
             raise AllowPluginsError(f"existing config already controls {plugin_id} MCP server {server}")
 
 
-def _managed_block(skill_paths: list[str], tools: list[str], mcp: list[tuple[str, str]]) -> str:
+def _managed_block(
+    skill_paths: list[str], tools: list[str], mcp: list[tuple[str, str]],
+    selected_app_ids: list[str], excluded_app_ids: list[str], hook_command: str,
+) -> str:
     lines = [BEGIN_MARKER, "# Generated by $iysl-allow-plugins; edit through the skill."]
     for path in sorted(set(skill_paths)):
         lines.extend(["", "[[skills.config]]", f"path = {_json_string(path)}", "enabled = false"])
@@ -685,6 +789,15 @@ def _managed_block(skill_paths: list[str], tools: list[str], mcp: list[tuple[str
                 "enabled = false",
             ]
         )
+    lines.extend(["", "[apps._default]", "enabled = false"])
+    for app_id in sorted(set(selected_app_ids)):
+        lines.extend(["", f"[apps.{_json_string(app_id)}]", "enabled = true"])
+    for app_id in sorted(set(excluded_app_ids) - set(selected_app_ids)):
+        lines.extend(["", f"[apps.{_json_string(app_id)}]", "enabled = false"])
+    lines.extend([
+        "", "[[hooks.SessionStart]]", 'matcher = "startup|resume|clear"',
+        "hooks = [{ type = \"command\", command = " + _json_string(hook_command) + ", async = true }]",
+    ])
     lines.append(END_MARKER)
     return "\n".join(lines)
 
@@ -724,40 +837,9 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
         raise AllowPluginsError(f"selection contains unavailable plugin IDs: {unknown}")
     selected_items = [item for plugin_id, item in selectable.items() if plugin_id in selected]
     disabled = [item for plugin_id, item in selectable.items() if plugin_id not in selected]
-    unsupported_capabilities = [
-        {
-            "plugin": item["id"],
-            "capability": "apps/connectors",
-            "reason": "plugin apps/connectors cannot be project-scoped",
-        }
-        for item in disabled
-        if item.get("apps") is True
-    ]
     previous = inventory.get("previous_allowlist")
     added = sorted(set(selected) - set(previous or []))
     removed = sorted(set(previous or []) - set(selected))
-    if unsupported_capabilities:
-        return {
-            "schema_version": SCHEMA_VERSION,
-            "project": str(project),
-            "allowed_plugins": selected,
-            "disabled_plugins": [item["id"] for item in disabled],
-            "selection_diff": {"added": added, "removed": removed},
-            "scope_enforceable": False,
-            "unsupported_capabilities": unsupported_capabilities,
-            "effects": [
-                {
-                    "id": item["id"],
-                    "skills_disabled": 0,
-                    "tool_suggestion_disabled": False,
-                    "mcp_servers_disabled": [],
-                    "apps_not_project_scopeable": bool(item.get("apps")),
-                }
-                for item in disabled
-            ],
-            "warnings": ["excluded plugin apps/connectors prevent project-scope enforcement"],
-            "files": [str(project / ALLOWLIST_REL), str(project / CONFIG_REL)],
-        }
     selectable_name_counts: dict[str, int] = {}
     for item in selectable.values():
         name = item.get("name")
@@ -767,6 +849,8 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
     selected_skill_paths: set[str] = set()
     selected_mcp_servers: set[str] = set()
     for item in selected_items:
+        if item.get("manifest_error"):
+            raise AllowPluginsError(f"cannot safely profile {item['id']}: {item['manifest_error']}")
         # Selected plugins need no write, but their observed paths are needed to
         # reject a cross-canonical root collision before masking another plugin.
         selected_skill_paths.update(_item_skill_paths(item, require_ready=False))
@@ -776,7 +860,15 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
     skill_paths: list[str] = []
     tools: list[str] = []
     mcp: list[tuple[str, str]] = []
-    app_limits: list[str] = []
+    def app_ids(item: dict[str, Any]) -> list[str]:
+        apps = item.get("apps", [])
+        if isinstance(apps, bool):  # compatibility with a caller-built v1 inventory
+            return []
+        if not isinstance(apps, list) or any(not isinstance(app, dict) or not isinstance(app.get("id"), str) for app in apps):
+            raise AllowPluginsError(f"plugin {item.get('id', '<unknown>')} has malformed app declarations")
+        return [app["id"] for app in apps]
+    selected_app_ids = sorted({app_id for item in selected_items for app_id in app_ids(item)})
+    excluded_app_ids = sorted({app_id for item in disabled for app_id in app_ids(item)})
     warnings: list[str] = []
     effects: list[dict[str, Any]] = []
     runtime_targets: list[dict[str, Any]] = []
@@ -805,15 +897,14 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
             warnings.append(
                 f"{item['id']} has a synthesized ID; tool suggestion and MCP routing are not changed"
             )
-        if item["apps"]:
-            app_limits.append(item["id"])
         effects.append(
             {
                 "id": item["id"],
                 "skills_disabled": len(item_paths),
                 "tool_suggestion_disabled": bool(item["canonical_known"]),
                 "mcp_servers_disabled": item["mcp_servers"] if item["canonical_known"] else [],
-                "apps_not_project_scopeable": bool(item["apps"]),
+                "apps_default_denied": app_ids(item),
+                "apps_not_project_scopeable": False,
             }
         )
         runtime_targets.append(
@@ -837,24 +928,26 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
         config_preexisting = inventory.get("config_preexisting")
         if not isinstance(config_preexisting, bool):
             raise AllowPluginsError("saved allowlist has no valid config_preexisting metadata")
-    _check_conflicts(base_data, skill_paths, tools, mcp)
-    block = _managed_block(skill_paths, tools, mcp)
+    _check_conflicts(base_data, skill_paths, tools, mcp, selected_app_ids + excluded_app_ids)
+    hook_command = shlex.join([sys.executable, str(Path(__file__).resolve()), "hook-check", "--project", str(project)])
+    block = _managed_block(skill_paths, tools, mcp, selected_app_ids, excluded_app_ids, hook_command)
     if _tracked(project, CONFIG_REL):
         warnings.append(f"{CONFIG_REL.as_posix()} is tracked by Git")
     if _tracked(project, ALLOWLIST_REL):
         warnings.append(f"{ALLOWLIST_REL.as_posix()} is tracked by Git")
     if skill_paths:
         warnings.append("generated absolute skill paths are machine- and plugin-version-specific")
-    if app_limits:
-        warnings.append("disabled plugin apps/connectors prevent project-scope enforcement")
+    shared_apps = sorted(set(selected_app_ids).intersection(excluded_app_ids))
+    if shared_apps:
+        warnings.append("shared app IDs selected and excluded; selected capability wins: " + ", ".join(shared_apps))
     return {
         "schema_version": SCHEMA_VERSION,
         "project": str(project),
         "allowed_plugins": selected,
         "disabled_plugins": [item["id"] for item in disabled],
         "selection_diff": {"added": added, "removed": removed},
-        "scope_enforceable": not unsupported_capabilities,
-        "unsupported_capabilities": unsupported_capabilities,
+        "scope_enforceable": True,
+        "unsupported_capabilities": [],
         "effects": effects,
         "warnings": warnings,
         "files": [str(project / ALLOWLIST_REL), str(project / CONFIG_REL)],
@@ -863,16 +956,43 @@ def build_plan(inventory: dict[str, Any], allowed: Iterable[str]) -> dict[str, A
         "base_config": base,
         "config_preexisting": config_preexisting,
         "runtime_targets": runtime_targets,
+        "selected_app_ids": selected_app_ids,
+        "excluded_app_ids": excluded_app_ids,
         "managed_preimage": managed_preimage,
+        "fingerprint": _capability_fingerprint(inventory, block),
+        "host_plugins": list(inventory.get("host_plugins", [])),
     }
 
 
-def _allowlist_text(allowed: Iterable[str], *, config_preexisting: bool) -> str:
+def _capability_fingerprint(inventory: dict[str, Any], managed_block: str) -> str:
+    """Hash deterministic effective inputs for the read-only SessionStart check."""
+    plugins = []
+    for item in inventory.get("plugins", []):
+        if item.get("selectable"):
+            plugins.append({key: item.get(key) for key in (
+                "id", "manifest_roots", "manifest_error", "skills", "mcp_servers", "apps", "capability_digests",
+                "global_enabled", "cli_enabled", "cli_installed",
+            )})
+    payload = {
+        "plugins": sorted(plugins, key=lambda item: str(item["id"])),
+        # Cache roots are drift evidence only.  Keep this independent of
+        # selectable records so a new cache version colliding with a host/CLI
+        # identity cannot disappear from the SessionStart fingerprint.
+        "cache_snapshot": inventory.get("cache_snapshot", []),
+        "managed_block": managed_block,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def _allowlist_text(allowed: Iterable[str], *, config_preexisting: bool, fingerprint: str, host_plugins: Iterable[str]) -> str:
     lines = [
         f"schema_version = {SCHEMA_VERSION}",
         f"config_preexisting = {'true' if config_preexisting else 'false'}",
-        "allowed_plugins = [",
+        f"fingerprint = {_json_string(fingerprint)}",
+        "host_plugins = [",
     ]
+    lines.extend(f"  {_json_string(item)}," for item in sorted(set(host_plugins)))
+    lines.extend(["]", "allowed_plugins = ["])
     lines.extend(f"  {_json_string(item)}," for item in allowed)
     lines.extend(["]", ""])
     return "\n".join(lines)
@@ -1005,6 +1125,8 @@ def discover_runtimes(
     run_command: Any = _run_command,
 ) -> list[dict[str, str]]:
     """Discover Desktop first, then PATH, while preserving their independent evidence."""
+    if not (desktop_path.is_file() and os.access(desktop_path, os.X_OK)):
+        raise RuntimeProbeError("desktop_required", f"Codex Desktop runtime is required: {desktop_path}")
     raw_paths: list[tuple[str, Path]] = [("desktop", desktop_path)]
     path_binary = which("codex")
     if path_binary:
@@ -1336,15 +1458,67 @@ def _runtime_targets(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return targets
 
 
+def _app_policy(plan: dict[str, Any]) -> tuple[list[str], list[str]]:
+    selected, excluded = plan.get("selected_app_ids", []), plan.get("excluded_app_ids", [])
+    if not all(isinstance(values, list) and all(isinstance(item, str) and item for item in values)
+               for values in (selected, excluded)):
+        raise RuntimeProbeError("app_policy", "plan has malformed app policy")
+    return sorted(set(selected)), sorted(set(excluded) - set(selected))
+
+
+def _effective_apps(result: dict[str, Any], selected: list[str], excluded: list[str]) -> None:
+    config = result.get("data", result)
+    if isinstance(config, dict):
+        config = config.get("config", config)
+    if not isinstance(config, dict) or not isinstance(config.get("apps"), dict):
+        raise RuntimeProbeError("config_schema", "config/read has no apps object")
+    apps = config["apps"]
+    default = apps.get("_default")
+    if not isinstance(default, dict) or default.get("enabled") is not False:
+        raise RuntimeProbeError("app_config_mismatch", "apps._default.enabled must be false")
+    for app_id, expected in [(item, True) for item in selected] + [(item, False) for item in excluded]:
+        row = apps.get(app_id)
+        if not isinstance(row, dict) or row.get("enabled") is not expected:
+            raise RuntimeProbeError("app_config_mismatch", f"app {app_id!r} does not have enabled={expected}")
+
+
+def _app_rows(result: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
+    rows = result.get("data")
+    cursor = result.get("nextCursor")
+    if not isinstance(rows, list) or (cursor is not None and not isinstance(cursor, str)):
+        raise RuntimeProbeError("app_schema", "app/list must return data and optional string-or-null nextCursor")
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not isinstance(row.get("isEnabled"), bool):
+            raise RuntimeProbeError("app_schema", "app/list row needs string id and boolean isEnabled")
+        if "callable" in row and not isinstance(row["callable"], bool):
+            raise RuntimeProbeError("app_schema", f"app {row['id']} has non-boolean callable")
+    return rows, cursor
+
+
+def _installed_apps(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rows = result.get("apps")
+    if not isinstance(rows, list):
+        raise RuntimeProbeError("app_schema", "app/installed result.apps must be an array")
+    output: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
+            raise RuntimeProbeError("app_schema", "app/installed row needs string id")
+        if row["id"] in output:
+            raise RuntimeProbeError("app_schema", f"app/installed repeats app {row['id']!r}")
+        output[row["id"]] = row
+    return output
+
+
 def probe_runtime(
     runtime: dict[str, str],
     project: Path,
     targets: list[dict[str, Any]],
     *,
+    plan: dict[str, Any],
     run_command: Any = _run_command,
     session_factory: Any = _StdioAppServerSession,
 ) -> dict[str, Any]:
-    """Probe one runtime's fresh skill catalog and MCP catalog/configuration."""
+    """Probe one runtime App Server session, including effective app policy."""
     session: Any = None
     status_rows: list[dict[str, Any]] = []
     try:
@@ -1365,17 +1539,67 @@ def probe_runtime(
         )
         _result(initialized, "initialize")
         session.notify({"method": "initialized", "params": {}})
-        skills_response = session.request(
+        thread_response = session.request({"id": 2, "method": "thread/start", "params": {"cwd": str(project), "ephemeral": True}})
+        thread_result = _result(thread_response, "thread/start")
+        thread = thread_result.get("thread")
+        if not isinstance(thread, dict) or not isinstance(thread.get("id"), str) or not thread["id"]:
+            raise RuntimeProbeError("thread_schema", "thread/start result.thread.id must be a nonempty string")
+        thread_id = thread["id"]
+        selected_apps, excluded_apps = _app_policy(plan)
+        config_response = session.request(
             {
-                "id": 2,
-                "method": "skills/list",
-                "params": {"cwds": [str(project)], "forceReload": True},
+                "id": 3, "method": "config/read",
+                "params": {"cwd": str(project), "includeLayers": True},
             }
         )
+        _effective_apps(_result(config_response, "config/read"), selected_apps, excluded_apps)
+
+        app_rows: list[dict[str, Any]] = []
+        cursor: str | None = None
+        request_id = 4
+        for _ in range(MAX_MCP_PAGES):
+            response = session.request({
+                "id": request_id, "method": "app/list",
+                "params": {"threadId": thread_id, "cursor": cursor, "limit": 100, "forceRefetch": False},
+            })
+            rows, cursor = _app_rows(_result(response, "app/list"))
+            app_rows.extend(rows)
+            if cursor is None:
+                break
+            request_id += 1
+        else:
+            raise RuntimeProbeError("app_pagination", "too many app/list pages")
+        by_id = {row["id"]: row for row in app_rows}
+        for app_id in selected_apps:
+            if app_id in by_id and by_id[app_id]["isEnabled"] is not True:
+                raise RuntimeProbeError("app_runtime_mismatch", f"selected app {app_id!r} is disabled")
+        for app_id in excluded_apps:
+            if app_id in by_id and by_id[app_id]["isEnabled"] is not False:
+                raise RuntimeProbeError("app_runtime_mismatch", f"excluded app {app_id!r} is enabled")
+        response = session.request({
+            "id": request_id + 1, "method": "app/installed",
+            "params": {"threadId": thread_id, "forceRefresh": False},
+        })
+        request_id += 1
+        installed_apps = _installed_apps(_result(response, "app/installed"))
+        for app_id in excluded_apps:
+            installed = installed_apps.get(app_id)
+            if installed is not None and (
+                not isinstance(installed.get("enabled"), bool) or not isinstance(installed.get("callable"), bool)
+            ):
+                raise RuntimeProbeError("app_schema", f"excluded installed app {app_id!r} lacks enabled/callable booleans")
+            if installed is not None and (installed["enabled"] or installed["callable"]):
+                raise RuntimeProbeError("app_runtime_mismatch", f"excluded installed app {app_id!r} is enabled or callable")
+
+        skills_response = session.request({
+            "id": request_id + 1, "method": "skills/list",
+            "params": {"cwds": [str(project)], "forceReload": True},
+        })
+        request_id += 1
         skill_entries = _skill_entries(_result(skills_response, "skills/list"), project)
 
-        cursor: str | None = None
-        request_id = 3
+        cursor = None
+        request_id += 1
         for _ in range(MAX_MCP_PAGES):
             status_response = session.request(
                 {
@@ -1426,7 +1650,7 @@ def verify_runtime_gate(
     evidence: list[dict[str, str]] = []
     for runtime in runtimes:
         try:
-            result = runtime_probe(runtime, Path(plan["project"]), targets)
+            result = runtime_probe(runtime, Path(plan["project"]), targets, plan=plan)
         except Exception as exc:
             return {
                 "ok": False,
@@ -1512,7 +1736,7 @@ def apply_plan(plan: dict[str, Any], *, runtime_gate: Any = verify_runtime_gate)
     config_text = base + separator + plan["managed_block"] + "\n"
     try:
         tomllib.loads(config_text)
-        tomllib.loads(_allowlist_text(plan["allowed_plugins"], config_preexisting=config_preexisting))
+        tomllib.loads(_allowlist_text(plan["allowed_plugins"], config_preexisting=config_preexisting, fingerprint=plan["fingerprint"], host_plugins=plan["host_plugins"]))
     except tomllib.TOMLDecodeError as exc:
         raise AllowPluginsError(f"generated TOML did not validate: {exc}") from exc
     snapshots = _snapshot_managed_files(project)
@@ -1520,7 +1744,7 @@ def apply_plan(plan: dict[str, Any], *, runtime_gate: Any = verify_runtime_gate)
         raise AllowPluginsError("managed files changed after planning; rebuild inventory and plan before apply")
     config_path = project / CONFIG_REL
     allow_path = project / ALLOWLIST_REL
-    allow_text = _allowlist_text(plan["allowed_plugins"], config_preexisting=config_preexisting)
+    allow_text = _allowlist_text(plan["allowed_plugins"], config_preexisting=config_preexisting, fingerprint=plan["fingerprint"], host_plugins=plan["host_plugins"])
     generated = dict(snapshots)
     with _transaction_sigterm_guard():
         try:
@@ -1590,9 +1814,24 @@ def validate_state(inventory: dict[str, Any], *, runtime_gate: Any = verify_runt
     allowed = inventory.get("previous_allowlist")
     if allowed is None:
         return {"status": "not_configured", "project": inventory["project"]}
+    if inventory.get("allowlist_schema_version") == 1:
+        return {
+            "status": "migration_required", "project": inventory["project"],
+            "allowed_plugins": allowed, "runtime_verified": False,
+            "message": "rerun $iysl-allow-plugins and confirm apply to migrate schema v1 to v2",
+        }
     plan = build_plan(inventory, allowed)
     if plan["scope_enforceable"] is False:
         return _unsupported_scope_result(Path(inventory["project"]), plan)
+    if plan["fingerprint"] != inventory.get("saved_fingerprint"):
+        return {
+            "status": "capability_drift",
+            "project": inventory["project"],
+            "allowed_plugins": allowed,
+            "runtime_verified": False,
+            "scope_enforceable": False,
+            "message": "plugin capability inputs changed; rerun $iysl-allow-plugins",
+        }
     _, _, actual = _read_project_config(Path(inventory["project"]))
     if actual != plan["managed_block"]:
         raise AllowPluginsError("managed block does not match the saved allowlist and live inventory")
@@ -1654,7 +1893,7 @@ def remove_state(project: Path, confirm: bool, *, unlink: Any = Path.unlink) -> 
     allowlist_state = _load_allowlist(project)
     if (allowlist_state is None) != (managed is None):
         raise AllowPluginsError("allowlist file and managed config block are out of sync")
-    config_preexisting = allowlist_state[1] if allowlist_state is not None else False
+    config_preexisting = allowlist_state["config_preexisting"] if allowlist_state is not None else False
     preview = {
         "status": "preview" if not confirm else "removed",
         "project": str(project),
@@ -1673,34 +1912,41 @@ def remove_state(project: Path, confirm: bool, *, unlink: Any = Path.unlink) -> 
     config_path = project / CONFIG_REL
     generated = dict(snapshots)
     try:
-        if managed is not None:
-            if base.strip():
-                try:
-                    tomllib.loads(base)
-                except tomllib.TOMLDecodeError as exc:
-                    raise AllowPluginsError(f"remaining project TOML would be invalid: {exc}") from exc
-            if base.strip() or config_preexisting:
-                config_mode = snapshots[config_path][2] if snapshots[config_path][0] else 0o644
-                generated[config_path] = (True, base.encode("utf-8"), config_mode)
-                _atomic_write(
-                    config_path,
-                    base,
-                    mode=config_mode,
-                    expected=snapshots[config_path],
-                )
-            elif config_path.exists():
-                generated[config_path] = (False, None, None)
-                _unlink_if_expected(config_path, expected=snapshots[config_path], unlink=unlink)
-        if allow_path.exists():
-            generated[allow_path] = (False, None, None)
-            _unlink_if_expected(allow_path, expected=snapshots[allow_path], unlink=unlink)
+        with _transaction_sigterm_guard():
+            if managed is not None:
+                if base.strip():
+                    try:
+                        tomllib.loads(base)
+                    except tomllib.TOMLDecodeError as exc:
+                        raise AllowPluginsError(f"remaining project TOML would be invalid: {exc}") from exc
+                if base.strip() or config_preexisting:
+                    config_mode = snapshots[config_path][2] if snapshots[config_path][0] else 0o644
+                    generated[config_path] = (True, base.encode("utf-8"), config_mode)
+                    _atomic_write(
+                        config_path,
+                        base,
+                        mode=config_mode,
+                        expected=snapshots[config_path],
+                    )
+                elif config_path.exists():
+                    generated[config_path] = (False, None, None)
+                    _unlink_if_expected(config_path, expected=snapshots[config_path], unlink=unlink)
+            if allow_path.exists():
+                generated[allow_path] = (False, None, None)
+                _unlink_if_expected(allow_path, expected=snapshots[allow_path], unlink=unlink)
+    except TransactionTerminated:
+        try:
+            _restore_managed_files(snapshots, expected_current=generated)
+        except Exception as rollback_error:
+            raise AllowPluginsError(f"remove terminated and rollback failed: {rollback_error}") from None
+        raise
     except KeyboardInterrupt:
         try:
             _restore_managed_files(snapshots, expected_current=generated)
         except Exception as rollback_error:
             raise AllowPluginsError(f"remove interrupted and rollback failed: {rollback_error}") from None
         raise
-    except (AllowPluginsError, OSError) as exc:
+    except Exception as exc:
         try:
             _restore_managed_files(snapshots, expected_current=generated)
         except Exception as rollback_error:
@@ -1789,10 +2035,40 @@ def _write_output(path: str | None, payload: Any) -> None:
         sys.stdout.write(text)
 
 
+def hook_check(project_raw: str, *, global_config: str | None = None, desktop_codex: str | None = None) -> int:
+    """Read-only SessionStart drift sentinel.  It intentionally never starts App Server."""
+    try:
+        project = _project_path(project_raw)
+        saved = _load_allowlist(project)
+        if saved is None or saved["schema_version"] != SCHEMA_VERSION:
+            raise AllowPluginsError("managed v2 allowlist is unavailable")
+        args = argparse.Namespace(
+            project=str(project), global_config=global_config, plugin_list_json=None,
+            host_plugin=saved["host_plugins"], desktop_codex=desktop_codex,
+        )
+        inventory = build_inventory(args)
+        plan = build_plan(inventory, saved["allowed_plugins"])
+        _, _, actual = _read_project_config(project)
+        if actual == plan["managed_block"] and plan["fingerprint"] == saved["fingerprint"]:
+            return 0
+        detail = "Project plugin capability profile changed"
+    except Exception as exc:
+        detail = f"Project plugin capability drift check failed: {exc}"
+    sys.stdout.write(json.dumps({
+        "systemMessage": detail + "; rerun $iysl-allow-plugins.",
+        "hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": "This SessionStart check is read-only and did not repair project configuration.",
+        },
+    }, ensure_ascii=False) + "\n")
+    return 0
+
+
 def _add_inventory_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--project", required=True)
     parser.add_argument("--global-config")
     parser.add_argument("--plugin-list-json", help="Use captured CLI JSON instead of running codex")
+    parser.add_argument("--desktop-codex", help=argparse.SUPPRESS)
     parser.add_argument("--host-plugin", action="append", default=[], metavar="NAME_OR_ID=PATH")
 
 
@@ -1820,12 +2096,20 @@ def _parser() -> argparse.ArgumentParser:
     remove = subparsers.add_parser("remove")
     remove.add_argument("--project", required=True)
     remove.add_argument("--confirm-remove", action="store_true")
+    hook = subparsers.add_parser("hook-check", help=argparse.SUPPRESS)
+    hook.add_argument("--project", required=True)
+    hook.add_argument("--global-config")
+    hook.add_argument("--desktop-codex", help=argparse.SUPPRESS)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command == "hook-check":
+            return hook_check(args.project, global_config=args.global_config, desktop_codex=args.desktop_codex)
+        if args.command in {"inventory", "plan", "apply", "validate"} and platform.system() != "Darwin":
+            raise AllowPluginsError("iysl-allow-plugins v2 requires macOS Codex Desktop")
         if args.command == "inventory":
             _write_output(args.output, build_inventory(args))
         elif args.command == "picker":
