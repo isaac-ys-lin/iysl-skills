@@ -17,6 +17,12 @@ body only after selecting that skill for the user's task. If the user explicitly
 asks to read every full instruction body, finish all bodies before starting the
 downstream task.
 
+Keep the default response compact. Do not print the full catalog unless the
+user explicitly asks to list it. Report the completeness receipt, the selected
+skill names, and a short selection reason. If there is no downstream task,
+report only the receipt and resolved plugin identity unless the user asks for
+the catalog.
+
 ## Input
 
 Require exactly one target in any of these forms:
@@ -65,9 +71,10 @@ plugin root. Then:
 5. Emit a completeness receipt with `read/discovered`. Say `complete` only when
    every discovered file produced a nonempty name and description.
 
-List the resulting names and descriptions unless the user requested only a
-completion receipt. If the plugin declares no skills, report `0/0` and do not
-pretend it offers a skill workflow.
+Retain every resulting name and description for selection, but do not list the
+full catalog by default. List every exact name and description only when the
+user explicitly asks for the complete catalog. If the plugin declares no
+skills, report `0/0` and do not pretend it offers a skill workflow.
 
 ## Select and load instructions
 

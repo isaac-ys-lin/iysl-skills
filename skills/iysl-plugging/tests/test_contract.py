@@ -23,6 +23,13 @@ class PluggingContractTest(unittest.TestCase):
         self.assertIn("Read each selected `SKILL.md` completely", skill)
         self.assertIn("discovered `SKILL.md` files in stable batches", skill)
 
+    def test_default_output_is_compact_but_complete(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("Do not print the full catalog unless", skill)
+        self.assertIn("Report the completeness receipt, the selected", skill)
+        self.assertIn("List every exact name and description only when", skill)
+
     def test_resolution_fails_closed_and_stays_read_only(self):
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
 

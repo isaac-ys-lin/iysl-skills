@@ -15,8 +15,17 @@
       "kind": "quality",
       "prompt": "$iysl-plugging data-analytics@openai-curated-remote; read every description, then diagnose why this metric changed.",
       "expected": {
-        "must_do": ["prefer the matching task-visible plugin root", "read the manifest-declared skills tree in stable order", "read every complete frontmatter name and description", "report an exact read/discovered completeness receipt", "compare the task against all descriptions before loading the smallest relevant full SKILL.md set"],
-        "must_not_do": ["load only the first matching description", "invoke plugin tools before catalog completion", "write configuration"]
+        "must_do": ["prefer the matching task-visible plugin root", "read the manifest-declared skills tree in stable order", "read every complete frontmatter name and description", "report an exact read/discovered completeness receipt", "report only the selected skill names and short reasons by default", "compare the task against all descriptions before loading the smallest relevant full SKILL.md set"],
+        "must_not_do": ["print the complete catalog without an explicit request", "load only the first matching description", "invoke plugin tools before catalog completion", "write configuration"]
+      }
+    },
+    {
+      "id": "explicit-complete-catalog-output",
+      "kind": "quality",
+      "prompt": "$iysl-plugging data-analytics@openai-curated-remote; list the complete skill catalog.",
+      "expected": {
+        "must_do": ["read every complete frontmatter", "report an exact read/discovered completeness receipt", "list every exact skill name and description"],
+        "must_not_do": ["omit catalog entries", "read every full SKILL.md body unless separately requested"]
       }
     },
     {
