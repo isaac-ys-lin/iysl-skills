@@ -1,7 +1,7 @@
 interface:
   display_name: "Equity Data"
-  short_description: "Two-stage evidence intake for public-equity analysis"
-  default_prompt: "Pair $equity-data with the Public Equity Investing router; run bounded Ask SA recall, complete the core Seeking Alpha evidence-or-gap coverage gate, retrieve only decision-relevant extensions, defer Wall Street targets during embedded underwriting until the owner freezes independent fair value, verify load-bearing claims, and return the smallest evidence handoff."
+  short_description: "Completeness-first formal equity evidence intake"
+  default_prompt: "Pair $equity-data with the Public Equity Investing router; for formal initiation or research refresh run Ask SA recall, disposition all twelve Seeking Alpha groups in a validated coverage artifact, resume Wall Street targets after independent fair value freezes, verify load-bearing claims, and keep the owner handoff lean. Keep non-formal workflows bounded."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:

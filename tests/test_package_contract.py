@@ -10,13 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 MANIFEST = load_manifest(ROOT)
 SKILL_ENTRIES = MANIFEST["skills"]
-REPO_OWNED_SKILLS = {
-    name for name, entry in SKILL_ENTRIES.items() if entry["ownership"] == "repo"
+MAINTAINED_SKILLS = {
+    name for name, entry in SKILL_ENTRIES.items() if entry["maintainer"] == "iysl"
 }
-THIRD_PARTY_SKILLS = {
+FORKED_SKILLS = {
     name
     for name, entry in SKILL_ENTRIES.items()
-    if entry["ownership"] == "third_party"
+    if entry["origin"] == "forked"
 }
 EXPECTED_SKILLS = set(SKILL_ENTRIES)
 # .DS_Store is ignored at the repository and skill levels, so Finder metadata
@@ -27,25 +27,30 @@ RESIDUE_NAMES = {"__pycache__", ".pytest_cache"}
 
 class PackageContractTest(unittest.TestCase):
     def test_manifest_is_the_single_inventory_and_has_valid_gate_metadata(self):
-        self.assertEqual(MANIFEST["schema_version"], 1)
+        self.assertEqual(MANIFEST["schema_version"], 2)
         self.assertEqual(
             set(MANIFEST["name_policy"]["allowed_unprefixed"]),
             {name for name in EXPECTED_SKILLS if not name.startswith(MANIFEST["name_policy"]["required_prefix"])},
         )
-        self.assertEqual(REPO_OWNED_SKILLS | THIRD_PARTY_SKILLS, EXPECTED_SKILLS)
+        self.assertEqual(MAINTAINED_SKILLS, EXPECTED_SKILLS)
         for name, entry in SKILL_ENTRIES.items():
-            self.assertIn(entry["ownership"], {"repo", "third_party"}, name)
+            self.assertEqual(entry["maintainer"], "iysl", name)
+            self.assertIn(entry["origin"], {"original", "forked"}, name)
+            self.assertNotIn("ownership", entry, name)
             self.assertIn(entry["visibility"], {"implicit", "explicit"}, name)
-            self.assertIn(entry["license"], {"repository", "skill"}, name)
+            self.assertIn(entry["license"], {"repository", "skill", "bundled-upstream"}, name)
             self.assertIsInstance(entry["required_gates"], list, name)
             self.assertEqual(len(entry["required_gates"]), len(set(entry["required_gates"])), name)
             self.assertTrue(set(entry["required_gates"]) <= {"trigger", "behavior"}, name)
-            if entry["ownership"] == "repo" and entry["visibility"] == "implicit":
+            if entry["origin"] == "original" and entry["visibility"] == "implicit":
                 self.assertEqual(set(entry["required_gates"]), {"trigger", "behavior"}, name)
             if entry["license"] == "repository":
-                self.assertEqual(entry["ownership"], "repo", name)
+                self.assertEqual(entry["origin"], "original", name)
                 self.assertFalse((SKILLS / name / "LICENSE").exists(), name)
+            elif entry["license"] == "skill":
+                self.assertTrue((SKILLS / name / "LICENSE").is_file(), name)
             else:
+                self.assertEqual(entry["origin"], "forked", name)
                 self.assertTrue((SKILLS / name / "LICENSE").is_file(), name)
 
     def test_repository_license_is_mit_and_owned_by_iysl(self):
@@ -53,7 +58,7 @@ class PackageContractTest(unittest.TestCase):
         licenses.extend(
             SKILLS / name / "LICENSE"
             for name, entry in SKILL_ENTRIES.items()
-            if entry["ownership"] == "repo" and entry["license"] == "skill"
+            if entry["license"] == "skill"
         )
         for path in licenses:
             self.assertTrue(path.is_file(), path)
@@ -61,11 +66,13 @@ class PackageContractTest(unittest.TestCase):
             self.assertTrue(body.startswith("MIT License"), path)
             self.assertIn("Copyright (c) 2026 iysl", body, path)
 
-    def test_third_party_skills_retain_license_and_provenance(self):
-        for name in THIRD_PARTY_SKILLS:
+    def test_forked_skills_retain_license_and_provenance(self):
+        for name in FORKED_SKILLS:
             skill_dir = SKILLS / name
             entry = SKILL_ENTRIES[name]
-            self.assertEqual(entry["license"], "skill", name)
+            self.assertEqual(entry["maintainer"], "iysl", name)
+            self.assertEqual(entry["origin"], "forked", name)
+            self.assertEqual(entry["license"], "bundled-upstream", name)
             upstream = entry.get("upstream")
             self.assertIsInstance(upstream, dict, name)
             self.assertRegex(upstream["repository"], r"^https://github\.com/[^/]+/[^/]+$", name)

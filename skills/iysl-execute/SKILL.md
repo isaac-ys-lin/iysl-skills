@@ -1,6 +1,6 @@
 ---
 name: iysl-execute
-description: Execute an approved, decision-complete software change with proportional Codex subagent delegation, deterministic validation, and fresh independent Sol review when risk warrants. Use after planning or diagnosis is complete; exclude planning, unknown-root-cause debugging, research, review-only, release-only, and trivial edits.
+description: Execute an approved, decision-complete software change with proportional Codex subagent delegation, deterministic validation, and fresh independent review when risk warrants. Use after planning or diagnosis is complete; exclude planning, unknown-root-cause debugging, research, review-only, release-only, and trivial edits.
 ---
 
 # Execution Orchestrator
@@ -30,6 +30,15 @@ whose ownership and completion criteria are already clear.
 
 - The main agent owns scope, architecture, task decomposition, integration,
   acceptance, and the final response.
+- The executable role configuration is `~/.codex/agents/*.toml`. Before any
+  dispatch, preflight the named role's availability and identity against that
+  configuration. `worker` and `qa` must resolve to the configured Luna Max
+  roles. Pass no model, effort, sandbox, or other role overrides in the
+  dispatch request; the TOML is authoritative.
+- If a required role is missing or its configured identity does not match,
+  stop and report the mismatch. Never silently substitute a generic agent or
+  another role. Use `solo` only after confirming that no delegated lane is
+  needed and the main agent can satisfy the packet's scope and gates safely.
 - Give every implementer an explicit objective, file ownership, interfaces,
   constraints, and verification contract.
 - Require implementers to report actual changes, commands, results, gaps, and
@@ -56,12 +65,26 @@ requesting independent QA, or opening a fresh review.
 4. Use `qa` when independent test execution or evidence collection adds value.
    QA reports defects and never repairs product code.
 5. Apply the fresh-review gate defined in the routing reference. A required
-   review must return `ship`. Allow one bounded fix-and-fresh-review cycle;
-   unresolved findings then return to the main agent instead of recursively
-   adding agents or effort.
+   review must return `ship`. Allow one automated fix-and-fresh-review cycle per
+   delegated implementation pass. If the rereview is not `ship`, stop recursive
+   reviewer spawning and return control to the main agent. This ends the
+   automated review loop, not the authorized task.
 6. Re-read the final diff after every correction. Stop when the authorized
    outcome and all required gates are satisfied; do not add cleanup or follow-up
    work outside scope.
+
+## Completion receipt
+
+Return an observable, inline delegation receipt for every route, including
+`solo` (with an empty dispatch list). The receipt contains:
+
+- `declared_route` — the selected `solo`, `delegate`, `audit`, or `full` route;
+- `dispatched_roles` — each dispatched role together with its task name;
+- `required_gates_passed` — one boolean for every required validation or review
+  gate, including any failed gate.
+
+This receipt is part of the final response or handoff only. Do not create a
+persistent log, registry, or other receipt artifact.
 
 ## Completion
 

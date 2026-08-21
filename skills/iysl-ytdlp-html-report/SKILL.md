@@ -24,6 +24,10 @@ Traditional Chinese.
   extraction details, transcript limits, and commands belong in the sidecar.
 - v2 structured reports are the default. Use v1 compatibility only for an
   existing Markdown report or an explicit request.
+- A generic request such as “整理重點” or “影片摘要” uses the same complete
+  bundle as every other standard request: transcript → validated v2 spec →
+  Markdown → HTML → verification sidecar → artifact validation. Do not create
+  a summary-only shortcut or an inline/deep mode.
 
 ## Invariants
 
@@ -68,9 +72,9 @@ Traditional Chinese.
 3. **Finalize** — run `/path/to/skill/scripts/finalize_report.mjs` to validate,
    render Markdown/HTML, write the sidecar, and perform fresh artifact checks.
 
-Default to one inline path and no subagent. Add read-only analysis, variants,
-or deeper review only for a long or high-value video, unstable transcript, an
-explicit request, or a quality gap. If Kami is visible and selected,
+Use the standard report path with no subagent. Add read-only analysis, variants,
+or a second review only for a long or high-value video, unstable transcript, an
+explicit request, or a quality gap; these do not change the report bundle. If Kami is visible and selected,
 **不要硬編碼安裝路徑**；give it only the validated spec. **不要把 Kami 的
 template、diagram、CSS、字型、reference 或 script 複製進本 skill**，並且
 **只保留一份 final report HTML**. If Kami is unavailable, use built-in v2 and

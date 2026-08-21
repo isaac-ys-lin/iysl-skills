@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from tools.skill_manifest import openai_policy, parse_frontmatter
+from tools.skill_manifest import (
+    forked_skill_names,
+    implicit_repo_skill_names,
+    load_manifest,
+    openai_policy,
+    parse_frontmatter,
+)
 
 
 def test_openai_policy_reads_only_immediate_policy_children(tmp_path: Path):
@@ -83,3 +89,46 @@ description: Example
     )
     with pytest.raises(ValueError, match="duplicate frontmatter key"):
         parse_frontmatter(path)
+
+
+def test_frontmatter_keeps_compatibility_authoritative_at_top_level(tmp_path: Path):
+    path = tmp_path / "SKILL.md"
+    path.write_text(
+        """---
+name: example
+description: Example
+metadata:
+  compatibility: forged nested value
+compatibility: Requires Python
+---
+""",
+        encoding="utf-8",
+    )
+    metadata = parse_frontmatter(path)
+    assert metadata["compatibility"] == "Requires Python"
+    assert "metadata" in metadata
+    assert "forged nested value" not in metadata.values()
+
+
+def test_frontmatter_allows_top_level_yaml_comments(tmp_path: Path):
+    path = tmp_path / "SKILL.md"
+    path.write_text(
+        "---\n# explanatory comment\nname: example\ndescription: Example\n---\n",
+        encoding="utf-8",
+    )
+    assert parse_frontmatter(path)["name"] == "example"
+
+
+def test_manifest_separates_maintainer_from_origin():
+    manifest = load_manifest()
+    assert forked_skill_names(manifest) == {"iysl-grill", "writing-great-skills"}
+    assert implicit_repo_skill_names(manifest) == {
+        name
+        for name, entry in manifest["skills"].items()
+        if entry["visibility"] == "implicit"
+    }
+    assert {entry["maintainer"] for entry in manifest["skills"].values()} == {"iysl"}
+    assert {entry["origin"] for entry in manifest["skills"].values()} == {
+        "original",
+        "forked",
+    }

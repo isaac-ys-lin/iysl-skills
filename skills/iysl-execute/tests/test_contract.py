@@ -32,16 +32,16 @@ class ExecuteContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.skill)
 
-    def test_role_efforts_are_fixed_and_luna_remains_max(self):
+    def test_luna_max_is_fixed_and_other_role_configuration_is_not_mirrored(self):
         for phrase in (
             "Luna `max`, fixed",
-            "Terra `medium`, fixed",
-            "Terra `high`, fixed",
-            "Sol `high`, fixed",
-            "Fresh Sol `high`, fixed",
-            "automatic routing never raises it to `xhigh` or `max`",
+            "All other model and effort choices remain owned by their TOML files",
+            "Do not automatically raise or lower any configured role effort",
+            "without model or effort overrides",
         ):
             self.assertIn(phrase, self.routing_text)
+        for phrase in ("Terra `medium`", "Terra `high`", "Sol `high`"):
+            self.assertNotIn(phrase, self.routing_text)
 
     def test_routes_are_selective_and_bounded(self):
         for phrase in (
@@ -50,7 +50,8 @@ class ExecuteContractTest(unittest.TestCase):
             "Only `full` may use an implementer and reviewer",
             "Delegation, file count, or a `material` label alone does not trigger review",
             "start one new fresh reviewer",
-            "do not add another reviewer or automatically increase effort",
+            "stop recursive reviewer spawning",
+            "This ends the automated review loop, not the authorized task",
         ):
             self.assertIn(phrase, self.routing_text)
 
@@ -72,6 +73,42 @@ class ExecuteContractTest(unittest.TestCase):
         review = by_id["high-risk-production-requires-fresh-review"]["expected"]
         self.assertIn("set reviewer fork_turns to none", review["must_do"])
 
+    def test_configured_roles_are_preflighted_without_overrides(self):
+        for phrase in (
+            "~/.codex/agents/*.toml",
+            "preflight the named role's availability and identity",
+            "worker` and `qa` must resolve to the configured Luna Max",
+            "Pass no model, effort, sandbox, or other role overrides",
+            "Never silently substitute a generic agent",
+            "Use `solo` only after confirming",
+        ):
+            self.assertIn(phrase, self.skill)
+        for phrase in (
+            "~/.codex/agents/*.toml",
+            "worker` and `qa` must be the configured Luna Max roles",
+            "Do not pass model, effort, sandbox, or other role overrides",
+            "do not silently substitute a generic agent",
+        ):
+            self.assertIn(phrase, self.routing_text)
+
+    def test_completion_receipt_is_inline_and_gate_complete(self):
+        for phrase in (
+            "observable, inline delegation receipt",
+            "`declared_route`",
+            "`dispatched_roles`",
+            "`required_gates_passed`",
+            "persistent log",
+        ):
+            self.assertIn(phrase, self.skill)
+        for phrase in (
+            "Completion receipt",
+            "declared_route:",
+            "dispatched_roles:",
+            "required_gates_passed:",
+            "not written to a persistent artifact",
+        ):
+            self.assertIn(phrase, self.routing_text)
+
     def test_fresh_review_lifecycle_is_complete(self):
         for phrase in (
             "no inherited implementation history",
@@ -79,6 +116,7 @@ class ExecuteContractTest(unittest.TestCase):
             "fix-first",
             "rethink",
             "Any code change invalidates the previous review",
+            "continue directly when the correction remains bounded",
             "never authorizes commit, push",
         ):
             self.assertIn(phrase, self.routing_text)
@@ -93,10 +131,11 @@ class ExecuteContractTest(unittest.TestCase):
                 "material-delegation-does-not-auto-review",
                 "high-risk-production-requires-fresh-review",
                 "fix-first-allows-one-fresh-rereview",
-                "second-non-ship-stops-review-loop",
+                "second-non-ship-ends-review-loop-not-task",
                 "rethink-stops-acceptance",
                 "parallel-writes-default-serial",
                 "custom-role-forks-never-use-full-history",
+                "configured-role-preflight-and-inline-receipt",
             }
             <= ids
         )

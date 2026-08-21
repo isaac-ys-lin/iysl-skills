@@ -18,7 +18,8 @@
     {"text": "把這個函式拆成兩個 private helper，命名你決定。", "family": "agent_owned_choice", "expected_route": "direct"},
     {"text": "重新設計 onboarding，有哪些方案？請比較取捨並推薦。", "family": "design_comparison", "expected_route": "think"},
     {"text": "幫我加 diagnostics 匯出；AGENTS.md 已規定 ZIP、不含 secrets、存到使用者選定位置。", "family": "context_resolves_requirements", "expected_route": "direct"},
-    {"text": "匯出功能最近開始卡住；先找出回歸原因。若查到既有行為互相矛盾再問我。", "family": "bug_with_deferred_ambiguity", "expected_route": "hunt"}
+    {"text": "匯出功能最近開始卡住；先找出回歸原因。若查到既有行為互相矛盾再問我。", "family": "bug_with_deferred_ambiguity", "expected_route": "hunt"},
+    {"text": "需求與 owned files、acceptance tests 都已定案，請直接完成實作。", "family": "cross_skill_pair_clarify_vs_execute", "expected_route": "iysl-execute"}
   ],
   "near_neighbor": [
     {"text": "幫我規劃 diagnostics 匯出的架構與測試策略。", "family": "clarify_vs_think", "expected_route": "think"},

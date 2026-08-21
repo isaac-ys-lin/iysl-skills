@@ -11,6 +11,12 @@ Build a complete, current catalog for one specified plugin before choosing its
 skills. Keep the operation read-only. Do not install, enable, disable, remove,
 configure, or invoke plugin tools while reading the catalog.
 
+`iysl-plugging` is the supported successor to the archived
+`$iysl-allow-plugins` capability-mask attempt, but it deliberately covers
+read-only plugin discovery and skill selection only. Do not restore, call, or
+modify the archived `allow_plugins.py` workflow, and do not claim to provide
+project-level capability controls.
+
 By default, read every bundled skill's complete YAML frontmatter and retain its
 exact `name` and `description` in the active context. Read a full `SKILL.md`
 body only after selecting that skill for the user's task. If the user explicitly

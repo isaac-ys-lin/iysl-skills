@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -29,6 +30,11 @@ class EquityDataContractTest(unittest.TestCase):
         )
         cls.interface_yaml = (SKILL_DIR / "agents" / "interface.yaml").read_text(
             encoding="utf-8"
+        )
+        cls.coverage_template = json.loads(
+            (SKILL_DIR / "templates" / "seeking-alpha-coverage.json").read_text(
+                encoding="utf-8"
+            )
         )
         cls.readme = (SKILL_DIR.parents[1] / "README.md").read_text(
             encoding="utf-8"
@@ -66,7 +72,7 @@ class EquityDataContractTest(unittest.TestCase):
     def test_two_stage_order_is_repeated_across_eval_surfaces(self):
         self.assertLess(
             self.skill.index("Use Ask SA to identify"),
-            self.skill.index("Retrieve only the relevant Seeking Alpha structured fields"),
+            self.skill.index("For `completeness_first`, retrieve"),
         )
         self.assertIn("Ask SA recall followed by targeted structured data", self.checklist)
         self.assertIn("Ask SA recall first", (SKILL_DIR / "evals" / "behavior_cases.json").read_text(encoding="utf-8"))
@@ -74,7 +80,7 @@ class EquityDataContractTest(unittest.TestCase):
 
     def test_owner_required_fields_survive_the_scan(self):
         self.assertIn(
-            "or independently required by the owning workflow",
+            "or independently required by the owning",
             self.skill,
         )
 
@@ -91,10 +97,18 @@ class EquityDataContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.skill)
         self.assertIn("Core evidence-or-gap gate completed", self.checklist)
-        self.assertIn(
-            "complete the core evidence-or-gap coverage gate",
-            self.behavior,
-        )
+        self.assertIn("record an explicit gap for each missing core group", self.behavior)
+
+    def test_formal_workflows_are_completeness_first(self):
+        for surface in (self.skill, self.source_map, self.checklist):
+            normalized = surface.lower()
+            self.assertIn("completeness_first", normalized)
+            self.assertIn("formal initial coverage", normalized)
+            self.assertIn("formal research refresh", normalized)
+        self.assertIn("attempt every accessible structured surface", self.behavior)
+        self.assertIn("stop because the investment conclusion already appears clear", self.behavior)
+        self.assertIn("support/seeking_alpha_coverage.json", self.skill)
+        self.assertIn("validate_sa_coverage.py", self.skill)
 
     def test_twelve_group_inventory_is_canonical_but_hidden(self):
         for group in (
@@ -118,6 +132,20 @@ class EquityDataContractTest(unittest.TestCase):
             "force all twelve inventory groups into reader-facing output",
             self.behavior,
         )
+        self.assertEqual(set(self.coverage_template["groups"]), {
+            "market_snapshot",
+            "street_estimates",
+            "estimate_revisions",
+            "earnings_surprises",
+            "wall_street",
+            "quant",
+            "valuation",
+            "peer_comparison",
+            "analyst_views",
+            "transcripts",
+            "positioning",
+            "normalized_financials",
+        })
 
     def test_quant_valuation_and_dividend_gaps_are_closed(self):
         for phrase in (
@@ -133,7 +161,8 @@ class EquityDataContractTest(unittest.TestCase):
             self.assertIn("deferred_until_owner_fv_freeze", surface)
         self.assertIn("For embedded underwriting or valuation workflows", self.skill)
         self.assertIn("do not request or retrieve provider price targets", self.source_map)
-        self.assertIn("provider targets never set or revise", self.skill)
+        self.assertIn("provider targets", self.skill)
+        self.assertIn("never set or revise", self.skill)
         self.assertIn("wall-street-target-post-freeze-comparison", self.behavior)
         self.assertNotIn(
             "recent upgrades/downgrades, target changes, and the expectation bar",
@@ -148,10 +177,11 @@ class EquityDataContractTest(unittest.TestCase):
 
     def test_interface_metadata_and_readme_match_new_contract(self):
         for surface in (self.openai_yaml, self.interface_yaml):
-            self.assertIn("core Seeking Alpha evidence-or-gap coverage gate", surface)
-            self.assertIn("defer Wall Street targets during embedded underwriting", surface)
-        self.assertIn("hidden twelve-group inventory", self.readme)
-        self.assertIn("during embedded underwriting", self.readme)
+            self.assertIn("completeness-first", surface.lower())
+            self.assertIn("validated coverage artifact", surface)
+            self.assertIn("resume Wall Street targets", surface)
+        self.assertIn("validated twelve-group coverage artifact", self.readme)
+        self.assertIn("independent fair value is frozen", self.readme)
 
     def test_multi_security_scan_does_not_expand_context_unnecessarily(self):
         self.assertIn(

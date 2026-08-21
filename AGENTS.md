@@ -15,7 +15,6 @@
 
 - Preserve trigger nouns and keep each skill's responsibility boundary explicit.
 - When `SKILL.md` references `scripts/`, `references/`, `assets/`, templates, tests, or agent metadata, validate the companion files as part of the same change.
-- Do not update or overwrite a live installed skill unless the user explicitly requests installation or synchronization.
 
 ## Verification
 

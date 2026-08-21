@@ -15,7 +15,8 @@
     {"text": "幫我做 DCF。", "family": "valuation", "expected_route": "public-equity-owner"},
     {"text": "今天股價為什麼跌？", "family": "market_analysis", "expected_route": "public-equity-owner"},
     {"text": "Seeking Alpha 的 Quant Rating 是什麼意思？", "family": "provider_explanation", "expected_route": "direct"},
-    {"text": "幫我決定建倉比例。", "family": "trade_decision", "expected_route": "public-equity-owner"}
+    {"text": "幫我決定建倉比例。", "family": "trade_decision", "expected_route": "public-equity-owner"},
+    {"text": "既有 PEI 研究包已完成，請給出 Long、Short 或 Avoid 的最終投資判斷，不要再收集 evidence。", "family": "cross_skill_pair_equity_data_vs_council", "expected_route": "iysl-equity-council"}
   ],
   "near_neighbor": [
     {"text": "投資 thesis 已完成，只要幫我潤稿成繁中。", "family": "thesis_polish", "expected_route": "writing"},

@@ -21,11 +21,14 @@ Request only inputs that materially improve or unblock the owning Public Equity 
 - [ ] Callable licensed provider checked when the owning workflow requires estimates or standardized data
 - [ ] One bounded two-stage Seeking Alpha intake completed for substantive issuer/security work: Ask SA recall followed by targeted structured data, or the skip reason recorded
 - [ ] Hidden Seeking Alpha coverage inventory records all twelve groups: market snapshot, street estimates, estimate revisions, earnings surprises, Wall Street, Quant, valuation, peer comparison, analyst views, transcripts, positioning, and normalized financials
+- [ ] Formal initial coverage or formal research refresh uses `completeness_first`, attempts every accessible structured surface, and saves `support/seeking_alpha_coverage.json`
+- [ ] Formal coverage JSON passes `python3 scripts/validate_sa_coverage.py <path>` before the evidence pack is called complete
 - [ ] Core evidence-or-gap gate completed for forward estimates, estimate revisions, earnings surprises, Wall Street rating/target, Quant plus five factor grades, sector/historical valuation, and bull/bear views
 - [ ] Each missing core group has an explicit route, coverage, permission, freshness, or fair-value-freeze gap; no core group silently disappears
 - [ ] In embedded underwriting/valuation, Wall Street target, implied upside, and target history excluded before independent owner FV freeze; required gated fields use `deferred_until_owner_fv_freeze`
+- [ ] After owner FV freeze, Wall Street target fields are resumed, the disposition is updated, and the coverage JSON is revalidated
 - [ ] Explicit standalone target lookup or target-based screen may collect requested target evidence directly with provenance and without fair-value or investment inference
-- [ ] Conditional groups retrieved only when required by the owner or material to the decision; complete inventory remains hidden from reader-facing output
+- [ ] Outside formal completeness-first work, conditional groups are retrieved only when required by the owner or material to the decision; complete inventory remains hidden from reader-facing output
 - [ ] Authorized account or in-app browser route attempted before classifying Seeking Alpha as unavailable
 - [ ] User-provided account export, screenshot, or excerpt used when an authorized non-public provider route is otherwise unavailable
 - [ ] Provider, upstream source, fiscal basis, analyst population, statistic, lookback/horizon, as-of, retrieval time, and timezone captured for consensus/targets

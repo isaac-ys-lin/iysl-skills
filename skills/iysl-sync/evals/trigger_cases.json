@@ -17,7 +17,8 @@
     {"text": "這個 repo 的 build 指令是什麼？", "family": "read_only_question", "expected_route": "direct"},
     {"text": "資料夾裡有一份未完成的舊 plan，但現在先修完全無關的拼字。", "family": "stale_plan_hijack", "expected_route": "direct"},
     {"text": "剛剛有人建議改用 SQLite，但我們還沒同意。", "family": "unaccepted_recommendation", "expected_route": "direct"},
-    {"text": "只讀目前計畫並摘要給我，不要修改。", "family": "read_plan_without_change", "expected_route": "direct"}
+    {"text": "只讀目前計畫並摘要給我，不要修改。", "family": "read_plan_without_change", "expected_route": "direct"},
+    {"text": "計畫與 acceptance criteria 都已定案，現在直接完成跨模組實作。", "family": "cross_skill_pair_sync_vs_execute", "expected_route": "iysl-execute"}
   ],
   "near_neighbor": [
     {"text": "匯出範圍還沒決定，而且可能包含 secrets，先問清楚。", "family": "sync_vs_clarify", "expected_route": "iysl-clarify"},

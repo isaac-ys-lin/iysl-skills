@@ -92,13 +92,16 @@ vintage, fiscal basis, listing, methodology, or forecast horizon.
 
 ### Data Completion Inside The Existing Workflow
 
-This is a coverage aid, not a new workflow stage or a mandatory metric
-dump. At the existing first workflow step, inventory all twelve Seeking Alpha
-groups below. Complete the seven core groups with evidence or an explicit route,
-coverage, permission, freshness, or fair-value-freeze gap. Retrieve conditional
-groups only when the owner requires them or they can change the decision. Fill
-selected groups through the existing bounded Ask SA scan, targeted Seeking
-Alpha retrieval, primary-source verification, and smallest-sufficient handoff.
+This is a support-artifact completeness control, not a reader-facing metric
+dump. Formal initial coverage and formal research refresh use
+`completeness_first`: inventory all twelve Seeking Alpha groups, attempt every
+accessible structured surface, and assign every group a valid disposition.
+Other workflows use `incremental_first`: complete the seven core groups with
+evidence or an explicit route, coverage, permission, freshness, or fair-value-
+freeze gap, and retrieve conditional groups only when the owner requires them
+or they can change the decision. Both modes preserve the bounded Ask SA scan,
+targeted Seeking Alpha retrieval, primary-source verification, and a lean owner
+handoff.
 
 #### Seeking Alpha Coverage Inventory
 
@@ -120,9 +123,30 @@ Alpha retrieval, primary-source verification, and smallest-sufficient handoff.
 Treat recent news and event feeds as discovery inputs across the relevant group,
 not a thirteenth evidence family. Within `normalized_financials`, collect
 dividend yield, growth, payout, and estimates only for income-relevant issuers.
-One inventory group may be marked not decision-relevant, but no core group may
-silently disappear: record why it was unavailable, unauthorized, uncovered,
-stale, or deferred.
+In formal completeness-first artifacts, use only `retrieved`, `not_covered`,
+`unavailable`, `unauthorized`, `stale`,
+`deferred_until_owner_fv_freeze`, or `not_material`. Only conditional groups
+may be `not_material`, and they require a reason. No core group may silently
+disappear: record why it was unavailable, unauthorized, uncovered, stale, or
+deferred.
+
+#### Formal Coverage Artifact
+
+Copy `templates/seeking-alpha-coverage.json` to
+`support/seeking_alpha_coverage.json` for each formal initial coverage or formal
+research refresh. Preserve the raw Ask SA artifact separately. The JSON records
+the workflow class, collection mode, fair-value-freeze state, Ask SA route, and
+all twelve group dispositions. Validate it before formal completion:
+
+```bash
+python3 scripts/validate_sa_coverage.py path/to/support/seeking_alpha_coverage.json
+```
+
+The validator requires all twelve groups, rejects `not_material` for core
+groups, requires evidence locators for `retrieved`, requires a reason for every
+gap, and rejects a still-deferred Wall Street group after fair value is frozen.
+The JSON remains a support/audit artifact; the owner and reader receive only
+decision-relevant findings and gaps.
 
 | Field group | Ask SA discovery | Targeted provider retrieval | Primary verification or supplement |
 |---|---|---|---|

@@ -58,6 +58,16 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("逐字稿是唯一內容來源", self.skill)
         self.assertIn("讀者與 operator 資訊分離", self.skill)
 
+    def test_generic_video_summary_keeps_the_full_report_bundle(self):
+        normalized_skill = " ".join(self.skill.split())
+        self.assertIn("generic request", normalized_skill)
+        self.assertIn(
+            "transcript → validated v2 spec → Markdown → HTML → verification sidecar → artifact validation",
+            normalized_skill,
+        )
+        self.assertIn("Do not create a summary-only shortcut", normalized_skill)
+        self.assertIn("or an inline/deep mode", normalized_skill)
+
     def test_kami_composition_owns_formal_presentation_without_vendoring(self):
         normalized_skill = " ".join(self.skill.split())
         self.assertIn("內容與 presentation 分工", self.skill)

@@ -15,7 +15,8 @@
     {"text": "比較 SQLite 和 JSON，幫我選架構但先不要實作。", "family": "solution_planning", "expected_route": "think"},
     {"text": "Review this existing PR and report actionable findings only.", "family": "review_only", "expected_route": "check"},
     {"text": "讀這份 API 文件並整理重點。", "family": "read_only_research", "expected_route": "read"},
-    {"text": "程式已完成，幫我 commit、push 並發布。", "family": "release_only", "expected_route": "check"}
+    {"text": "程式已完成，幫我 commit、push 並發布。", "family": "release_only", "expected_route": "check"},
+    {"text": "需求已確認，請只更新 active plan 的驗收條件，先不要實作。", "family": "cross_skill_pair_execute_vs_sync", "expected_route": "iysl-sync"}
   ],
   "near_neighbor": [
     {"text": "請先把這個模糊需求變成 decision-complete plan。", "family": "execute_vs_plan", "expected_route": "think"},

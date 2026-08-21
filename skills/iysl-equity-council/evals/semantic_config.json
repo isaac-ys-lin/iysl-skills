@@ -1,0 +1,146 @@
+{
+  "recommended_threshold": 0.75,
+  "fallback_positive_concepts": [
+    "terminal_judgment",
+    "usable_upstream_or_explicit"
+  ],
+  "positive_concepts": {
+    "terminal_judgment": {
+      "weight": 0.5,
+      "phrases": [
+        "research stance",
+        "Long、Short 或 Avoid",
+        "final stance",
+        "終局仲裁",
+        "最終投資方向",
+        "投資判斷",
+        "$iysl-equity-council"
+      ]
+    },
+    "usable_upstream_or_explicit": {
+      "weight": 0.5,
+      "phrases": [
+        "minimally usable",
+        "Public Equity Investing 已完成",
+        "既有研究分布",
+        "既有 PEI pack",
+        "已完成的 PEI workflows",
+        "已完成 PEI packs",
+        "completed public-equity research pack",
+        "source pack and valuation model are complete",
+        "既有研究包已完成",
+        "$iysl-equity-council"
+      ]
+    },
+    "stance_readiness_conflict": {
+      "weight": 0.25,
+      "phrases": [
+        "研究方向和實作準備度分開",
+        "借券和 options",
+        "watchlist",
+        "implementation gap"
+      ]
+    },
+    "horizon_conflict": {
+      "weight": 0.2,
+      "phrases": [
+        "長期 DCF",
+        "指定期限",
+        "期限權重相反"
+      ]
+    },
+    "bounded_uncertainty": {
+      "weight": 0.15,
+      "phrases": [
+        "尚未證實",
+        "有界假設",
+        "optionality",
+        "證據不足作結"
+      ]
+    },
+    "serial_suppression": {
+      "weight": 0.1,
+      "phrases": [
+        "全部變成 pass",
+        "方向差異",
+        "共同缺少",
+        "serial suppression"
+      ]
+    }
+  },
+  "negative_concepts": {
+    "evidence_collection": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": [
+        "替匿名上市公司蒐集最新 filing",
+        "從零蒐集 source pack",
+        "evidence collection only"
+      ]
+    },
+    "model_or_valuation_build": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": [
+        "從零建立匿名上市公司的 DCF",
+        "build the valuation model from scratch",
+        "只建立 WACC 與 terminal value sensitivity"
+      ]
+    },
+    "scenario_only": {
+      "weight": 0.65,
+      "exclusive": true,
+      "phrases": [
+        "只需要 sensitivity table",
+        "把既有模型轉成 bull/base/bear sensitivity table，不需要最終 pitch",
+        "scenario-only"
+      ]
+    },
+    "implementation_only": {
+      "weight": 0.7,
+      "exclusive": true,
+      "phrases": [
+        "請只計算 position sizing",
+        "只設計 hedge alternatives",
+        "implementation only"
+      ]
+    },
+    "non_equity_work": {
+      "weight": 0.75,
+      "exclusive": true,
+      "phrases": [
+        "評估一家未上市公司",
+        "不涉及投資判斷",
+        "不涉及投資判斷的公司背景介紹"
+      ]
+    },
+    "no_usable_upstream": {
+      "weight": 0.8,
+      "exclusive": true,
+      "phrases": [
+        "尚未進行任何研究",
+        "尚未做任何研究"
+      ]
+    },
+    "explicit_no_terminal_judgment": {
+      "weight": 0.9,
+      "exclusive": true,
+      "phrases": [
+        "不要最終投資判斷",
+        "不要 Long、Short 或 Avoid",
+        "不要做終局仲裁",
+        "只檢查 borrow、liquidity 與 implementation readiness",
+        "只整理各 workflow 的方向與期限分歧"
+      ]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "evidence_collection",
+    "model_or_valuation_build",
+    "scenario_only",
+    "implementation_only",
+    "non_equity_work",
+    "no_usable_upstream",
+    "explicit_no_terminal_judgment"
+  ]
+}

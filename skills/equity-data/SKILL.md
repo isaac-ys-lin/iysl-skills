@@ -1,14 +1,16 @@
 ---
 name: equity-data
-description: "Collect the smallest source-backed evidence pack for substantive Public Equity Investing or standalone filings, estimates, market data, transcript, consensus, and provider-reconciliation requests. For issuer/security work, run a bounded two-stage Seeking Alpha scan with a core evidence-or-gap coverage gate, targeted structured data, and verification of load-bearing claims. Does not own investment judgment."
+description: Collect public-equity evidence. Formal initiation and research refresh require completeness-first Seeking Alpha twelve-group coverage; other workflows stay bounded.
+compatibility: Requires Python 3 for the formal Seeking Alpha coverage validator; evidence retrieval uses the authorized provider route selected by the owning workflow.
 ---
 
 # Equity Data
 
 ## Role
 
-Maximize early information recall without lowering evidentiary quality or
-crowding out the owning workflow's decision context.
+Maximize information recall without lowering evidentiary quality. For formal
+initial coverage and formal research refresh, prefer complete collection over
+resource minimization; keep the owner handoff and reader-facing output lean.
 
 Use Seeking Alpha and Ask SA to surface important developments, provider
 signals, market expectations, and source leads quickly. Use the source closest
@@ -27,7 +29,12 @@ must not be inspected.
 ## Default Seeking Alpha scan
 
 For every substantive issuer- or security-specific workflow, run one bounded
-two-stage Seeking Alpha scan before investor judgment. For a multi-security
+two-stage Seeking Alpha scan before investor judgment. Use
+`completeness_first` for formal initial coverage and formal research refresh:
+attempt every accessible structured surface needed to disposition all twelve
+coverage groups, even when the emerging investment conclusion already appears
+clear. Use `incremental_first` for monitoring, Trade Overlay, event work,
+standalone field requests, and multi-security screens. For a multi-security
 screen, scan only priority names, outliers, and decision-critical securities
 selected by the owning workflow; record the selection rule and any material
 exclusions, not every unscanned name.
@@ -40,10 +47,11 @@ Use two stages:
 
 1. Use Ask SA to identify developments that may change the thesis, estimates,
    valuation, catalyst path, market setup, or risk.
-2. Retrieve only the relevant Seeking Alpha structured fields surfaced by the
-   scan or independently required by the owning workflow, such as ratings,
-   estimates, revisions, valuation, factor grades, momentum, short interest,
-   or peer data.
+2. For `completeness_first`, retrieve every accessible structured field needed
+   to disposition the twelve coverage groups. For `incremental_first`, retrieve
+   the fields surfaced by the scan or independently required by the owning
+   workflow, such as ratings, estimates, revisions, valuation, factor grades,
+   momentum, short interest, or peer data.
 
 Require the Ask SA response to separate provider facts, analyst
 interpretation, and source leads. The second stage is the targeted retrieval
@@ -64,9 +72,14 @@ for these seven core groups:
 - forward, trailing, sector-relative, and available historical valuation context;
 - recent bull and bear views and their disputed assumptions.
 
-Retrieve the remaining inventory groups only when required by the owner or
-material to the decision. Keep the complete inventory in supporting artifacts
-and pass only decision-relevant findings or gaps to the owning workflow.
+For `completeness_first`, attempt all twelve groups and record each disposition
+in `support/seeking_alpha_coverage.json` using
+`templates/seeking-alpha-coverage.json`. A conditional group may be
+`not_material` only with a reason; a core group may not. For
+`incremental_first`, retrieve the remaining inventory groups only when required
+by the owner or material to the decision. In both modes, keep the complete
+inventory in supporting artifacts and pass only decision-relevant findings or
+gaps to the owning workflow.
 
 For embedded underwriting or valuation workflows, before the owner records an
 independent fair-value freeze, do not ask for or retrieve Wall Street target
@@ -74,7 +87,8 @@ prices, implied upside, or target history. Record
 `deferred_until_owner_fv_freeze` as the gap when those fields are required but
 still gated. If Ask SA returns target data unsolicited, keep it out of the
 pre-freeze handoff. Retrieve and compare it only after the owner confirms the
-freeze; provider targets never set or revise the owner's fair value by default.
+freeze, update the coverage artifact, and rerun its validator; provider targets
+never set or revise the owner's fair value by default.
 This gate does not block an explicit standalone target lookup or a target-based
 screen with no independent underwriting; collect the requested provider fields
 with provenance, but do not turn them into fair value or investment judgment.
@@ -118,20 +132,28 @@ Pass only decision-relevant findings to the owning workflow.
 
 ## Workflow
 
-1. Identify the owning workflow, decision, evidence cut-off, and minimum
-   decision-critical inputs.
+1. Identify the owning workflow, decision, evidence cut-off, and collection
+   mode. Formal initial coverage and formal research refresh are always
+   `completeness_first`.
 2. Run the bounded Seeking Alpha scan and record its per-leg route status,
    permission, provider vintage, and evidence artifacts.
-3. Verify or supplement material findings using the closest available sources.
-4. Reconcile definitions, vintages, and conflicts, then return the smallest
-   sufficient evidence handoff.
-5. Stop when every required input is traceably supported or explicitly labeled
-   as an unresolved gap.
+3. For `completeness_first`, populate `support/seeking_alpha_coverage.json` and
+   run `python3 scripts/validate_sa_coverage.py <path>`. Do not call the formal
+   evidence pack complete unless validation passes.
+4. Verify or supplement material findings using the closest available sources.
+5. Reconcile definitions, vintages, and conflicts, then return the smallest
+   sufficient evidence handoff without discarding the broader support artifact.
+6. Stop formal collection only after all twelve groups have a valid disposition,
+   every accessible structured surface has been attempted, and any post-freeze
+   Wall Street fields have been resumed. Other workflows stop when every
+   required input is traceably supported or explicitly labeled as an unresolved
+   gap.
 
 Read `references/source-map.md` for every substantive Seeking Alpha scan. For
 other collection, read it only for standalone work or when the embedded plugin
 route does not supply provider, provenance, or conflict details. Use the
-templates to audit coverage, but populate detailed fields only when material to
+templates to audit coverage. Formal coverage always populates the twelve-group
+artifact; detailed reader-facing fields remain limited to what is material to
 the owning workflow.
 
 ## Handoff

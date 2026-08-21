@@ -38,9 +38,10 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
 - `iysl-execute` — finish authorized software changes through proportional delegation, deterministic validation, and fresh independent review when risk warrants it.
 - `iysl-plugging` — explicitly read every bundled skill name and description from one specified Codex plugin, prove completeness, then load only the relevant full skill instructions.
+- `iysl-equity-council` — run named Aswath Damodaran, George Soros, and Michael Mauboussin public-method members with distinct work products, then have a Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from a usable Public Equity Investing pack.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
-- `equity-data` — run a bounded two-stage Seeking Alpha intake with a hidden twelve-group inventory and core evidence-or-gap gate, defer Wall Street targets during embedded underwriting until independent fair value is frozen, and return the smallest verified evidence pack rather than owning investor judgment.
+- `equity-data` — use completeness-first Seeking Alpha collection plus a validated twelve-group coverage artifact for formal initiation and research refresh, keep other workflows bounded, defer Wall Street targets until independent fair value is frozen, and return a lean verified handoff without owning investor judgment.
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 
 ## Structure
@@ -63,10 +64,12 @@ tools/
   verify-npx-install.sh
 ```
 
-skills-manifest.json is the single package inventory. It records ownership,
-visibility, license location (`repository` or `skill`), and required release
-gates; license text stays in the referenced `LICENSE`, while skill names and descriptions
-remain sourced from each `SKILL.md`. The release gate also runs
+skills-manifest.json is the single package inventory. It records the iysl
+maintainer, source provenance (`original` or `forked`), visibility, license
+location (`repository`, `skill`, or `bundled-upstream`), and required release
+gates; license text stays in the referenced `LICENSE`, while forked skills keep
+their upstream record in `UPSTREAM.md`. Skill names, descriptions, and official
+frontmatter compatibility remain sourced from each `SKILL.md`. The release gate also runs
 `tools/verify_behavior_evals.py` for deterministic trigger/behavior contract
 checks. Semantic model or human judgment is intentionally outside that CI
 gate.
@@ -157,5 +160,5 @@ resolution.
 
 MIT License. Copyright (c) 2026 iysl.
 
-Third-party skills retain their upstream license and attribution in their
-skill directory.
+Forked skills retain their upstream license and attribution in their skill
+directory; all packaged skills remain maintained by iysl.

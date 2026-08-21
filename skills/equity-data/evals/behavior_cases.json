@@ -7,16 +7,22 @@
       "expected": {"max_questions": 0, "must_not_do": ["intercept routine issuer question"]}
     },
     {
-      "id": "owner-driven-minimum-pack",
+      "id": "owner-driven-formal-pack",
       "kind": "simple",
       "prompt": "以 initiating-coverage 為 owner，整理 NVDA 10-Q、IR、consensus 與 source ledger。",
-      "expected": {"max_questions": 0, "must_do": ["collect minimum decision-relevant inputs", "preserve provenance", "preserve embedded handoff fields"]}
+      "expected": {"max_questions": 0, "must_do": ["use completeness-first collection for formal initiation", "preserve provenance", "preserve embedded handoff fields", "keep the owner handoff lean"]}
     },
     {
       "id": "substantive-analysis-default-seeking-alpha-scan",
       "kind": "simple",
-      "prompt": "以 initiating-coverage 分析 RKLB；先做一輪 bounded two-stage Seeking Alpha scan：先用 Ask SA 做 recall，再收集 decision-relevant structured data，最後驗證重大主張。",
-      "expected": {"max_questions": 0, "must_do": ["run Ask SA recall first", "complete the core evidence-or-gap coverage gate", "retrieve targeted structured data second", "verify material claims", "pass only decision-relevant findings"], "must_not_do": ["force all twelve inventory groups into reader-facing output", "treat Ask SA as direct proof"]}
+      "prompt": "以 initiating-coverage 正式分析 RKLB；先做 Ask SA recall，再完整收集 Seeking Alpha structured data，最後驗證重大主張。",
+      "expected": {"max_questions": 0, "must_do": ["run Ask SA recall first", "attempt every accessible structured surface", "disposition all twelve coverage groups", "save and validate the formal coverage artifact", "verify material claims", "pass only decision-relevant findings"], "must_not_do": ["stop because the investment conclusion already appears clear", "force all twelve inventory groups into reader-facing output", "treat Ask SA as direct proof"]}
+    },
+    {
+      "id": "formal-refresh-is-completeness-first",
+      "kind": "simple",
+      "prompt": "正式 refresh TYOYY。現有 issuer evidence 已經很支持 Avoid，所以 Seeking Alpha 只抓幾個欄位就好。",
+      "expected": {"max_questions": 0, "must_do": ["reject early stopping for formal refresh", "use completeness_first", "record every one of the twelve group dispositions", "validate support/seeking_alpha_coverage.json"], "must_not_do": ["treat a clear direction as provider-coverage completion", "omit unavailable groups silently"]}
     },
     {
       "id": "stock-move-owner-evidence-pass",
@@ -38,7 +44,7 @@
       "id": "partial-seeking-alpha-coverage-is-explicit",
       "kind": "failure",
       "prompt": "Seeking Alpha estimates 可讀，但 revisions、surprises 與 Quant history 沒有顯示。",
-      "expected": {"max_questions": 0, "must_do": ["preserve accessible estimates", "record an explicit gap for each missing core group", "continue with a limited evidence handoff"], "must_not_do": ["silently omit missing core groups", "invent unavailable provider fields"]}
+      "expected": {"max_questions": 0, "must_do": ["preserve accessible estimates", "record an explicit gap for each missing core group", "continue with a limited evidence handoff"], "must_not_do": ["silently omit missing core groups", "invent unavailable provider fields", "classify a missing core group as not_material"]}
     },
     {
       "id": "wall-street-target-is-gated-before-fv-freeze",
@@ -50,7 +56,7 @@
       "id": "wall-street-target-post-freeze-comparison",
       "kind": "simple",
       "prompt": "Owner 已凍結獨立 fair value，現在讀 Seeking Alpha Wall Street target 做比較。",
-      "expected": {"max_questions": 0, "must_do": ["retrieve timestamped target data", "preserve analyst count and horizon when exposed", "compare without revising owner fair value by default"], "must_not_do": ["replace independent underwriting with provider consensus"]}
+      "expected": {"max_questions": 0, "must_do": ["retrieve timestamped target data", "preserve analyst count and horizon when exposed", "update and revalidate the coverage artifact for formal work", "compare without revising owner fair value by default"], "must_not_do": ["leave wall_street deferred after the fair value freeze", "replace independent underwriting with provider consensus"]}
     },
     {
       "id": "standalone-wall-street-target-lookup",

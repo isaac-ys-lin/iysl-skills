@@ -9,6 +9,11 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    from tools.skill_manifest import parse_frontmatter
+except ModuleNotFoundError:  # Direct `python tools/audit-skills.py` execution.
+    from skill_manifest import parse_frontmatter
+
 
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 RESOURCE_RE = re.compile(
@@ -20,22 +25,12 @@ HARD_DEP_RE = re.compile(
 )
 
 
-def parse_frontmatter(path: Path) -> tuple[dict[str, str], str, list[str]]:
+def frontmatter_body(path: Path) -> tuple[str, list[str]]:
     text = path.read_text(encoding="utf-8")
     match = FRONTMATTER_RE.match(text)
     if not match:
-        return {}, text, ["missing frontmatter"]
-    fields: dict[str, str] = {}
-    errors: list[str] = []
-    for raw in match.group(1).splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        if ":" not in raw:
-            errors.append(f"malformed frontmatter line: {raw.strip()}")
-            continue
-        key, value = raw.split(":", 1)
-        fields[key.strip()] = value.strip().strip('"').strip("'")
-    return fields, text[match.end() :], errors
+        return text, ["missing frontmatter"]
+    return text[match.end() :], []
 
 
 def audit_skill(skill_dir: Path, known_skills: set[str]) -> dict:
@@ -54,8 +49,13 @@ def audit_skill(skill_dir: Path, known_skills: set[str]) -> dict:
             "warnings": [],
         }
 
-    fields, body, frontmatter_errors = parse_frontmatter(skill_path)
+    body, frontmatter_errors = frontmatter_body(skill_path)
     errors.extend(frontmatter_errors)
+    try:
+        fields = parse_frontmatter(skill_path)
+    except ValueError as exc:
+        fields = {}
+        errors.append(str(exc))
     if fields.get("name") != skill_dir.name:
         errors.append(f"frontmatter name is {fields.get('name', '<missing>')!r}")
     if not fields.get("description"):

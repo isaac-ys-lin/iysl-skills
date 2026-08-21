@@ -102,9 +102,10 @@ def test_explicit_skill_required_gate_is_not_ignored(tmp_path):
             {
                 "skills": {
                     "explicit-skill": {
-                        "ownership": "third_party",
+                        "maintainer": "iysl",
+                        "origin": "forked",
                         "visibility": "explicit",
-                        "license": "skill",
+                        "license": "bundled-upstream",
                         "required_gates": ["behavior"],
                     }
                 }

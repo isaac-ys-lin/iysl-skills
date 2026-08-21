@@ -1,0 +1,22 @@
+interface:
+  display_name: "iysl-equity-council"
+  short_description: "Run three named personas and a named PM Chair."
+  default_prompt: "Use $iysl-equity-council to run the named Aswath Damodaran, George Soros, and Michael Mauboussin public-method personas, then have the Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from an existing Public Equity Investing research pack."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "generic"
+  activation:
+    mode: "implicit"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "native-implicit-skill"
+    generic: "description-routed"

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name_policy": {
     "required_prefix": "iysl-",
     "allowed_unprefixed": [
@@ -9,7 +9,8 @@
   },
   "skills": {
     "equity-data": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -18,7 +19,8 @@
       ]
     },
     "iysl-anidiagram": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "skill",
       "required_gates": [
@@ -27,7 +29,8 @@
       ]
     },
     "iysl-clarify": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -36,9 +39,10 @@
       ]
     },
     "iysl-grill": {
-      "ownership": "third_party",
+      "maintainer": "iysl",
+      "origin": "forked",
       "visibility": "explicit",
-      "license": "skill",
+      "license": "bundled-upstream",
       "upstream": {
         "repository": "https://github.com/mattpocock/skills",
         "snapshot_commit": "8b78b531ab965735c5dc74f6f7a219e1e37326df",
@@ -48,7 +52,8 @@
       "required_gates": []
     },
     "iysl-deckab": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -57,7 +62,8 @@
       ]
     },
     "iysl-execute": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -66,7 +72,8 @@
       ]
     },
     "iysl-plugging": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "explicit",
       "license": "repository",
       "required_gates": [
@@ -74,8 +81,19 @@
         "behavior"
       ]
     },
+    "iysl-equity-council": {
+      "maintainer": "iysl",
+      "origin": "original",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
+    },
     "iysl-sync": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -84,7 +102,8 @@
       ]
     },
     "iysl-ytdlp-html-report": {
-      "ownership": "repo",
+      "maintainer": "iysl",
+      "origin": "original",
       "visibility": "implicit",
       "license": "repository",
       "required_gates": [
@@ -93,9 +112,10 @@
       ]
     },
     "writing-great-skills": {
-      "ownership": "third_party",
+      "maintainer": "iysl",
+      "origin": "forked",
       "visibility": "explicit",
-      "license": "skill",
+      "license": "bundled-upstream",
       "upstream": {
         "repository": "https://github.com/mattpocock/skills",
         "snapshot_commit": "2ab958093e83e0ec752e6c1c5932da465bf23e0c",

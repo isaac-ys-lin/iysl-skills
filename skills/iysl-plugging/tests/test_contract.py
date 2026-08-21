@@ -38,6 +38,16 @@ class PluggingContractTest(unittest.TestCase):
         self.assertIn("Do not change model context or compaction settings", skill)
         self.assertIn("Keep no persistent index, hook", skill)
 
+    def test_supported_successor_does_not_revive_archived_capability_mask(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        normalized_skill = " ".join(skill.split())
+        self.assertIn("supported successor", skill)
+        self.assertIn("archived", skill)
+        self.assertIn("$iysl-allow-plugins", skill)
+        self.assertIn("read-only plugin discovery and skill selection only", skill)
+        self.assertIn("Do not restore, call, or modify the archived `allow_plugins.py` workflow", normalized_skill)
+        self.assertIn("project-level capability controls", skill)
+
 
 if __name__ == "__main__":
     unittest.main()

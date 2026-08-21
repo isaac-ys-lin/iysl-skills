@@ -31,8 +31,10 @@ def parse_frontmatter(path: Path) -> dict[str, str]:
     raw = text[4 : text.index("\n---\n", 4)]
     values: dict[str, str] = {}
     for line in raw.splitlines():
-        if not line or line[0].isspace() or ":" not in line:
+        if not line or line[0].isspace() or line.lstrip().startswith("#"):
             continue
+        if ":" not in line:
+            raise ValueError(f"malformed frontmatter line {line!r} in {path}")
         key, value = line.split(":", 1)
         key = key.strip()
         if key in values:
@@ -89,26 +91,19 @@ def openai_policy(path: Path) -> dict[str, str]:
     return values
 
 
-def repo_skill_names(manifest: dict[str, Any]) -> set[str]:
-    return {
-        name
-        for name, entry in manifest["skills"].items()
-        if entry.get("ownership") == "repo"
-    }
-
-
 def implicit_repo_skill_names(manifest: dict[str, Any]) -> set[str]:
     return {
         name
         for name, entry in manifest["skills"].items()
-        if entry.get("ownership") == "repo"
-        and entry.get("visibility") == "implicit"
+        if entry.get("visibility") == "implicit"
     }
 
 
-def third_party_skill_names(manifest: dict[str, Any]) -> set[str]:
+def forked_skill_names(manifest: dict[str, Any]) -> set[str]:
+    """Return locally maintained skills whose source provenance is forked."""
+
     return {
         name
         for name, entry in manifest["skills"].items()
-        if entry.get("ownership") == "third_party"
+        if entry.get("maintainer") == "iysl" and entry.get("origin") == "forked"
     }
