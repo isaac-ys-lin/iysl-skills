@@ -1,5 +1,5 @@
 {
-  "recommended_threshold": 0.25,
+  "recommended_threshold": 0.15,
   "should_trigger": [
     {"text": "整理 NVDA 最新 10-Q、IR、consensus 與 source ledger。", "family": "explicit_evidence_pack", "expected_route": "equity-data"},
     {"text": "以 initiating-coverage 為 owner，先收集 filings、estimates、transcripts 與 market data。", "family": "owner_requested_inputs", "expected_route": "equity-data"},
