@@ -2,7 +2,7 @@
 
 Use this contract after the minimum gate in `SKILL.md` passes.
 
-## Chair receipt and common Council header
+## Chair receipt, common factual spine, and private partitions
 
 The Chair receipt records:
 
@@ -15,11 +15,26 @@ The Chair receipt records:
 - the lead workflow's directional or actionability conclusion, sealed until
   after the Council research stance freezes.
 
-Derive one common Council header from this receipt. It contains the first four
-categories but excludes upstream Long, Short, Avoid, watchlist, pass, wait,
-blocked, conviction, actionability, participation, implementation readiness,
-borrow, cost, sizing, orders, and execution fields. Members must not infer the
-omitted fields.
+Derive one common factual spine from this receipt. It contains security identity,
+current price/as-of, horizon, cutoff, and accepted facts needed by all seats. It
+excludes the full PEI thesis narrative and upstream Long, Short, Avoid,
+watchlist, pass, wait, blocked, conviction, actionability, participation,
+implementation readiness, borrow, cost, sizing, orders, and execution fields.
+Members must not infer the omitted fields.
+
+The spine is structured, not narrative: use only the validator's factual field
+IDs with scalar values, units, as-of times, and accepted evidence IDs. Nested
+values, prose thesis summaries, model conclusions, and unrecognized or extra
+fields fail the receipt. Each private partition contains only its exact
+`allowed_domains` and `evidence_ids`.
+
+Then construct the three private partitions defined in
+`council-protocol.md`. Damodaran receives accepted fundamentals, reverse-
+valuation, and capital-structure inputs; Soros receives price-path, marginal-
+actor, and positioning/reflexivity inputs; Mauboussin receives expectations,
+revisions, reference-class, and probability/payoff inputs. Do not give all
+three seats the complete upstream narrative merely because they share a factual
+spine.
 
 Do not silently upgrade screen-grade, illustrative, stale, conflicting, or
 market-belief evidence into verified company facts.
@@ -44,11 +59,12 @@ ledger and does not replace Public Equity Investing provenance.
 ## Evidence classes
 
 - `Established company fact`: directly supported by an accepted PEI artifact
-  or an opened primary source with a precise receipt. A newly discovered
-  model- or sign-changing fact becomes established only if the Chair selects it
-  among the at-most-two facts in the single targeted PEI refill and PEI accepts
-  it. Every unselected or unaccepted fact remains an unverified research lead;
-  it may not change a model input or start another refill.
+  or an opened primary source with a precise receipt before Council admission.
+  If a seat identifies an exact model- or sign-changing evidence gap, the
+  current Council run stops and may return at most two inputs in one targeted
+  PEI refill request. Only a new independently accepted PEI receipt can
+  establish the input and start a new Council run. An unaccepted lead may not
+  change a model input or start another refill.
 - `Market-belief signal`: observable evidence of attention, expectations,
   positioning, narrative, or behavior. It may have high price relevance while
   having low truth relevance about company fundamentals.
@@ -76,9 +92,11 @@ author ratings, and price momentum may each carry bounded signal. Do not assign
 zero weight by rule, vote across them, average them, or multiply confidence
 without examining shared inputs and origin.
 
-Headlines and search snippets are discovery aids. Open the underlying material
-before using a load-bearing claim. When Seeking Alpha is unavailable, a
-public-web-only route is valid if disclosed; provider absence is not Avoid.
+Headlines and search snippets remain research leads unless PEI opened and
+accepted the underlying material before Council admission. When Seeking Alpha
+is unavailable, an upstream accepted public-web route may be disclosed and
+used; provider absence is not `Avoid`. Council does not open a replacement
+route itself.
 
 ## Conjecture admissibility
 
@@ -125,7 +143,7 @@ Record the three public-method personas by name before Chair synthesis:
 | Committee member | Completion requires |
 | --- | --- |
 | `Aswath Damodaran — Fundamental Committee Member` | Archetype-appropriate reverse valuation, price-to-equity bridge, price-implied drivers versus PEI baseline and plausible range, story-to-numbers consistency, least plausible assumption, and convergence path |
-| `George Soros — Reflexivity Committee Member` | Current trend and bias, evidenced marginal actors, complete belief-action-market-reality feedback loop or an explicit non-reflexive flow regime, phase, continuation and reversal triggers, and requested-horizon market refresh |
+| `George Soros — Reflexivity Committee Member` | Current trend and bias, evidenced marginal actors, complete belief-action-market-reality feedback loop or an explicit non-reflexive flow regime, phase, continuation and reversal triggers, and the accepted requested-horizon market packet |
 | `Michael Mauboussin — Expectations Committee Member` | Price-implied expectations, value trigger, defensible reference class and base-rate prior or explicit `Reference-class gap`, inside-view update, posterior range, probability-payoff table, and sign sensitivity |
 
 Set each to `Complete`, `Partial`, or `Unavailable`. A generic valuation summary,
@@ -133,19 +151,32 @@ momentum description, or unsupported scenario probability does not satisfy the
 named method. The exact names disclose which public method was simulated; they
 do not imply participation, endorsement, private access, or evidentiary weight.
 
+Before Chair synthesis, require a canonical `primary_mechanism_tag`, then
+compare it with each sealed memo's `causal_mechanism`,
+`disconfirming_condition`, `key_metric`, and `source_posture`. Complete the
+validator-derived `mechanism_tags` set and semantic convergence review to
+detect controlled English/Chinese near-synonym restatements that evade literal
+matching. Declared tags must exactly match every taxonomy pattern found in the
+causal sentence. If any canonical tag, field, or semantic causal line collides
+across seats, label `persona_convergence` and run exactly one same-evidence
+corrective pass. Remaining collision is
+`unresolved_convergence`: it is not independent confirmation and forces
+`Robustness: Fragile`.
+
 Then apply the separate `Stanley Druckenmiller — PM Chair` completion gate. The
 Chair is a public-method decision persona, not a fourth research member, and
 must return the `Dominant-variable decision matrix` defined in
 `council-protocol.md`: requested-horizon transition, one dominant variable,
 MECE state matrix, `Accept`/`Conditional`/`Reject` decisions for every decisive
 member proposition, strongest disconfirming path, observable reversal trigger,
-and Long/Short/Avoid with confidence and robustness. The Chair may use only
-accepted PEI inputs and sealed member memos. It may not browse, add evidence,
+and Long/Short/Avoid with confidence and robustness. The Chair receives the full
+accepted PEI baseline only after first-round sealing and the unique-contribution
+gate. It may use only accepted PEI inputs and sealed member memos. It may not browse, add evidence,
 simulate a personal position, infer sizing, or repair a partial member method.
 
 Public options, price, volume, short-interest, positioning, liquidity, and
-market-reaction evidence may enter the George Soros method before stance freeze
-when used to understand beliefs or feedback. Options suitability, borrow
+market-reaction evidence accepted by PEI may enter the George Soros sealed
+partition before stance freeze when used to understand beliefs or feedback. Options suitability, borrow
 availability, transaction cost, sizing, orders, and execution remain sealed
 until participation and implementation assessment.
 

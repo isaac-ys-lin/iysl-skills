@@ -114,9 +114,9 @@
       "expected_route": "public-equity-investing"
     },
     {
-      "text": "既有 Public Equity Investing workflow 只缺 evidence pack；請用 equity-data 蒐集最新 filing、transcript、consensus estimates 與 source ledger，不要給最終投資判斷。",
+      "text": "既有 Public Equity Investing workflow 只缺 evidence pack；請用 iysl-equity-data 蒐集最新 filing、transcript、consensus estimates 與 source ledger，不要給最終投資判斷。",
       "family": "cross_skill_pair_council_vs_equity_data",
-      "expected_route": "equity-data"
+      "expected_route": "iysl-equity-data"
     }
   ],
   "near_neighbor": [

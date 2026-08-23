@@ -11,6 +11,7 @@ class ExecuteContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        cls.skill_text = re.sub(r"\s+", " ", cls.skill)
         cls.routing = (ROOT / "references" / "routing.md").read_text(encoding="utf-8")
         cls.routing_text = re.sub(r"\s+", " ", cls.routing)
         cls.behavior = json.loads(
@@ -121,6 +122,45 @@ class ExecuteContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.routing_text)
 
+    def test_evidenced_review_defects_route_through_hunt(self):
+        for phrase in (
+            "If QA or a fresh reviewer reports an evidenced product defect",
+            "invoke `$hunt`",
+            "bounded, authorized, and decision-complete",
+            "Keep non-defect feedback here",
+        ):
+            self.assertIn(phrase, self.skill_text)
+
+        for routing_only_phrase in (
+            "functional error, crash, regression, race",
+            "one root-cause sentence",
+            "observed failing repro before the product fix",
+            "same-shape sibling paths",
+            "naming, formatting, documentation",
+        ):
+            self.assertNotIn(routing_only_phrase, self.skill_text)
+            self.assertIn(routing_only_phrase, self.routing_text)
+
+        for phrase in (
+            "When QA reports a product defect or a reviewer returns `fix-first`",
+            "treat each finding as evidence, not a correction plan",
+            "route the correction through `$hunt`",
+            "Do not invoke `$hunt` for naming, formatting, documentation",
+        ):
+            self.assertIn(phrase, self.routing_text)
+
+        qa_case = {
+            case["id"]: case for case in self.behavior["cases"]
+        }["qa-is-luna-max-and-does-not-fix"]["expected"]
+        self.assertIn(
+            "route an evidenced product failure through hunt before correction",
+            qa_case["must_do"],
+        )
+        self.assertIn(
+            "patch the failure directly without root-cause diagnosis",
+            qa_case["must_not_do"],
+        )
+
     def test_behavior_cases_cover_execution_and_review_failures(self):
         ids = {case["id"] for case in self.behavior["cases"]}
         self.assertTrue(
@@ -131,6 +171,8 @@ class ExecuteContractTest(unittest.TestCase):
                 "material-delegation-does-not-auto-review",
                 "high-risk-production-requires-fresh-review",
                 "fix-first-allows-one-fresh-rereview",
+                "reviewed-product-defect-routes-through-hunt",
+                "non-defect-review-feedback-stays-in-execute",
                 "second-non-ship-ends-review-loop-not-task",
                 "rethink-stops-acceptance",
                 "parallel-writes-default-serial",

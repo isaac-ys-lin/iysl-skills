@@ -27,12 +27,5 @@ class SkillCompatibilityTests(unittest.TestCase):
             for requirement in requirements:
                 self.assertIn(requirement.lower(), compatibility, f"{skill}: {requirement}")
 
-    def test_equity_data_declares_official_top_level_compatibility(self):
-        path = SKILLS / "equity-data" / "SKILL.md"
-        metadata = parse_frontmatter(path)
-        self.assertIn("compatibility", metadata)
-        self.assertNotIn("metadata", metadata)
-
-
 if __name__ == "__main__":
     unittest.main()

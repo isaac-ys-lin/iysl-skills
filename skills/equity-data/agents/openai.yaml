@@ -1,6 +1,0 @@
-interface:
-  display_name: "Equity Data"
-  short_description: "Completeness-first formal equity evidence intake"
-  default_prompt: "Pair $equity-data with the Public Equity Investing router; for formal initiation or research refresh run Ask SA recall, disposition all twelve Seeking Alpha groups in a validated coverage artifact, resume Wall Street targets after independent fair value freezes, verify load-bearing claims, and keep the owner handoff lean. Keep non-formal workflows bounded."
-policy:
-  allow_implicit_invocation: true

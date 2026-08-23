@@ -29,11 +29,25 @@ class EquityCouncilContractTest(unittest.TestCase):
         cls.interface = (ROOT / "agents" / "interface.yaml").read_text(
             encoding="utf-8"
         )
+        cls.run_template = json.loads(
+            (ROOT / "templates" / "council-run.json").read_text(encoding="utf-8")
+        )
 
     def test_frontmatter_name_matches_directory(self):
         match = re.search(r"^name:\s*([a-z0-9-]+)$", self.skill, re.MULTILINE)
         self.assertIsNotNone(match)
         self.assertEqual(match.group(1), ROOT.name)
+
+    def test_public_council_package_does_not_load_private_skill_code(self):
+        inspected = [
+            ROOT / "scripts" / "validate_council_run.py",
+            ROOT / "tests" / "test_council_run_validator.py",
+        ]
+        for path in inspected:
+            body = path.read_text(encoding="utf-8")
+            self.assertNotIn('/ "iysl-equity-data"', body, path)
+            self.assertNotIn("test_pei_input_receipt_validator.py", body, path)
+            self.assertNotIn("test_study_flow_adapter.py", body, path)
 
     def test_minimum_gate_and_native_owner_boundary(self):
         normalized = re.sub(r"\s+", " ", self.skill).replace(TICK, "")
@@ -43,12 +57,12 @@ class EquityCouncilContractTest(unittest.TestCase):
             "explicit decision horizon",
             "minimally usable Public Equity Investing",
             "Never fan out across every constituent skill",
-            "Do not invoke equity-data directly",
+            "Do not invoke iysl-equity-data directly",
             "formal provider coverage",
-            "do not create a competing coverage artifact",
-            "requires Public Equity Investing verification",
-            "the only targeted Public Equity Investing refill",
-            "Do not start a second refill",
+            "may not browse, create a competing coverage artifact, or repair the gap",
+            "Return a targeted refill request to Public Equity Investing",
+            "start a new Council run only after the updated PEI receipt",
+            "do not start a second refill loop",
             "intake failure, not Avoid",
         ):
             self.assertIn(phrase, normalized)
@@ -57,19 +71,19 @@ class EquityCouncilContractTest(unittest.TestCase):
         skill = re.sub(r"\s+", " ", self.skill)
         judgment = re.sub(r"\s+", " ", self.judgment)
         for phrase in (
-            "Rank all newly discovered model- or sign-changing company facts",
-            "Select at most two",
-            "the only targeted Public Equity Investing refill",
-            "All remaining facts stay unverified research leads",
-            "may not enter established inputs",
-            "Do not start a second refill",
+            "identifies a model- or sign-changing gap",
+            "at most two exact inputs",
+            "one targeted Public Equity Investing refill request",
+            "Do not browse or patch the live Council record",
+            "creates a new accepted PEI baseline and a new Council run",
+            "do not start a second refill loop",
         ):
             self.assertIn(phrase, skill)
         for phrase in (
-            "selects it among the at-most-two facts",
-            "single targeted PEI refill",
-            "Every unselected or unaccepted fact remains an unverified research lead",
-            "may not change a model input or start another refill",
+            "current Council run stops",
+            "at most two inputs in one targeted PEI refill request",
+            "Only a new independently accepted PEI receipt",
+            "An unaccepted lead may not change a model input or start another refill",
         ):
             self.assertIn(phrase, judgment)
 
@@ -158,31 +172,107 @@ class EquityCouncilContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, judgment)
 
-    def test_three_agents_are_isolated_but_can_browse(self):
+    def test_three_agents_are_isolated_and_evidence_closed(self):
         normalized = re.sub(r"\s+", " ", self.council)
         for phrase in (
             "Spawn exactly three parallel leaf agents",
-            "the same security identity, current price/as-of, decision horizon",
+            "the same common factual spine",
             "one exact committee-member name and its distinct method card",
+            "one method-specific private evidence partition",
             "named method-specific work product and freshness receipt",
-            "browse accessible external sources",
-            "no Chair conclusion, other member memo, upstream disposition",
+            "evidence-closed authority to inspect only that packet",
+            "browsed=false",
+            "no added evidence IDs",
+            "no full PEI narrative, Chair conclusion, other member memo, upstream disposition",
             "prohibition on further delegation",
             "First-round memos remain sealed",
             "independent work paths, not independent proof",
         ):
             self.assertIn(phrase, normalized)
-        self.assertNotIn("authority to reason from the pack but not to search", normalized)
+        self.assertNotIn("browse accessible external sources", normalized)
 
-    def test_market_refresh_and_options_evidence_are_not_sealed_from_soros(self):
+    def test_common_factual_spine_and_private_partitions_prevent_narrative_anchoring(self):
+        council = re.sub(r"\s+", " ", self.council).replace(TICK, "")
+        skill = re.sub(r"\s+", " ", self.skill).replace(TICK, "")
+        for phrase in (
+            "common factual spine",
+            "private_partitions.damodaran",
+            "fundamentals, reverse_valuation, and capital_structure",
+            "private_partitions.soros",
+            "price_path, marginal_actors, and positioning_reflexivity",
+            "private_partitions.mauboussin",
+            "expectations_revisions, reference_class, and probability_payoff",
+            "owner fair value remains sealed from George Soros",
+            "full PEI thesis narrative remains sealed from Michael Mauboussin",
+        ):
+            self.assertIn(phrase, council)
+        for phrase in (
+            "support/pei_input_receipt.json",
+            "hard research gap",
+            "implementation-only blocker does not block research admission",
+            "full accepted PEI baseline only after",
+        ):
+            self.assertIn(phrase, skill)
+
+    def test_unique_contribution_gate_has_one_bounded_correction(self):
+        normalized = re.sub(r"\s+", " ", self.council).replace(TICK, "")
+        for phrase in (
+            "causal_mechanism",
+            "primary_mechanism_tag",
+            "mechanism_tags",
+            "disconfirming_condition",
+            "key_metric",
+            "source_posture",
+            "persona_convergence",
+            "exactly one corrective pass",
+            "may not browse or add evidence during the corrective pass",
+            "unresolved_convergence",
+            "Robustness: Fragile",
+            "not independent confirmation",
+            "semantic convergence review",
+            "near-synonym paraphrases",
+        ):
+            self.assertIn(phrase, normalized)
+
+    def test_council_run_template_exposes_admission_partitions_and_separate_outputs(self):
+        template = self.run_template
+        self.assertEqual(template["schema_version"], 1)
+        self.assertIn("council_runtime", template)
+        self.assertIn("pei_input_receipt", template)
+        self.assertEqual(set(template["private_partitions"]), {"damodaran", "soros", "mauboussin"})
+        for memo in template["first_round"]["memos"]:
+            self.assertIs(memo["browsed"], False)
+            self.assertEqual(memo["added_evidence_ids"], [])
+        self.assertEqual(set(template["sealed_inputs"]), {
+            "upstream_verdict",
+            "full_pei_narrative",
+            "participation",
+            "implementation_readiness",
+            "other_seat_outputs",
+        })
+        self.assertIn("corrective_pass_count", template["convergence"])
+        self.assertIn("semantic_review", template["convergence"])
+        for memo in template["first_round"]["memos"]:
+            self.assertIn("primary_mechanism_tag", memo["contribution"])
+            self.assertIn("mechanism_tags", memo["contribution"])
+        for field in (
+            "research_stance",
+            "confidence",
+            "robustness",
+            "participation",
+            "implementation_readiness",
+        ):
+            self.assertIn(field, template["chair"])
+        self.assertIn("validate_council_run.py", self.skill)
+
+    def test_accepted_market_evidence_is_sealed_into_soros_partition(self):
         council = re.sub(r"\s+", " ", self.council)
         skill = re.sub(r"\s+", " ", self.skill)
         judgment = re.sub(r"\s+", " ", self.judgment)
         for phrase in (
-            "Use a current market refresh for the requested horizon",
+            "Use the accepted current market packet for the requested horizon",
             "options, short-interest, positioning, or liquidity",
-            "provider freshness receipt",
-            "live_refreshed",
+            "upstream freshness receipt",
             "current_upstream_reused",
             "surfaces_attempted",
             "distinct_evidence_edge",
@@ -197,10 +287,10 @@ class EquityCouncilContractTest(unittest.TestCase):
             judgment,
         )
 
-    def test_exploration_is_broad_and_adoption_is_strict(self):
+    def test_analysis_is_broad_but_the_evidence_set_is_closed(self):
         normalized = re.sub(r"\s+", " ", self.council)
-        self.assertIn("Exploration is broad; adoption is strict", normalized)
-        self.assertIn("Do not prescribe a fixed domain list", normalized)
+        self.assertIn("Analysis may be broad, but the evidence set is closed", normalized)
+        self.assertIn("may not browse, follow an unaccepted lead", normalized)
         for field in (
             "claim",
             "origin_key",
@@ -214,7 +304,7 @@ class EquityCouncilContractTest(unittest.TestCase):
             "falsifier",
         ):
             self.assertRegex(self.council, rf"\| {TICK}{field}{TICK} \|")
-        self.assertIn("Headlines and search snippets are discovery aids", self.judgment)
+        self.assertIn("Headlines and search snippets remain research leads", self.judgment)
         self.assertIn("Count the underlying event, document, dataset", self.judgment)
 
     def test_ambient_context_and_provider_fallback_are_explicit(self):
@@ -223,14 +313,17 @@ class EquityCouncilContractTest(unittest.TestCase):
             "workflow and run identifier",
             "coverage universe and matched security/topic",
             "current matched security",
-            "new or unmatched security",
-            "Stale receipts are historical context",
-            "Receipt absence never prevents fresh research",
-            "SA route unavailable; public-web-only",
+            "new, unmatched, stale, or absent receipt",
+            "return the gap upstream",
+            "Council does not launch collection",
+            "accepted public-web route",
         )
         for phrase in council_phrases:
             self.assertIn(phrase, self.council)
-        self.assertIn("public-web-only route is valid if disclosed", self.judgment)
+        self.assertIn(
+            "Council does not open a replacement route itself",
+            re.sub(r"\s+", " ", self.judgment).replace(TICK, ""),
+        )
 
     def test_evidence_truth_and_price_relevance_are_separate(self):
         normalized = re.sub(r"\s+", " ", self.judgment)
@@ -344,11 +437,10 @@ class EquityCouncilContractTest(unittest.TestCase):
         self.assertEqual(
             {case["evidence_route"] for case in cases},
             {
-                "mixed-baseline-and-external",
-                "fresh-discovery",
+                "sealed-pei-baseline",
                 "correlated-provider-signals",
                 "accepted-ambient-context",
-                "public-web-only",
+                "accepted-public-web-upstream",
                 "unsupported-popular-narrative",
                 "sealed-implementation-inputs",
                 "targeted-pei-refill",
@@ -408,11 +500,15 @@ class EquityCouncilContractTest(unittest.TestCase):
         for phrase in (
             "deduplicate the correlated provider signals by underlying origin",
             "reuse the current matched ambient receipt",
-            "public-web-only research",
+            "upstream accepted public-web evidence",
             "exclude the unsupported popular narrative",
             "set implementation readiness to Blocked",
             "at most one targeted Public Equity Investing refill",
             "preserve Long Short and Avoid differentiation",
+            "give all seats the common factual spine and distinct private evidence partitions",
+            "give every seat the full PEI narrative",
+            "use one common factual spine plus three method-specific private partitions",
+            "claim repeated persona mechanisms are independent confirmation",
             "claim fraud or misconduct",
             "average the council opinions",
         ):
@@ -441,6 +537,8 @@ class EquityCouncilContractTest(unittest.TestCase):
             "Michael Mauboussin memo defines reference-class criteria",
             "public options price volume positioning and liquidity evidence remain available to George Soros",
             "Chair method-completion ledger names Aswath Damodaran George Soros and Michael Mauboussin",
+            "detect persona_convergence and allow at most one same-evidence corrective pass before Chair synthesis",
+            "each seat states a distinct causal mechanism disconfirming condition key metric and source posture",
             "Stanley Druckenmiller PM Chair names expectations revision as the dominant variable",
             "Stanley Druckenmiller PM Chair issues Avoid from the balanced state matrix rather than member disagreement",
             "Stanley Druckenmiller PM Chair does not infer sizing concentration orders execution or a simulated personal position",
@@ -461,7 +559,10 @@ class EquityCouncilContractTest(unittest.TestCase):
             self.assertIn("public-method personas", surface)
         self.assertIn("allow_implicit_invocation: true", self.openai)
         self.assertIn('mode: "implicit"', self.interface)
-        self.assertFalse((ROOT / "scripts").exists())
+        self.assertEqual(
+            {path.name for path in (ROOT / "scripts").glob("*.py")},
+            {"validate_council_run.py"},
+        )
 
 
 if __name__ == "__main__":

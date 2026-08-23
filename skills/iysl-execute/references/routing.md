@@ -85,11 +85,32 @@ The reviewer returns exactly one verdict:
 - `fix-first`: a bounded correction is required before acceptance.
 - `rethink`: the approach or premise is unsafe or materially wrong.
 
-After the first `fix-first`, return only the bounded findings to the implementer,
-inspect the new complete diff, rerun verification, and start one new fresh
-reviewer. Any code change invalidates the previous review. If that second review
-is not `ship`, stop recursive reviewer spawning and return control with the
-unresolved findings to the main agent; do not add another reviewer or
+### Defect handoff to Hunt
+
+When QA reports a product defect or a reviewer returns `fix-first`, treat each
+finding as evidence, not a correction plan, and classify it before changing
+product code:
+
+- For an evidenced product defect—functional error, crash, regression, race,
+  lifecycle failure, or persistence failure—pause ordinary correction and route
+  the correction through `$hunt`. Hunt must produce one root-cause sentence
+  that explains the observed symptoms, an observed failing repro before the
+  product fix, the corresponding green verification, and a sweep of the
+  same-shape sibling paths. A recurring or previously fixed bug also requires
+  Hunt's durable red-green regression guard.
+- Do not invoke `$hunt` for naming, formatting, documentation, missing evidence,
+  or acceptance feedback unless it reveals a product defect. Handle that
+  bounded feedback directly in this execution workflow.
+
+Resume execution only when Hunt has made the correction bounded, authorized,
+and decision-complete. If diagnosis changes architecture, ownership,
+verification, or acceptance, start a newly scoped execution pass or return to
+planning instead of patching through the mismatch.
+
+After correction, inspect the new complete diff, rerun verification, and start
+one new fresh reviewer. Any code change invalidates the previous review. If that
+second review is not `ship`, stop recursive reviewer spawning and return control
+with the unresolved findings to the main agent; do not add another reviewer or
 automatically increase effort. This ends the automated review loop, not the
 authorized task. The main agent classifies the remaining findings: continue
 directly when the correction remains bounded, authorized, and decision-complete;

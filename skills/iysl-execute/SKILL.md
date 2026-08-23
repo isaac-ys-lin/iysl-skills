@@ -64,12 +64,16 @@ requesting independent QA, or opening a fresh review.
    validators before broader checks.
 4. Use `qa` when independent test execution or evidence collection adds value.
    QA reports defects and never repairs product code.
-5. Apply the fresh-review gate defined in the routing reference. A required
+5. If QA or a fresh reviewer reports an evidenced product defect, pause
+   symptom-level correction and invoke `$hunt`; treat the finding as evidence,
+   not as a patch instruction. Resume only after Hunt makes the correction
+   bounded, authorized, and decision-complete. Keep non-defect feedback here.
+6. Apply the fresh-review gate defined in the routing reference. A required
    review must return `ship`. Allow one automated fix-and-fresh-review cycle per
    delegated implementation pass. If the rereview is not `ship`, stop recursive
    reviewer spawning and return control to the main agent. This ends the
    automated review loop, not the authorized task.
-6. Re-read the final diff after every correction. Stop when the authorized
+7. Re-read the final diff after every correction. Stop when the authorized
    outcome and all required gates are satisfied; do not add cleanup or follow-up
    work outside scope.
 

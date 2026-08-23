@@ -3,21 +3,10 @@
   "name_policy": {
     "required_prefix": "iysl-",
     "allowed_unprefixed": [
-      "equity-data",
       "writing-great-skills"
     ]
   },
   "skills": {
-    "equity-data": {
-      "maintainer": "iysl",
-      "origin": "original",
-      "visibility": "implicit",
-      "license": "repository",
-      "required_gates": [
-        "trigger",
-        "behavior"
-      ]
-    },
     "iysl-anidiagram": {
       "maintainer": "iysl",
       "origin": "original",

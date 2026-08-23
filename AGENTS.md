@@ -21,3 +21,17 @@
 - Run the narrowest affected skill verifier first, then the relevant repository contract or package tests.
 - Use `tools/verify-live-install.sh <skill-name>` only when live-install parity is in scope.
 - Distinguish repository tests, package validation, live-install visibility, and published plugin state.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels without renaming. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses the single-context layout. See `docs/agents/domain.md`.

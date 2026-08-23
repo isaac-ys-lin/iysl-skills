@@ -1,6 +1,7 @@
 ---
 name: iysl-equity-council
 description: Run three named equity method personas and a Stanley Druckenmiller PM Chair for Long, Short, or Avoid after a usable PEI pack.
+compatibility: Requires Python 3 for the Council admission, information-partition, and judgment receipt validator.
 ---
 
 # Equity Council
@@ -21,8 +22,10 @@ Member`, `George Soros — Reflexivity Committee Member`, and `Michael Mauboussi
 decision persona that reconciles their sealed work; it is not a fourth research
 seat. These are public-method personas, not the actual people, private-process
 claims, endorsements, simulated current positions, or evidentiary authority.
-Members may independently explore accessible external sources. The Chair may
-not add evidence and remains accountable for every adopted claim and the final
+All three members and the Chair are evidence-closed for the run: they may use
+only the accepted PEI baseline, common factual spine, and their sealed private
+partition. They may not browse, add evidence, or repair an upstream gap inside
+Council. The Chair remains accountable for every adopted claim and the final
 distribution.
 
 This skill is advisory only. It does not infer authorization, size a position,
@@ -34,6 +37,11 @@ Use this skill when explicitly invoked, or only when both conditions hold:
 
 - a Public Equity Investing workflow has a minimally usable research pack; and
 - the user requests a final directional investment judgment.
+
+When both conditions hold, this is the mandatory decision gate for a requested
+final `Long`, `Short`, or `Avoid` research judgment. It is not mandatory for
+pure data collection, model construction, monitoring, or implementation-only
+work.
 
 Do not activate for raw company facts, first-pass evidence gathering, model or
 valuation construction, earnings summary, scenario-only analysis, standalone
@@ -47,13 +55,12 @@ single-lead-owner contract. Reuse an existing plugin artifact when available;
 otherwise have the router select the narrowest lead skill and only the support
 skills that lead assigns. Never fan out across every constituent skill.
 
-Do not invoke `equity-data` directly from this skill. It remains the owner of
+Do not invoke `iysl-equity-data` directly from this skill. It remains the owner of
 formal provider coverage, source resolution, and evidence handoff accepted by
-the Public Equity Investing lead. Council members may browse independently for
-price-formation evidence and research leads, but do not create a competing
-coverage artifact. A newly discovered company fact that would change a model
-input requires Public Equity Investing verification before the Chair treats it
-as established.
+the Public Equity Investing lead. Council members may identify an exact missing
+input, but may not browse, create a competing coverage artifact, or repair the
+gap. Return a targeted refill request to Public Equity Investing and start a new
+Council run only after the updated PEI receipt is independently accepted.
 
 The plugin lead retains ownership of the hero artifact. This skill returns the
 canonical judgment block for that artifact; it does not take over HTML, DOCX,
@@ -69,6 +76,14 @@ Require all four inputs before issuing an investment stance:
 4. at least one minimally usable Public Equity Investing research, valuation,
    or scenario handoff.
 
+For a decision-ready run, also require a fingerprinted
+`support/pei_input_receipt.json` validated against the installed PEI routing map
+and routed lead skill. Any hard research gap blocks Council admission. A
+`LIMITED` receipt may proceed with reduced confidence or robustness. A PEI
+`BLOCKED` posture may proceed only when every hard gap is `portfolio` or
+`implementation`; an implementation-only blocker does not block research
+admission and remains sealed until participation and readiness assessment.
+
 Before the gate, state the exact missing upstream inputs and stop the investment
 judgment. This is an intake failure, not `Avoid`. After the gate, uncertainty
 may lower confidence or robustness but may not create a fourth verdict.
@@ -80,28 +95,51 @@ the gate passes.
 
 1. Record the Public Equity Investing lead, accepted artifacts, as-of dates,
    decision relevance, source posture, and unresolved gaps in the internal
-   upstream receipt. Seal upstream verdicts, participation, readiness, and
-   execution inputs from Council members.
-2. Prepare one common Council header containing security identity, price,
-   horizon, evidence cutoff, the usable PEI baseline, and any accepted optional
-   `ambient_market_context` receipt. A current matched receipt is a discovery
-   accelerator, not automatic proof.
+   upstream receipt. Validate Council research admission. Seal upstream
+   verdicts, the full PEI narrative, participation, readiness, and execution
+   inputs from Council members.
+2. Prepare one common factual spine containing only security identity, price,
+   horizon, evidence cutoff, and accepted factual fields needed by every seat.
+   Encode each field as an allowlisted structured fact with a scalar value,
+   unit, as-of time, and accepted evidence IDs; identity facts must bind to the
+   accepted security or price identity (including currency). Arbitrary prose,
+   nested values, model conclusions, and extra partition payload fields are
+   forbidden.
+   Build three non-overlapping private evidence partitions from the accepted
+   PEI inputs: Damodaran receives fundamentals/reverse-valuation/capital-
+   structure inputs; Soros receives price-path/marginal-actor/positioning-
+   reflexivity inputs; Mauboussin receives expectations/revisions/reference-
+   class/probability-payoff inputs. An accepted `ambient_market_context`
+   receipt remains a discovery accelerator, not automatic proof.
 3. Read [references/council-protocol.md](references/council-protocol.md) and,
    when agent collaboration is available, run its three isolated persona
    agents. Put the exact committee-member name, method card, method-specific
-   work product, freshness receipt, common header, and authority to browse
-   accessible sources in each task packet. Do not let a dispatcher replace the
+   work product, freshness receipt, common header, and evidence-closed authority
+   to inspect only that sealed packet in each task packet. Do not let a dispatcher replace the
    named deliverable with a generic bull, bear, valuation, or risk memo, or hide
    a method card's permitted public market evidence. When collaboration is
    unavailable, use the protocol's explicit unavailable fallback; do not run
    the three research methods inside the Chair.
-4. After first-round memos arrive, deduplicate common source origins. Rank all
-   newly discovered model- or sign-changing company facts by potential
-   distribution impact. Select at most two and bundle them into the only
-   targeted Public Equity Investing refill. All remaining facts stay
-   unverified research leads and may not enter established inputs. Do not start
-   a second refill.
-5. Apply the method-completion gate. A member that does not deliver its named
+4. After first-round memos arrive, deduplicate common source origins. If a seat
+   identifies a model- or sign-changing gap, stop the current Council admission
+   and return at most two exact inputs in one targeted Public Equity Investing
+   refill request. Do not browse or patch the live Council record. A refill, if
+   completed, creates a new accepted PEI baseline and a new Council run; do not
+   start a second refill loop.
+5. Apply the method-completion and unique-contribution gates. Each seat must
+   state a distinct causal mechanism, disconfirming condition, key metric, and
+   source posture, plus one canonical `primary_mechanism_tag`. Perform an
+   explicit semantic convergence review. Record every validator-derived
+   `mechanism_tags` match from the causal text; the declared tags must equal the
+   controlled English/Chinese semantic taxonomy, including indirect
+   cash-conversion phrasing, and any overlap across seats triggers convergence.
+   This prevents near-synonym paraphrases from
+   masquerading as independent causal lines. If the first pass has
+   `persona_convergence`, run exactly one
+   bounded corrective pass over the same sealed inputs; no browsing or new
+   evidence is allowed. If convergence remains, label it unresolved and cap
+   robustness at `Fragile` rather than claiming independent confirmation. A
+   member that does not deliver its named
    method artifact is `Partial` or `Unavailable`, even if its prose is
    plausible. Missing method completion lowers confidence or robustness; it
    does not create a fourth stance or permit the Chair to invent the missing
@@ -110,8 +148,10 @@ the gate passes.
    disagreements that can change stance, horizon weight, or a material
    probability/payoff. Do not manufacture debate when no such disagreement
    exists.
-7. Run the `Stanley Druckenmiller — PM Chair` decision contract. From the sealed
-   memos and accepted PEI inputs only, the Chair accepts, conditions, or rejects
+7. Run the `Stanley Druckenmiller — PM Chair` decision contract. Give the Chair
+   the full accepted PEI baseline only after first-round sealing, method
+   completion, and unique-contribution checks. From that baseline and the
+   sealed memos only, the Chair accepts, conditions, or rejects
    decisive propositions, identifies the one dominant variable and its
    price-formation mechanism for the requested horizon, constructs the required
    decision matrix, tests the strongest opposing path, states the reversal
@@ -123,6 +163,9 @@ the gate passes.
    participation or readiness; they may not rewrite the research stance.
 9. Return the canonical judgment block to the lead artifact owner. Route
    monitoring, tracking, or memo work back to the appropriate plugin owner.
+   Save the internal run as `support/council_run.json` from
+   `templates/council-run.json` and validate it with
+   `scripts/validate_council_run.py` before calling the Council complete.
 
 ## Council discussion gate
 
@@ -164,15 +207,17 @@ second round.
   public methods affect question generation, required work products, and
   interpretation, never source quality or evidentiary weight. Without that
   runtime, record the Council as unavailable rather than emulating the seats.
-- Members may search broadly within their mandate, but adopted claims must pass
-  the provenance, truth-relevance, price-relevance, mechanism, horizon, payoff,
-  and falsifier controls in the references.
+- Members may reason broadly within their mandate but may not search. Adopted
+  claims must resolve to their sealed packet and pass the provenance,
+  truth-relevance, price-relevance, mechanism, horizon, payoff, and falsifier
+  controls in the references.
 - Members may not see another member memo, upstream disposition,
-  participation, readiness, borrow suitability, cost, sizing, or execution
-  fields before the first round closes, and may not delegate again. Public
+  the full PEI narrative, participation, readiness, borrow suitability, cost,
+  sizing, or execution fields before the first round closes, and may not
+  delegate again. Public
   options, volume, price, short-interest, positioning, and liquidity evidence
-  used to study market beliefs or feedback remains available to the relevant
-  method card; do not misclassify it as sealed implementation advice.
+  already accepted by PEI remains available when placed in the relevant sealed
+  method partition; do not misclassify it as sealed implementation advice.
 - Seeking Alpha ratings, Quant, Wall Street consensus, author opinion, and
   repeated coverage from one underlying origin are correlated signals, not
   independent votes.

@@ -22,7 +22,7 @@
       "id": "qa-is-luna-max-and-does-not-fix",
       "kind": "failure",
       "prompt": "讓 QA 重跑測試；如果失敗就直接改產品程式碼。",
-      "expected": {"max_subagents": 1, "must_do": ["use QA with Luna max", "set fork_turns to none", "report the failure"], "must_not_do": ["let QA modify product code"]}
+      "expected": {"max_subagents": 1, "must_do": ["use QA with Luna max", "set fork_turns to none", "report the failure", "route an evidenced product failure through hunt before correction"], "must_not_do": ["let QA modify product code", "patch the failure directly without root-cause diagnosis"]}
     },
     {
       "id": "ranged-read-and-plan-roles",
@@ -47,6 +47,18 @@
       "kind": "failure",
       "prompt": "Fresh reviewer 給 fix-first；implementer 修完後沿用原本 review 即可。",
       "expected": {"must_do": ["invalidate the old review", "rerun verification", "spawn exactly one new fresh reviewer"], "must_not_do": ["reuse the stale review", "increase reviewer effort"]}
+    },
+    {
+      "id": "reviewed-product-defect-routes-through-hunt",
+      "kind": "failure",
+      "prompt": "Fresh reviewer 抓到可重現的背景重試 race；不要只照 comment 補條件，請完成修正。",
+      "expected": {"must_do": ["pause symptom-level correction", "invoke hunt", "state one root-cause sentence", "observe a deterministic failing repro before the product fix", "sweep sibling paths", "resume execute only after the bounded correction is decision-complete"], "must_not_do": ["patch only the reported call site", "start another review before root-cause verification"]}
+    },
+    {
+      "id": "non-defect-review-feedback-stays-in-execute",
+      "kind": "quality",
+      "prompt": "Reviewer 只要求補驗證證據與調整一個命名，沒有功能錯誤或行為回歸。",
+      "expected": {"must_do": ["handle the bounded feedback in execute", "rerun the required validation"], "must_not_do": ["invoke hunt without an evidenced product defect"]}
     },
     {
       "id": "second-non-ship-ends-review-loop-not-task",

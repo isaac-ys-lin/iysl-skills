@@ -46,14 +46,17 @@ Public-method anchors:
 
 Spawn exactly three parallel leaf agents. Every task packet contains:
 
-- the same security identity, current price/as-of, decision horizon, evidence
-  cutoff, usable Public Equity Investing baseline, and accepted ambient-context
-  status;
+- the same common factual spine: security identity, current price/as-of,
+  decision horizon, evidence cutoff, accepted facts needed by every seat, and
+  accepted ambient-context status;
 - one exact committee-member name and its distinct method card below;
+- one method-specific private evidence partition defined below;
 - its named method-specific work product and freshness receipt;
-- authority to inspect the baseline and browse accessible external sources;
-- no Chair conclusion, other member memo, upstream disposition, participation
-  conclusion, implementation conclusion, sizing, or execution input;
+- evidence-closed authority to inspect only that packet, with `browsed=false`
+  and no added evidence IDs;
+- no full PEI narrative, Chair conclusion, other member memo, upstream
+  disposition, participation conclusion, implementation conclusion, sizing, or
+  execution input;
 - a prohibition on further delegation; and
 - the evidence receipt and sealed memo contracts below.
 
@@ -63,9 +66,43 @@ model priors are uncorrelated.
 
 The dispatcher may not shorten these packets into generic analyst roles. Market
 options, price, volume, positioning, short-interest, liquidity, news reaction,
-and chart evidence are research inputs when a method card uses them to study
-beliefs or feedback. Only implementation suitability, transaction economics,
-sizing, orders, and execution conclusions remain sealed.
+and chart evidence remain available only when the accepted PEI baseline placed
+them in the seat's sealed packet. Implementation suitability, transaction
+economics, sizing, orders, and execution conclusions remain sealed.
+
+## Information partition contract
+
+The common factual spine prevents factual disagreement caused only by different
+identity, price, date, or accepted-company-fact inputs. It is not a shared PEI
+thesis narrative. Its fields use the validator's fixed factual IDs, scalar
+values, units, as-of times, and accepted evidence IDs. Identity facts must equal
+the accepted security or current-price identity, including the price currency.
+Do not place prose,
+nested objects, model conclusions, an owner narrative, or an unrecognized field
+inside `value`; private partitions accept only `allowed_domains` and
+`evidence_ids`. Put each non-common input into exactly one primary method
+partition while allowing a seat to cite a common fact when its mechanism needs
+it:
+
+- `private_partitions.damodaran`: `fundamentals`, `reverse_valuation`, and
+  `capital_structure`. Include accepted model primitives, capital bridge,
+  operating drivers, and primary financial evidence, but not the upstream
+  verdict.
+- `private_partitions.soros`: `price_path`, `marginal_actors`, and
+  `positioning_reflexivity`. Include current price/volume, reaction, options,
+  positioning, liquidity-as-market-context, and resolved research leads. The
+  owner fair value remains sealed from George Soros until his first-round memo
+  is sealed.
+- `private_partitions.mauboussin`: `expectations_revisions`, `reference_class`,
+  and `probability_payoff`. Include consensus, revisions, surprises, dispersion,
+  comparable base rates, and price-implied expectation inputs. The full PEI
+  thesis narrative remains sealed from Michael Mauboussin until his first-round
+  memo is sealed.
+
+Upstream `Long`/`Short`/`Avoid`, the full owner narrative, participation,
+implementation readiness, and other seat outputs are sealed from all three
+first-round packets. A partition defines the complete evidence set the seat may
+inspect in this run; it does not lower evidence standards or permit browsing.
 
 ## Method cards and required work products
 
@@ -83,7 +120,7 @@ price and the requested horizon.
   embedded in the current price?
 - Which accepted story-to-number bridge differs from the PEI base case?
 - Which company-life-cycle facts narrow or widen plausible outcomes?
-- Can any newly found fact change a model input, or is it only a research lead?
+- Which exact missing accepted input, if any, prevents a defensible method result?
 
 **Primary surfaces:** PEI models and scenarios, filings and IR, Seeking Alpha
 Financials, Valuation, Growth, Profitability, and Dividends.
@@ -146,10 +183,11 @@ discussion.
    fundamentals -> reinforcement or weakening of the original belief. If price
    cannot affect reality, label the path a sentiment or flow regime rather than
    reflexivity.
-4. Use a current market refresh for the requested horizon: narrative/news and
-   earnings reaction, price/volume, and when accessible and material, options,
-   short-interest, positioning, or liquidity. Record unavailable or immaterial
-   surfaces instead of silently excluding them.
+4. Use the accepted current market packet for the requested horizon:
+   narrative/news and earnings reaction, price/volume, and when material,
+   options, short-interest, positioning, or liquidity. Record unavailable or
+   immaterial upstream surfaces instead of silently excluding them; do not
+   refresh them inside Council.
 5. Locate the path in `inception`, `acceleration`, `negative-feedback test`,
    `twilight`, or `reversal`; state both continuation and reversal triggers and
    the resulting payoff/timing change. Do not claim a forced actor without an
@@ -258,30 +296,28 @@ seat may cite it when the evidence directly affects its mechanism. The Chair
 deduplicates by underlying origin, not by webpage, provider label, or number of
 personas that mention it.
 
-Use a current authenticated provider session when it is already available. Do
-not request or retry credentials, bypass access controls, or imply permanent
-provider availability. If Seeking Alpha cannot be used, continue with
-accessible public-web research and record:
+Council does not open a provider session or public web route. It consumes the
+current receipt-backed provider and primary evidence already accepted by PEI.
+An upstream accepted public-web route may remain in the sealed PEI evidence set.
+If Seeking Alpha or another required source was unavailable upstream, preserve
+that route gap. A missing load-bearing input becomes a targeted PEI refill
+request, not a reason for `Avoid` and not a Council-side collection leg.
 
-`SA route unavailable; public-web-only`
-
-This is a source-route disclosure, not a reason for Avoid.
-
-Each named member returns one provider freshness receipt:
+Each named member returns one upstream freshness receipt:
 
 | Field | Allowed values or content |
 | --- | --- |
 | `committee_member` | Exact name: `Aswath Damodaran`, `George Soros`, or `Michael Mauboussin` |
-| `freshness_status` | `live_refreshed`, `current_upstream_reused`, or `unavailable` |
-| `surfaces_attempted` | Assigned Seeking Alpha and public-web surfaces actually inspected or attempted |
+| `freshness_status` | `current_upstream_reused` or `unavailable` |
+| `surfaces_attempted` | Accepted PEI evidence surfaces inspected inside the sealed packet |
 | `as_of` | Evidence cutoff and provider timestamp |
 | `route_gaps` | Unavailable, unauthorized, stale, uncovered, or immaterial surfaces with reasons |
 | `distinct_evidence_edge` | New origin, mechanism, reference class, or `No differentiated evidence` |
 
-Reuse an upstream surface only when its as-of time is current for the requested
-horizon and its contents satisfy the named method. Otherwise attempt a live
-refresh of the assigned surfaces. Do not impose a page quota, and do not claim
-full provider coverage; `equity-data` retains that artifact.
+Use an upstream surface only when its validated as-of time is current for the
+requested horizon and its contents satisfy the named method. Otherwise return
+the exact gap to PEI. Do not attempt a live refresh or claim full provider
+coverage; `iysl-equity-data` retains that artifact.
 
 ## Ambient market context
 
@@ -294,19 +330,18 @@ another accepted upstream workflow. It contains:
 - claims, stance, observed-at time, and evidence locators; and
 - stale, unmatched, unavailable, or provider-gap status.
 
-For a current matched security, use the receipt to identify what deserves
-verification or deeper reading. Do not repeat collection merely to look busy.
-For a new or unmatched security, perform a fresh broad headline and
-landing-page sweep, then open and inspect the material the persona judges
-decision-relevant. Stale receipts are historical context, not current sentiment.
-Receipt absence never prevents fresh research.
+For a current matched security, use only lead IDs that the accepted PEI receipt
+placed in the seat's private partition. They remain research leads, not common
+facts. For a new, unmatched, stale, or absent receipt, return the gap upstream;
+Council does not launch collection or open the underlying material.
 
-## Exploration and adoption
+## Sealed analysis and evidence use
 
-Exploration is broad; adoption is strict. Do not prescribe a fixed domain list,
-query script, or number of pages. A persona may follow unexpected leads inside
-its mandate. It may not turn a headline, search snippet, unsourced assertion, or
-provider score into a company fact.
+Analysis may be broad, but the evidence set is closed. A persona may reason
+freely inside its method mandate from its common spine and private partition. It
+may not browse, follow an unaccepted lead, turn a headline or provider score
+into a company fact, or cite an accepted PEI input that was not placed in its
+sealed packet.
 
 Every load-bearing observation returned to the Chair includes:
 
@@ -337,7 +372,7 @@ Each seat returns:
 2. `Method completion`: `Complete`, `Partial`, or `Unavailable`, with the unmet
    element when not complete;
 3. the named `Method-specific work product` above;
-4. its provider freshness receipt;
+4. its upstream freshness receipt with `browsed=false` and no added evidence;
 5. `Central price path`, or `No differentiated view`;
 6. strongest opposing path;
 7. up to three load-bearing observations with receipts;
@@ -345,7 +380,14 @@ Each seat returns:
 9. marginal buyer, seller, or forced actor when relevant;
 10. provisional gross expected-return direction;
 11. dated falsifier or flip condition; and
-12. the method card's most relevant blind spot in this case.
+12. the method card's most relevant blind spot in this case; and
+13. a `Unique contribution` object with non-empty `causal_mechanism`,
+    `primary_mechanism_tag`, `disconfirming_condition`, `key_metric`, and
+    `source_posture` fields. The tag uses the validator's canonical mechanism
+    taxonomy and states the primary causal line, not the seat name. Also record
+    `mechanism_tags`: it must equal every English/Chinese taxonomy match derived
+    by the validator from `causal_mechanism`, including indirect descriptions of
+    sales or earnings failing to become cash, and must contain the primary tag.
 
 Qualitative evidence may change a probability range through Chair judgment
 when the memo provides an evidence anchor, mechanism, price relevance,
@@ -356,6 +398,31 @@ exact probability. False precision and unbounded narrative remain prohibited.
 the baseline or leaves a gap, and why no evidence-supported distribution change
 is warranted.
 
+## Persona-convergence correction
+
+After all first-round memos are sealed, compare the canonical mechanism tag and
+the four prose Unique contribution fields across seats. The validator derives
+the complete mechanism-tag set from each causal sentence and treats any shared
+tag as convergence; the receipt's semantic convergence review must agree with
+that result. This catches controlled English/Chinese near-synonym paraphrases
+that exact string comparison cannot detect. Repeated causal mechanisms,
+disconfirming conditions, key metrics, source postures, or semantically
+equivalent causal lines trigger `persona_convergence`; agreement on a final
+direction alone does not. Record both first-pass and final semantic-overlap
+status with a rationale.
+
+When convergence is detected, run exactly one corrective pass for the
+implicated seats. Reveal only that their contribution collided and restate each
+seat's original method partition. They may revise or concede their mechanism,
+condition, metric, or source posture from the same sealed record, but may not
+browse or add evidence during the corrective pass. This pass is not a second
+research round and cannot reopen collection.
+
+If contributions become distinct, mark the final status `distinct`. If they
+still collide, mark `unresolved_convergence`, state that the seats are not
+independent confirmation, and require `Robustness: Fragile`. Never run a second
+corrective pass.
+
 ## Stanley Druckenmiller — PM Chair reconciliation and discussion
 
 1. Identify the output as `Stanley Druckenmiller — PM Chair` and label it a
@@ -365,8 +432,10 @@ is warranted.
    and `Michael Mauboussin`, each member's `Complete`, `Partial`, or
    `Unavailable` status, freshness status, and distinct contribution. These are
    public-method persona labels, not claims that the people participated.
-3. Apply the unique-contribution gate. A memo that merely repeats another
-   mechanism does not become stronger because a second persona found it.
+3. Apply the unique-contribution gate and the bounded persona-convergence
+   correction above. A memo that merely repeats another mechanism does not
+   become stronger because a second persona found it. Only after this gate may
+   the Chair inspect the full accepted PEI baseline alongside the sealed memos.
 4. Mark each decisive proposition `Accept`, `Conditional`, or `Reject`,
    with its evidentiary and distribution consequence.
 5. If a discussion-gate condition in `SKILL.md` is present, send at most two
@@ -416,14 +485,22 @@ The Council fails its contract if:
   reverse valuation and story-to-numbers bridge;
 - the George Soros seat declares completion without a trend-bias-actor-feedback-
   phase-reversal chain, or a dispatcher seals public options or market evidence
-  needed to test that chain;
+needed to test that chain;
 - the Michael Mauboussin seat declares completion with unanchored point
   probabilities, no price-implied expectations, or no defensible reference
   class or explicit `Reference-class gap`;
-- a named member omits the provider freshness receipt or claims live refresh
-  without inspected surfaces and an as-of time;
+- a named member omits the upstream freshness receipt or claims a Council-side
+  live refresh;
 - a first-round member sees another memo or a sealed upstream/implementation
   field;
+- a first-round packet exposes the full PEI narrative instead of the common
+  factual spine plus one private partition;
+- a first-round member browses, adds evidence, cites an input outside its sealed
+  packet, or promotes a Study Flow research lead into the common factual spine;
+- persona convergence is ignored, receives more than one corrective pass, or a
+  corrective pass browses or adds evidence;
+- unresolved convergence is presented as independent confirmation or receives
+  robustness above `Fragile`;
 - a cross-examination response browses, cites a new origin, introduces a new
   fact, or changes the current distribution using evidence outside the sealed
   first-round receipts;
