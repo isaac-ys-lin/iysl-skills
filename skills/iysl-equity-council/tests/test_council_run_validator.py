@@ -39,7 +39,7 @@ def _build_chain(tmp_path):
     pei_path = artifact_dir / "support" / "pei_input_receipt.json"
     ambient_claim_id = "STUDY_FLOW:claim:ambient"
     pei_receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "ticker": "EXAMPLE",
         "security_identity": {
             "symbol": "EXAMPLE",
@@ -102,6 +102,145 @@ def _build_chain(tmp_path):
     return plugin_root, artifact_dir, pei_path, pei_receipt
 
 
+def _damodaran_artifact(evidence_id):
+    return {
+        "artifact_type": "damodaran_reverse_valuation_v1",
+        "requested_horizon": "12 months",
+        "proposition_id": "damodaran:price_implied_growth_gap",
+        "company_archetype": "high_growth",
+        "archetype_rationale": "Growth duration and reinvestment efficiency dominate value.",
+        "valuation_frame": "reverse_dcf",
+        "anchor_price": 100.0,
+        "currency": "USD",
+        "price_implied_drivers": [
+            {"id": "revenue_cagr", "value": 28.0, "unit": "percent", "evidence_ids": [evidence_id]},
+            {"id": "target_operating_margin", "value": 24.0, "unit": "percent", "evidence_ids": [evidence_id]},
+            {"id": "sales_to_capital", "value": 1.8, "unit": "ratio", "evidence_ids": [evidence_id]},
+        ],
+        "owner_case_drivers": [
+            {"id": "revenue_cagr", "value": 20.0, "unit": "percent", "evidence_ids": [evidence_id]},
+            {"id": "target_operating_margin", "value": 20.0, "unit": "percent", "evidence_ids": [evidence_id]},
+            {"id": "sales_to_capital", "value": 1.4, "unit": "ratio", "evidence_ids": [evidence_id]},
+        ],
+        "story_to_numbers_bridge": [
+            {
+                "driver_id": "revenue_cagr",
+                "story": "Category adoption must remain unusually fast.",
+                "implied_value": 28.0,
+                "owner_value": 20.0,
+                "unit": "percent",
+                "directional_effect": "downside",
+                "evidence_ids": [evidence_id],
+                "falsifier": "Two years of growth above 28 percent with stable retention.",
+            },
+            {
+                "driver_id": "target_operating_margin",
+                "story": "Scale must produce mature software-like margins.",
+                "implied_value": 24.0,
+                "owner_value": 20.0,
+                "unit": "percent",
+                "directional_effect": "downside",
+                "evidence_ids": [evidence_id],
+                "falsifier": "Incremental margin exceeds 35 percent for four quarters.",
+            },
+            {
+                "driver_id": "sales_to_capital",
+                "story": "Growth must require less capital than recent history.",
+                "implied_value": 1.8,
+                "owner_value": 1.4,
+                "unit": "ratio",
+                "directional_effect": "downside",
+                "evidence_ids": [evidence_id],
+                "falsifier": "Sales-to-capital stays above 1.8 through the next investment cycle.",
+            },
+        ],
+        "fundamental_value_range": {"low": 75.0, "base": 115.0, "high": 155.0, "currency": "USD", "evidence_ids": [evidence_id]},
+        "least_plausible_implied_driver": "revenue_cagr",
+        "requested_horizon_transmission": "Estimate revisions transmit the growth gap into the 12-month multiple.",
+        "method_gap": None,
+    }
+
+
+def _soros_artifact(evidence_id):
+    return {
+        "artifact_type": "soros_reflexivity_chain_v1",
+        "requested_horizon": "12 months",
+        "proposition_id": "soros:revision_feedback_loop",
+        "classification": "reflexive",
+        "current_trend": {"direction": "up", "observation": "Price and volume rise after estimate revisions.", "evidence_ids": [evidence_id]},
+        "prevailing_bias": {"belief": "Growth acceleration improves access to financing.", "reality_gap": "Cash conversion still lags the narrative.", "evidence_ids": [evidence_id]},
+        "marginal_actors": [
+            {"actor": "momentum buyers", "incentive": "follow positive revisions", "expected_action": "add on price confirmation", "evidence_ids": [evidence_id]}
+        ],
+        "feedback_chain": [
+            {"step": "trend_to_bias", "claim": "Price strength reinforces the acceleration belief.", "evidence_ids": [evidence_id]},
+            {"step": "bias_to_actor_action", "claim": "The belief attracts marginal momentum demand.", "evidence_ids": [evidence_id]},
+            {"step": "actor_action_to_price", "claim": "Incremental demand lifts price and volume.", "evidence_ids": [evidence_id]},
+            {"step": "price_to_fundamentals", "claim": "A higher price lowers equity-financing friction.", "evidence_ids": [evidence_id]},
+            {"step": "fundamentals_to_bias", "claim": "Financing access extends the growth narrative.", "evidence_ids": [evidence_id]},
+        ],
+        "phase": "accelerating",
+        "phase_rationale": "Positive revisions and price response still reinforce each other.",
+        "reversal_trigger": {"metric": "revision breadth", "operator": "<", "threshold": 0.0, "unit": "percent", "observation_window": "two consecutive months", "evidence_ids": [evidence_id]},
+        "horizon_price_paths": [
+            {"state_id": "reinforcing", "scenario_role": "upside", "condition": "Revisions stay positive", "probability_pct": 40.0, "gross_return_pct": 30.0, "mechanism": "Marginal demand and financing reinforce growth.", "evidence_ids": [evidence_id]},
+            {"state_id": "stall", "scenario_role": "base", "condition": "Revisions flatten", "probability_pct": 35.0, "gross_return_pct": 0.0, "mechanism": "The loop loses fuel without reversing.", "evidence_ids": [evidence_id]},
+            {"state_id": "reversal", "scenario_role": "downside", "condition": "Revisions turn negative", "probability_pct": 25.0, "gross_return_pct": -25.0, "mechanism": "Marginal buyers leave and financing feedback reverses.", "evidence_ids": [evidence_id]},
+        ],
+        "expected_path_return_pct": 5.75,
+        "non_reflexive_tests": [],
+        "method_gap": None,
+    }
+
+
+def _mauboussin_artifact(evidence_id):
+    return {
+        "artifact_type": "mauboussin_expectations_distribution_v1",
+        "requested_horizon": "12 months",
+        "proposition_id": "mauboussin:positive_expectations_distribution",
+        "anchor_price": 100.0,
+        "currency": "USD",
+        "price_implied_expectations": [
+            {"metric": "revenue_cagr", "implied_value": 28.0, "unit": "percent", "evidence_ids": [evidence_id], "disconfirming_observation": "Consensus growth falls below 20 percent."}
+        ],
+        "reference_class": {
+            "status": "available",
+            "definition": "Listed high-growth firms entering margin scale-up.",
+            "inclusion_criteria": ["revenue growth above 20 percent", "positive gross margin", "public history above eight quarters"],
+            "exclusion_criteria": ["distressed financing within twelve months"],
+            "sample_size": 32,
+            "base_rate_label": "sustained scale-up success",
+            "base_rate_pct": 68.0,
+            "evidence_ids": [evidence_id],
+            "gap_reason": None,
+        },
+        "inside_view_updates": [
+            {"signal": "Revision breadth is positive.", "direction": "increase", "probability_delta_pct": 7.0, "affected_state_ids": ["base", "upside"], "rationale": "Current evidence is better than the reference-class median.", "evidence_ids": [evidence_id]}
+        ],
+        "probability_payoff_states": [
+            {"state_id": "downside", "scenario_role": "downside", "definition": "Growth fades", "probability_pct": 25.0, "target_price": 70.0, "gross_return_pct": -30.0, "evidence_ids": [evidence_id]},
+            {"state_id": "base", "scenario_role": "base", "definition": "Orderly scale-up", "probability_pct": 50.0, "target_price": 115.0, "gross_return_pct": 15.0, "evidence_ids": [evidence_id]},
+            {"state_id": "upside", "scenario_role": "upside", "definition": "Growth and margins exceed implied path", "probability_pct": 25.0, "target_price": 160.0, "gross_return_pct": 60.0, "evidence_ids": [evidence_id]},
+        ],
+        "posterior_mode": "base_rate_update",
+        "posterior_success_probability_pct": 75.0,
+        "success_state_ids": ["base", "upside"],
+        "expected_return_pct": 15.0,
+        "sign_sensitivity": [
+            {"variable": "revenue_cagr", "low_input": 15.0, "base_input": 20.0, "high_input": 28.0, "unit": "percent", "low_expected_return_pct": -8.0, "high_expected_return_pct": 24.0, "sign_flips": True}
+        ],
+        "method_gap": None,
+    }
+
+
+def _method_artifact(seat, evidence_id):
+    return {
+        "damodaran": _damodaran_artifact,
+        "soros": _soros_artifact,
+        "mauboussin": _mauboussin_artifact,
+    }[seat](evidence_id)
+
+
 def _seat_memo(
     seat,
     *,
@@ -117,6 +256,7 @@ def _seat_memo(
         "seat": seat,
         "method_completion": "Complete",
         "work_product": f"Completed {seat} method-specific work product",
+        "method_artifact": _method_artifact(seat, evidence_id),
         "sealed_at": "2026-08-22T10:20:00+08:00",
         "browsed": False,
         "added_evidence_ids": [],
@@ -134,6 +274,66 @@ def _seat_memo(
     }
 
 
+def _chair_matrix(sa_market_source_id):
+    return {
+        "artifact_type": "dominant_variable_state_matrix_v1",
+        "requested_horizon": "12 months",
+        "dominant_variable": "Revenue estimate revision breadth",
+        "dominant_variable_unit": "percent",
+        "dominance_rationale": "It changes both expected cash flows and the marginal buyer within the horizon.",
+        "transition": {"from": "positive revisions", "to": "sustained breadth or reversal", "mechanism": "Revision breadth changes expectations and price-sensitive flows.", "timing": "monthly observations over 12 months"},
+        "states": [
+            {
+                "state_id": "revision_down",
+                "scenario_role": "downside",
+                "definition": "Revision breadth is materially negative.",
+                "dominant_variable_interval": {"lower": None, "lower_inclusive": False, "upper": -5.0, "upper_inclusive": False},
+                "probability_pct": 25.0,
+                "target_price": 70.0,
+                "gross_return_pct": -30.0,
+                "decisive_mechanism": "Negative revisions remove marginal demand.",
+                "seat_inputs": ["mauboussin"],
+                "target_components": [{"seat": "mauboussin", "proposition_id": "mauboussin:positive_expectations_distribution", "source_kind": "probability_payoff_target", "source_id": "downside", "weight_pct": 100.0}],
+                "probability_components": [{"seat": "mauboussin", "proposition_id": "mauboussin:positive_expectations_distribution", "source_kind": "probability_payoff_probability", "source_id": "downside", "weight_pct": 100.0}],
+                "evidence_ids": [sa_market_source_id],
+            },
+            {
+                "state_id": "revision_flat",
+                "scenario_role": "base",
+                "definition": "Revision breadth remains near zero.",
+                "dominant_variable_interval": {"lower": -5.0, "lower_inclusive": True, "upper": 5.0, "upper_inclusive": True},
+                "probability_pct": 35.0,
+                "target_price": 100.0,
+                "gross_return_pct": 0.0,
+                "decisive_mechanism": "Fundamental value anchors price as expectations stop changing.",
+                "seat_inputs": ["soros"],
+                "target_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_return", "source_id": "stall", "weight_pct": 100.0}],
+                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "stall", "weight_pct": 100.0}],
+                "evidence_ids": [sa_market_source_id],
+            },
+            {
+                "state_id": "revision_up",
+                "scenario_role": "upside",
+                "definition": "Revision breadth stays materially positive.",
+                "dominant_variable_interval": {"lower": 5.0, "lower_inclusive": False, "upper": None, "upper_inclusive": False},
+                "probability_pct": 40.0,
+                "target_price": 155.0,
+                "gross_return_pct": 55.0,
+                "decisive_mechanism": "Upward revisions and marginal demand reinforce the growth path.",
+                "seat_inputs": ["damodaran", "soros"],
+                "target_components": [{"seat": "damodaran", "proposition_id": "damodaran:price_implied_growth_gap", "source_kind": "fundamental_value_high", "source_id": None, "weight_pct": 100.0}],
+                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "reinforcing", "weight_pct": 100.0}],
+                "evidence_ids": ["IR:earnings-release:2026Q2", sa_market_source_id],
+            },
+        ],
+        "gross_expected_return_pct": 14.5,
+        "strongest_disconfirming_state_id": "revision_down",
+        "reversal_triggers": [
+            {"observable": "Revision breadth is at or below negative five percent for two months.", "metric": "Revenue estimate revision breadth", "operator": "<=", "threshold": -5.0, "unit": "percent", "observation_window": "two consecutive months", "resulting_stance": "Short", "evidence_ids": [sa_market_source_id]}
+        ],
+    }
+
+
 def _council_payload(pei_path, pei_receipt):
     ambient_claim_id = next(
         entry["id"]
@@ -146,7 +346,7 @@ def _council_payload(pei_path, pei_receipt):
         if entry["source_kind"] == "seeking_alpha"
     )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "council_runtime": "collaboration_available",
         "ticker": "EXAMPLE",
         "security_identity": {
@@ -287,14 +487,15 @@ def _council_payload(pei_path, pei_receipt):
                 "IR:earnings-release:2026Q2",
             ],
             "seat_decisions": [
-                {"seat": "damodaran", "decision": "Accept"},
-                {"seat": "soros", "decision": "Conditional"},
-                {"seat": "mauboussin", "decision": "Accept"},
+                {"seat": "damodaran", "decision": "Accept", "proposition_id": "damodaran:price_implied_growth_gap", "proposition": "The owner case is below the price-implied growth path.", "reason": "The numerical bridge is supported by accepted model inputs."},
+                {"seat": "soros", "decision": "Conditional", "proposition_id": "soros:revision_feedback_loop", "proposition": "Positive revisions sustain a financing feedback loop.", "reason": "The loop reverses if revision breadth turns negative."},
+                {"seat": "mauboussin", "decision": "Accept", "proposition_id": "mauboussin:positive_expectations_distribution", "proposition": "The probability-payoff distribution remains positive.", "reason": "The reference class and inside-view update support positive expected return."},
             ],
             "dominant_variable": "Revenue estimate revision breadth",
             "strongest_disconfirming_path": "Returns fade while revisions reverse.",
-            "reversal_trigger": "Two consecutive monthly revision-breadth declines.",
-            "gross_expected_return_pct": 12.5,
+            "reversal_trigger": "Revision breadth is at or below negative five percent for two months.",
+            "decision_matrix": _chair_matrix(sa_market_source_id),
+            "gross_expected_return_pct": 14.5,
             "research_stance": "Long",
             "confidence": "Medium",
             "robustness": "Conditional",
@@ -324,6 +525,376 @@ def test_full_receipt_chain_admits_council_and_validates_final_judgment(tmp_path
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
     errors = _validate(council, plugin_root, artifact_dir)
     assert errors == []
+
+
+def test_plausible_prose_without_named_method_artifacts_is_rejected(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    for memo in council["first_round"]["memos"]:
+        memo["work_product"] = "A fluent and plausible investment analysis."
+        memo["method_artifact"] = None
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    for seat in ("damodaran", "soros", "mauboussin"):
+        assert any(f"{seat} Complete requires its named structured method artifact" in error for error in errors)
+
+
+def test_partial_or_unavailable_method_requires_structured_gap_artifact(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    for memo in council["first_round"]["memos"]:
+        memo["method_completion"] = "Partial"
+        memo["method_artifact"] = None
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    for seat in ("damodaran", "soros", "mauboussin"):
+        assert any(
+            f"{seat} Partial requires a structured gap artifact" in error
+            for error in errors
+        )
+
+
+def test_partial_numeric_artifact_is_fully_validated_before_chair_use(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    memo = council["first_round"]["memos"][0]
+    memo["method_completion"] = "Partial"
+    artifact = memo["method_artifact"]
+    artifact["method_gap"] = "The owner case lacks one accepted capital input."
+    artifact["fundamental_value_range"].update(
+        {"low": "bad", "base": [], "high": 9999.0}
+    )
+    upside = council["chair"]["decision_matrix"]["states"][2]
+    upside["target_price"] = 9999.0
+    upside["gross_return_pct"] = 9899.0
+    council["chair"]["decision_matrix"]["gross_expected_return_pct"] = 3952.1
+    council["chair"]["gross_expected_return_pct"] = 3952.1
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Damodaran value range must contain positive numbers" in error
+        for error in errors
+    )
+
+
+def test_all_named_method_artifacts_bind_to_requested_horizon(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    for memo in council["first_round"]["memos"]:
+        memo["method_artifact"]["requested_horizon"] = "5 years"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    for seat in ("Damodaran", "Soros", "Mauboussin"):
+        assert any(
+            f"{seat} requested_horizon must equal decision_horizon" in error
+            for error in errors
+        )
+
+
+def test_damodaran_complete_requires_archetype_drivers_and_numeric_bridge(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    artifact = council["first_round"]["memos"][0]["method_artifact"]
+    artifact["price_implied_drivers"].pop()
+    artifact["story_to_numbers_bridge"][0]["owner_value"] = 999.0
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Damodaran price-implied drivers must match the high_growth archetype" in error for error in errors)
+    assert any("Damodaran story bridge values must equal its driver tables" in error for error in errors)
+
+
+def test_soros_complete_requires_full_evidenced_feedback_chain(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    artifact = council["first_round"]["memos"][1]["method_artifact"]
+    artifact["feedback_chain"].pop()
+    artifact["reversal_trigger"]["evidence_ids"] = ["NEW:unsupported"]
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Soros reflexive chain must contain all five ordered links" in error for error in errors)
+    assert any("Soros method artifact uses evidence outside its sealed packet" in error for error in errors)
+
+
+def test_mauboussin_complete_requires_reference_class_and_recomputed_distribution(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    memo = council["first_round"]["memos"][2]
+    artifact = memo["method_artifact"]
+    artifact["reference_class"]["status"] = "gap"
+    artifact["reference_class"]["gap_reason"] = "No comparable sample was accepted."
+    artifact["probability_payoff_states"][0]["probability_pct"] = 35.0
+    artifact["sign_sensitivity"][0]["sign_flips"] = False
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Mauboussin reference-class gap requires Partial completion" in error for error in errors)
+    assert any("Mauboussin state probabilities must sum to 100" in error for error in errors)
+    assert any("Mauboussin sign_flips must equal the recomputed sign range" in error for error in errors)
+
+
+def test_mauboussin_prior_updates_must_reconcile_to_posterior_states(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    artifact = council["first_round"]["memos"][2]["method_artifact"]
+    artifact["reference_class"]["base_rate_pct"] = 1.0
+    artifact["inside_view_updates"][0]["probability_delta_pct"] = 1.0
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Mauboussin posterior must equal base rate plus inside-view updates" in error
+        for error in errors
+    )
+
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    artifact = council["first_round"]["memos"][2]["method_artifact"]
+    artifact["reference_class"]["base_rate_pct"] = 1.0
+    artifact["inside_view_updates"][0]["probability_delta_pct"] = 1.0
+    artifact["posterior_success_probability_pct"] = 2.0
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Mauboussin success-state probability must equal posterior" in error
+        for error in errors
+    )
+
+
+def test_chair_requires_mece_recomputed_state_matrix_and_opposing_path(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    matrix = council["chair"]["decision_matrix"]
+    matrix["states"][2]["dominant_variable_interval"]["lower"] = 4.0
+    matrix["states"][0]["gross_return_pct"] = -1.0
+    matrix["gross_expected_return_pct"] = 99.0
+    matrix["strongest_disconfirming_state_id"] = "revision_up"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Chair state intervals must be contiguous and non-overlapping" in error for error in errors)
+    assert any("Chair state gross return must equal target-price return" in error for error in errors)
+    assert any("Chair matrix gross expected return must equal recomputed state EV" in error for error in errors)
+    assert any("Chair strongest disconfirming state must oppose the final stance" in error for error in errors)
+
+
+def test_chair_targets_and_decisions_bind_to_named_method_artifacts(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    matrix = council["chair"]["decision_matrix"]
+    matrix["states"][0]["target_price"] = 50.0
+    matrix["states"][0]["gross_return_pct"] = -50.0
+    matrix["states"][1]["target_price"] = 100.0
+    matrix["states"][1]["gross_return_pct"] = 0.0
+    matrix["states"][2]["target_price"] = 200.0
+    matrix["states"][2]["gross_return_pct"] = 100.0
+    matrix["states"][0]["probability_pct"] = 30.0
+    matrix["states"][1]["probability_pct"] = 20.0
+    matrix["states"][2]["probability_pct"] = 50.0
+    matrix["gross_expected_return_pct"] = 35.0
+    council["chair"]["gross_expected_return_pct"] = 35.0
+    council["chair"]["seat_decisions"][0]["proposition_id"] = "damodaran:invented"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Chair state target_price must equal weighted method-artifact inputs" in error
+        for error in errors
+    )
+    assert any(
+        "Chair state probability_pct must equal weighted method-artifact inputs" in error
+        for error in errors
+    )
+    assert any(
+        "chair seat decision proposition_id must match its method artifact" in error
+        for error in errors
+    )
+
+
+def test_chair_components_must_match_the_same_economic_scenario(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    states = council["chair"]["decision_matrix"]["states"]
+
+    states[0]["target_components"] = [{
+        "seat": "damodaran",
+        "proposition_id": "damodaran:price_implied_growth_gap",
+        "source_kind": "fundamental_value_high",
+        "source_id": None,
+        "weight_pct": 100.0,
+    }]
+    states[0]["probability_components"] = [{
+        "seat": "soros",
+        "proposition_id": "soros:revision_feedback_loop",
+        "source_kind": "horizon_path_probability",
+        "source_id": "reinforcing",
+        "weight_pct": 100.0,
+    }]
+    states[0]["seat_inputs"] = ["damodaran", "soros"]
+    states[0].update({"probability_pct": 40.0, "target_price": 155.0, "gross_return_pct": 55.0})
+
+    states[1]["target_components"] = [{
+        "seat": "mauboussin",
+        "proposition_id": "mauboussin:positive_expectations_distribution",
+        "source_kind": "probability_payoff_target",
+        "source_id": "upside",
+        "weight_pct": 100.0,
+    }]
+    states[1]["seat_inputs"] = ["mauboussin", "soros"]
+    states[1].update({"probability_pct": 35.0, "target_price": 160.0, "gross_return_pct": 60.0})
+
+    states[2]["target_components"] = [{
+        "seat": "mauboussin",
+        "proposition_id": "mauboussin:positive_expectations_distribution",
+        "source_kind": "probability_payoff_target",
+        "source_id": "downside",
+        "weight_pct": 100.0,
+    }]
+    states[2]["probability_components"] = [{
+        "seat": "mauboussin",
+        "proposition_id": "mauboussin:positive_expectations_distribution",
+        "source_kind": "probability_payoff_probability",
+        "source_id": "downside",
+        "weight_pct": 100.0,
+    }]
+    states[2]["seat_inputs"] = ["mauboussin"]
+    states[2].update({"probability_pct": 25.0, "target_price": 70.0, "gross_return_pct": -30.0})
+
+    council["chair"]["decision_matrix"]["gross_expected_return_pct"] = 35.5
+    council["chair"]["decision_matrix"]["strongest_disconfirming_state_id"] = "revision_up"
+    council["chair"]["gross_expected_return_pct"] = 35.5
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("target component scenario_role" in error for error in errors)
+    assert any("probability component scenario_role" in error for error in errors)
+    assert any(
+        "Chair decision_matrix.states scenario roles must be ordered" in error
+        for error in errors
+    )
+
+
+def test_method_probability_state_cannot_be_counted_twice_across_matrix(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    soros = council["first_round"]["memos"][1]["method_artifact"]
+    soros_paths = {row["state_id"]: row for row in soros["horizon_price_paths"]}
+    soros_paths["reinforcing"]["probability_pct"] = 40.0
+    soros_paths["stall"]["probability_pct"] = 10.0
+    soros_paths["reversal"]["probability_pct"] = 50.0
+    soros["expected_path_return_pct"] = -0.5
+
+    mauboussin = council["first_round"]["memos"][2]["method_artifact"]
+    maub_states = {
+        row["state_id"]: row for row in mauboussin["probability_payoff_states"]
+    }
+    maub_states["downside"]["probability_pct"] = 10.0
+    maub_states["base"]["probability_pct"] = 50.0
+    maub_states["upside"]["probability_pct"] = 40.0
+    mauboussin["reference_class"]["base_rate_pct"] = 83.0
+    mauboussin["posterior_success_probability_pct"] = 90.0
+    mauboussin["expected_return_pct"] = 28.5
+
+    states = council["chair"]["decision_matrix"]["states"]
+    states[0]["probability_pct"] = 10.0
+    states[1]["probability_pct"] = 10.0
+    states[2]["probability_components"] = [{
+        "seat": "mauboussin",
+        "proposition_id": "mauboussin:positive_expectations_distribution",
+        "source_kind": "probability_payoff_probability",
+        "source_id": "upside",
+        "weight_pct": 100.0,
+    }]
+    states[2]["seat_inputs"] = ["damodaran", "mauboussin"]
+    states[2]["dominant_variable_interval"].update(
+        {"upper": 10.0, "upper_inclusive": True}
+    )
+
+    second_upside = copy.deepcopy(states[2])
+    second_upside.update(
+        {
+            "state_id": "revision_up_extreme",
+            "definition": "Revision breadth accelerates beyond ten percent.",
+            "target_price": 160.0,
+            "gross_return_pct": 60.0,
+            "seat_inputs": ["mauboussin"],
+            "target_components": [{
+                "seat": "mauboussin",
+                "proposition_id": "mauboussin:positive_expectations_distribution",
+                "source_kind": "probability_payoff_target",
+                "source_id": "upside",
+                "weight_pct": 100.0,
+            }],
+        }
+    )
+    second_upside["dominant_variable_interval"] = {
+        "lower": 10.0,
+        "lower_inclusive": False,
+        "upper": None,
+        "upper_inclusive": False,
+    }
+    states.append(second_upside)
+    council["chair"]["decision_matrix"]["gross_expected_return_pct"] = 43.0
+    council["chair"]["gross_expected_return_pct"] = 43.0
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Chair probability source state may be used by only one matrix state"
+        in error
+        for error in errors
+    )
+
+
+def test_zero_price_and_zero_probability_states_fail_closed_without_crashing(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["current_price"]["value"] = 0.0
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert any("current_price.value must be positive finite numeric" in error for error in errors)
+
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["common_factual_spine"]["fields"][0]["value"] = float("nan")
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert any(
+        "value must be finite numeric for current_price" in error
+        for error in errors
+    )
+
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["common_factual_spine"]["fields"][0]["value"] = 99.0
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert any(
+        "common factual current_price must equal current_price.value" in error
+        for error in errors
+    )
+
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    soros = council["first_round"]["memos"][1]["method_artifact"]
+    soros["horizon_price_paths"][0]["probability_pct"] = 0.0
+    soros["horizon_price_paths"][1]["probability_pct"] = 75.0
+    soros["expected_path_return_pct"] = -6.25
+    mauboussin = council["first_round"]["memos"][2]["method_artifact"]
+    mauboussin["probability_payoff_states"][0]["probability_pct"] = 0.0
+    mauboussin["probability_payoff_states"][1]["probability_pct"] = 75.0
+    mauboussin["expected_return_pct"] = 26.25
+    matrix = council["chair"]["decision_matrix"]
+    matrix["states"][0]["probability_pct"] = 0.0
+    matrix["states"][1]["probability_pct"] = 65.0
+    matrix["gross_expected_return_pct"] = 19.25
+    council["chair"]["gross_expected_return_pct"] = 19.25
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Soros path probability must be greater than 0" in error for error in errors)
+    assert any("Mauboussin state probability must be greater than 0" in error for error in errors)
+    assert any("Chair state probability must be greater than 0" in error for error in errors)
+
+
+def test_chair_strongest_disconfirming_state_must_be_most_adverse(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    matrix = council["chair"]["decision_matrix"]
+    matrix["states"][0]["target_price"] = 90.0
+    matrix["states"][0]["gross_return_pct"] = -10.0
+    matrix["states"][1]["target_price"] = 70.0
+    matrix["states"][1]["gross_return_pct"] = -30.0
+    matrix["gross_expected_return_pct"] = 9.0
+    council["chair"]["gross_expected_return_pct"] = 9.0
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("Chair strongest disconfirming state must be the most adverse state" in error for error in errors)
 
 
 def test_limited_pei_baseline_remains_admissible_with_explicit_soft_gap(tmp_path):
@@ -392,6 +963,24 @@ def test_first_round_seats_are_browse_closed_and_cannot_add_evidence(tmp_path):
     )
 
 
+def test_member_and_chair_cannot_smuggle_unvalidated_fields(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["upstream_verdict"] = "Long"
+    council["first_round"]["memos"][0]["upstream_verdict"] = "Long"
+    council["first_round"]["upstream_verdict"] = "Long"
+    council["convergence"]["new_company_fact"] = "Unsupported claim"
+    council["chair"]["new_company_fact"] = "Unsupported claim"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("root has unexpected fields: upstream_verdict" in error for error in errors)
+    assert any("sealed input leaked outside its declaration" in error for error in errors)
+    assert any("first_round.memos[0] has unexpected fields: upstream_verdict" in error for error in errors)
+    assert any("first_round has unexpected fields: upstream_verdict" in error for error in errors)
+    assert any("convergence has unexpected fields: new_company_fact" in error for error in errors)
+    assert any("chair has unexpected fields: new_company_fact" in error for error in errors)
+
+
 def test_first_round_memo_cannot_escape_its_sealed_partition(tmp_path):
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
     council["first_round"]["memos"][2]["accepted_evidence_ids"] = [
@@ -436,6 +1025,10 @@ def test_unavailable_runtime_does_not_impersonate_seats(tmp_path):
     }
     council["chair"]["seat_decisions"] = []
     council["chair"]["robustness"] = "Fragile"
+    for state in council["chair"]["decision_matrix"]["states"]:
+        state["seat_inputs"] = []
+        state["target_components"] = []
+        state["probability_components"] = []
     errors = _validate(council, plugin_root, artifact_dir)
     assert errors == []
 
@@ -654,6 +1247,17 @@ def test_chair_is_evidence_closed_and_cannot_add_or_browse(tmp_path):
     assert any("chair used evidence outside accepted PEI inputs" in e for e in errors)
 
 
+def test_chair_seat_decisions_must_be_exactly_one_per_member(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["chair"]["seat_decisions"].append(
+        copy.deepcopy(council["chair"]["seat_decisions"][0])
+    )
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("duplicate chair seat decision: damodaran" in error for error in errors)
+
+
 def test_council_must_match_pei_security_and_cutoff(tmp_path):
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
     council["ticker"] = "WRONG"
@@ -766,6 +1370,28 @@ def test_research_stance_sign_and_decision_dimensions_are_separate(tmp_path):
     council["chair"]["participation"] = "Blocked"
     errors = _validate(council, plugin_root, artifact_dir)
     assert any("chair.participation must be Eligible, Conditional, or Stand aside" in e for e in errors)
+
+
+def test_malformed_enum_and_component_selector_types_fail_closed(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    council["first_round"]["memos"][0]["method_artifact"][
+        "company_archetype"
+    ] = []
+    council["first_round"]["memos"][1]["method_artifact"]["classification"] = {}
+    council["chair"]["decision_matrix"]["states"][0]["target_components"][0][
+        "source_id"
+    ] = []
+    council["chair"]["research_stance"] = []
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("company_archetype" in error for error in errors)
+    assert any("classification" in error for error in errors)
+    assert any("cannot resolve Mauboussin target input" in error for error in errors)
+    assert any(
+        "chair.research_stance must be Long, Short, or Avoid" in error
+        for error in errors
+    )
 
 
 def test_cli_validates_the_public_artifact_seam(tmp_path):

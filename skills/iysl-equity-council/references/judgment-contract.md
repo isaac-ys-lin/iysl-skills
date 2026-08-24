@@ -150,6 +150,18 @@ Set each to `Complete`, `Partial`, or `Unavailable`. A generic valuation summary
 momentum description, or unsupported scenario probability does not satisfy the
 named method. The exact names disclose which public method was simulated; they
 do not imply participation, endorsement, private access, or evidentiary weight.
+Each `Complete` member must also return the machine-checkable structured artifact
+defined in `council-protocol.md`; prose quality cannot replace required drivers,
+feedback links, reference-class treatment, probability states, evidence IDs, or
+recomputed arithmetic. Each artifact exposes a unique `proposition_id`; Chair
+seat decisions and state target components must resolve back to those IDs and
+their evidence-backed numeric inputs. Soros paths, Mauboussin payoff states, and
+Chair states must use canonical `downside` / `base` / `upside` roles ordered by
+payoff; a Chair component may resolve only to a source carrying the same role.
+The full Chair matrix may use each named method source state only once; it may
+not duplicate one probability event across mutually exclusive states.
+A numeric `Partial` artifact remains usable only after full-schema validation;
+a gap-only artifact cannot contribute a target or probability.
 
 Before Chair synthesis, require a canonical `primary_mechanism_tag`, then
 compare it with each sealed memo's `causal_mechanism`,

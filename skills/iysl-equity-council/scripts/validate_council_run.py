@@ -31,6 +31,28 @@ SEALED_INPUTS = {
     "implementation_readiness",
     "other_seat_outputs",
 }
+ROOT_FIELDS = {
+    "schema_version",
+    "council_runtime",
+    "ticker",
+    "security_identity",
+    "current_price",
+    "decision_horizon",
+    "evidence_cutoff",
+    "pei_input_receipt",
+    "research_admission",
+    "sealed_inputs",
+    "common_factual_spine",
+    "private_partitions",
+    "first_round",
+    "convergence",
+    "chair",
+}
+SEALED_OUTPUT_PATHS = {
+    "chair.participation",
+    "chair.implementation_readiness",
+}
+SCENARIO_ROLES = {"downside", "base", "upside"}
 COMMON_FORBIDDEN_FIELDS = {
     "upstream_verdict",
     "research_stance",
@@ -157,6 +179,8 @@ IMPLEMENTATION_READINESS = {"Ready", "Conditional", "Blocked"}
 IMPLEMENTATION_ONLY_CLASSES = {"implementation", "portfolio"}
 COUNCIL_RUNTIMES = {"collaboration_available", "unavailable"}
 HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+COUNCIL_SCHEMA_VERSION = 2
+PEI_RECEIPT_SCHEMA_VERSION = 2
 PEI_POSTURES = {"PASS", "LIMITED", "BLOCKED"}
 PEI_REQUIREMENT_CLASSES = {
     "provider",
@@ -170,6 +194,97 @@ PEI_REQUIREMENT_CLASSES = {
 }
 PEI_REQUIREMENT_STATUSES = {"satisfied", "gap", "not_required"}
 PEI_CRITICALITIES = {"hard", "soft"}
+DAMODARAN_ARCHETYPE_DRIVERS = {
+    "pre_revenue_optionality": {"addressable_market", "success_probability", "funding_need"},
+    "high_growth": {"revenue_cagr", "target_operating_margin", "sales_to_capital"},
+    "mature": {"normalized_growth", "normalized_operating_margin", "reinvestment_rate"},
+    "cyclical": {"midcycle_revenue", "midcycle_margin", "cycle_multiple"},
+    "financial": {"return_on_equity", "cost_of_equity", "payout_ratio"},
+    "commodity": {"normalized_commodity_price", "unit_cost", "replacement_capex"},
+    "distressed": {"survival_probability", "recovery_value", "funding_need"},
+}
+DAMODARAN_ARCHETYPE_FRAMES = {
+    "pre_revenue_optionality": {"probability_weighted_reverse_dcf"},
+    "high_growth": {"reverse_dcf"},
+    "mature": {"reverse_dcf", "normalized_dcf"},
+    "cyclical": {"normalized_earnings"},
+    "financial": {"excess_return"},
+    "commodity": {"normalized_earnings", "asset_value"},
+    "distressed": {"probability_weighted_recovery"},
+}
+SOROS_FEEDBACK_STEPS = [
+    "trend_to_bias",
+    "bias_to_actor_action",
+    "actor_action_to_price",
+    "price_to_fundamentals",
+    "fundamentals_to_bias",
+]
+SOROS_PHASES = {
+    "unrecognized",
+    "accelerating",
+    "test",
+    "twilight",
+    "reversal",
+    "non_reflexive",
+}
+COMPARISON_OPERATORS = {"<", "<=", ">", ">=", "=="}
+DAMODARAN_ARTIFACT_FIELDS = {
+    "artifact_type",
+    "requested_horizon",
+    "proposition_id",
+    "company_archetype",
+    "archetype_rationale",
+    "valuation_frame",
+    "anchor_price",
+    "currency",
+    "price_implied_drivers",
+    "owner_case_drivers",
+    "story_to_numbers_bridge",
+    "fundamental_value_range",
+    "least_plausible_implied_driver",
+    "requested_horizon_transmission",
+    "method_gap",
+}
+SOROS_ARTIFACT_FIELDS = {
+    "artifact_type",
+    "requested_horizon",
+    "proposition_id",
+    "classification",
+    "current_trend",
+    "prevailing_bias",
+    "marginal_actors",
+    "feedback_chain",
+    "phase",
+    "phase_rationale",
+    "reversal_trigger",
+    "horizon_price_paths",
+    "expected_path_return_pct",
+    "non_reflexive_tests",
+    "method_gap",
+}
+MAUBOUSSIN_ARTIFACT_FIELDS = {
+    "artifact_type",
+    "requested_horizon",
+    "proposition_id",
+    "anchor_price",
+    "currency",
+    "price_implied_expectations",
+    "reference_class",
+    "inside_view_updates",
+    "probability_payoff_states",
+    "posterior_mode",
+    "posterior_success_probability_pct",
+    "success_state_ids",
+    "expected_return_pct",
+    "sign_sensitivity",
+    "method_gap",
+}
+METHOD_GAP_FIELDS = {
+    "artifact_type",
+    "requested_horizon",
+    "proposition_id",
+    "method_gap",
+}
 
 
 def _nonempty_string(value: Any) -> bool:
@@ -178,6 +293,93 @@ def _nonempty_string(value: Any) -> bool:
 
 def _string_list(value: Any) -> bool:
     return isinstance(value, list) and all(_nonempty_string(item) for item in value)
+
+
+def _allowed_string(value: Any, allowed: set[str]) -> bool:
+    return _nonempty_string(value) and value in allowed
+
+
+def _number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _expect_keys(
+    value: dict[str, Any], expected: set[str], label: str, errors: list[str]
+) -> None:
+    missing = sorted(expected - set(value))
+    extra = sorted(set(value) - expected)
+    if missing:
+        errors.append(f"{label} is missing fields: {', '.join(missing)}")
+    if extra:
+        errors.append(f"{label} has unexpected fields: {', '.join(extra)}")
+
+
+def _reject_unexpected_keys(
+    value: dict[str, Any], allowed: set[str], label: str, errors: list[str]
+) -> None:
+    extra = sorted(set(value) - allowed)
+    if extra:
+        errors.append(f"{label} has unexpected fields: {', '.join(extra)}")
+
+
+def _collect_evidence_ids(value: Any) -> set[str]:
+    result: set[str] = set()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "evidence_ids" and _string_list(child):
+                result.update(child)
+            else:
+                result.update(_collect_evidence_ids(child))
+    elif isinstance(value, list):
+        for child in value:
+            result.update(_collect_evidence_ids(child))
+    return result
+
+
+def _validate_artifact_evidence(
+    value: Any,
+    *,
+    allowed: set[str],
+    label: str,
+    errors: list[str],
+) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_label = f"{label}.{key}"
+            if key == "evidence_ids":
+                if not _string_list(child) or not child:
+                    errors.append(f"{child_label} must be a non-empty string list")
+                    continue
+                outside = sorted(set(child) - allowed)
+                if outside:
+                    errors.append(
+                        f"{label.split('.', 1)[0].capitalize()} method artifact uses evidence outside its sealed packet: "
+                        + ", ".join(outside)
+                    )
+            else:
+                _validate_artifact_evidence(
+                    child, allowed=allowed, label=child_label, errors=errors
+                )
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            _validate_artifact_evidence(
+                child,
+                allowed=allowed,
+                label=f"{label}[{index}]",
+                errors=errors,
+            )
+
+
+def _require_text_fields(
+    value: dict[str, Any], fields: tuple[str, ...], label: str, errors: list[str]
+) -> None:
+    for field in fields:
+        if not _nonempty_string(value.get(field)):
+            errors.append(f"{label}.{field} must be a non-empty string")
 
 
 def _parse_time(value: Any, label: str, errors: list[str]) -> datetime | None:
@@ -245,8 +447,10 @@ def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None
     errors: list[str] = []
     if not isinstance(payload, dict):
         return ["root must be an object"], None
-    if payload.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    if payload.get("schema_version") != PEI_RECEIPT_SCHEMA_VERSION:
+        errors.append(
+            f"schema_version must be {PEI_RECEIPT_SCHEMA_VERSION}"
+        )
     if not _nonempty_string(payload.get("ticker")):
         errors.append("ticker must be a non-empty string")
     if not isinstance(payload.get("security_identity"), dict):
@@ -291,13 +495,13 @@ def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None
         else:
             requirement_ids.add(requirement_id)
         requirement_class = requirement.get("requirement_class")
-        if requirement_class not in PEI_REQUIREMENT_CLASSES:
+        if not _allowed_string(requirement_class, PEI_REQUIREMENT_CLASSES):
             errors.append(f"{prefix}.requirement_class is invalid")
         criticality = requirement.get("criticality")
-        if criticality not in PEI_CRITICALITIES:
+        if not _allowed_string(criticality, PEI_CRITICALITIES):
             errors.append(f"{prefix}.criticality must be hard or soft")
         status = requirement.get("status")
-        if status not in PEI_REQUIREMENT_STATUSES:
+        if not _allowed_string(status, PEI_REQUIREMENT_STATUSES):
             errors.append(f"{prefix}.status is invalid")
         refs = requirement.get("evidence_ids")
         if not _string_list(refs):
@@ -319,7 +523,7 @@ def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None
                 has_soft_gap = True
 
     posture = "BLOCKED" if has_hard_gap else "LIMITED" if has_soft_gap else "PASS"
-    if payload.get("output_posture") not in PEI_POSTURES:
+    if not _allowed_string(payload.get("output_posture"), PEI_POSTURES):
         errors.append("output_posture must be PASS, LIMITED, or BLOCKED")
     elif payload.get("output_posture") != posture:
         errors.append(f"output_posture must equal derived posture {posture}")
@@ -355,6 +559,64 @@ def _find_forbidden_key(value: Any, *, path: str = "common_factual_spine") -> st
     return None
 
 
+def _find_leaked_sealed_input(
+    value: Any,
+    *,
+    path: str = "",
+) -> str | None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_path = f"{path}.{key}" if path else key
+            if key in SEALED_INPUTS:
+                in_declaration = path == "sealed_inputs"
+                in_allowed_output = child_path in SEALED_OUTPUT_PATHS
+                if not in_declaration and not in_allowed_output:
+                    return f"sealed input leaked outside its declaration: {child_path}"
+            found = _find_leaked_sealed_input(child, path=child_path)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            found = _find_leaked_sealed_input(child, path=f"{path}[{index}]")
+            if found:
+                return found
+    return None
+
+
+def _validate_scenario_roles(
+    rows: list[Any],
+    *,
+    label: str,
+    payoff_field: str,
+    errors: list[str],
+) -> None:
+    payoffs: dict[str, list[float]] = {role: [] for role in SCENARIO_ROLES}
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        role = row.get("scenario_role")
+        if not _allowed_string(role, SCENARIO_ROLES):
+            errors.append(f"{label}[{index}].scenario_role is invalid")
+            continue
+        payoff = row.get(payoff_field)
+        if _number(payoff):
+            payoffs[role].append(payoff)
+    missing = sorted(role for role, values in payoffs.items() if not values)
+    if rows and missing:
+        errors.append(
+            f"{label} must include downside, base, and upside roles; missing: "
+            + ", ".join(missing)
+        )
+        return
+    if rows and (
+        max(payoffs["downside"]) > min(payoffs["base"])
+        or max(payoffs["base"]) > min(payoffs["upside"])
+    ):
+        errors.append(
+            f"{label} scenario roles must be ordered downside <= base <= upside"
+        )
+
+
 def _convergence(
     contributions: dict[str, dict[str, Any]]
 ) -> tuple[bool, set[str]]:
@@ -384,10 +646,18 @@ def _validate_contribution(
     if not isinstance(contribution, dict):
         errors.append(f"{prefix} must be an object")
         return {}
+    _expect_keys(
+        contribution,
+        CONTRIBUTION_TEXT_FIELDS | {"primary_mechanism_tag", "mechanism_tags"},
+        prefix,
+        errors,
+    )
     for field in CONTRIBUTION_TEXT_FIELDS:
         if not _nonempty_string(contribution.get(field)):
             errors.append(f"{prefix}.{field} must be a non-empty string")
-    if contribution.get("primary_mechanism_tag") not in MECHANISM_TAGS:
+    if not _allowed_string(
+        contribution.get("primary_mechanism_tag"), MECHANISM_TAGS
+    ):
         errors.append(
             f"{prefix}.primary_mechanism_tag must use the canonical mechanism taxonomy"
         )
@@ -408,11 +678,1415 @@ def _validate_contribution(
             f"{prefix}.mechanism_tags must equal validator-derived semantic tags: "
             + ", ".join(sorted(derived_tags))
         )
-    if contribution.get("primary_mechanism_tag") not in set(mechanism_tags):
+    if not _nonempty_string(contribution.get("primary_mechanism_tag")) or (
+        contribution.get("primary_mechanism_tag") not in set(mechanism_tags)
+    ):
         errors.append(
             f"{prefix}.primary_mechanism_tag must be included in mechanism_tags"
         )
     return contribution
+
+
+def _driver_table(
+    value: Any,
+    *,
+    label: str,
+    errors: list[str],
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(value, list) or not value:
+        errors.append(f"{label} must be a non-empty list")
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    expected = {"id", "value", "unit", "evidence_ids"}
+    for index, row in enumerate(value):
+        prefix = f"{label}[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(row, expected, prefix, errors)
+        driver_id = row.get("id")
+        if not _nonempty_string(driver_id) or driver_id in result:
+            errors.append(f"{prefix}.id must be non-empty and unique")
+            continue
+        if not _number(row.get("value")):
+            errors.append(f"{prefix}.value must be finite numeric")
+        if not _nonempty_string(row.get("unit")):
+            errors.append(f"{prefix}.unit must be non-empty")
+        result[driver_id] = row
+    return result
+
+
+def _validate_damodaran_artifact(
+    artifact: Any,
+    *,
+    completion: str,
+    price: dict[str, Any],
+    horizon: Any,
+    allowed_evidence: set[str],
+    errors: list[str],
+) -> None:
+    if not isinstance(artifact, dict):
+        if completion == "Complete":
+            errors.append(
+                "damodaran Complete requires its named structured method artifact"
+            )
+        else:
+            errors.append(
+                f"damodaran {completion} requires a structured gap artifact"
+            )
+        return
+    gap_only = completion == "Unavailable" or (
+        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
+    )
+    allowed_fields = METHOD_GAP_FIELDS if gap_only else DAMODARAN_ARTIFACT_FIELDS
+    _reject_unexpected_keys(
+        artifact, allowed_fields, "Damodaran method artifact", errors
+    )
+    if artifact.get("artifact_type") != "damodaran_reverse_valuation_v1":
+        errors.append("Damodaran method artifact_type is invalid")
+    if artifact.get("requested_horizon") != horizon:
+        errors.append("Damodaran requested_horizon must equal decision_horizon")
+    if not _nonempty_string(artifact.get("proposition_id")):
+        errors.append("Damodaran proposition_id must be a non-empty string")
+    _validate_artifact_evidence(
+        artifact, allowed=allowed_evidence, label="Damodaran", errors=errors
+    )
+    if gap_only:
+        _expect_keys(
+            artifact,
+            METHOD_GAP_FIELDS,
+            "Damodaran method gap artifact",
+            errors,
+        )
+        if not _nonempty_string(artifact.get("method_gap")):
+            errors.append("Damodaran Partial or Unavailable requires method_gap")
+        return
+    _expect_keys(
+        artifact, DAMODARAN_ARTIFACT_FIELDS, "Damodaran method artifact", errors
+    )
+    archetype = artifact.get("company_archetype")
+    required_drivers = (
+        DAMODARAN_ARCHETYPE_DRIVERS.get(archetype)
+        if _nonempty_string(archetype)
+        else None
+    )
+    if required_drivers is None:
+        errors.append("Damodaran company_archetype is invalid")
+        required_drivers = set()
+    valuation_frame = artifact.get("valuation_frame")
+    valid_frames = (
+        DAMODARAN_ARCHETYPE_FRAMES.get(archetype, set())
+        if _nonempty_string(archetype)
+        else set()
+    )
+    if not _allowed_string(valuation_frame, valid_frames):
+        errors.append("Damodaran valuation_frame is not appropriate for its archetype")
+    _require_text_fields(
+        artifact,
+        ("archetype_rationale", "requested_horizon_transmission"),
+        "Damodaran method artifact",
+        errors,
+    )
+    if completion == "Complete" and artifact.get("method_gap") is not None:
+        errors.append("Damodaran Complete requires method_gap null")
+    elif completion == "Partial" and not _nonempty_string(
+        artifact.get("method_gap")
+    ):
+        errors.append("Damodaran Partial requires method_gap")
+    anchor = artifact.get("anchor_price")
+    price_value = price.get("value")
+    if (
+        not _number(anchor)
+        or not _number(price_value)
+        or not math.isclose(anchor, price_value, rel_tol=1e-9, abs_tol=1e-9)
+    ):
+        errors.append("Damodaran anchor_price must equal current_price")
+    if artifact.get("currency") != price.get("currency"):
+        errors.append("Damodaran currency must equal current_price.currency")
+    implied = _driver_table(
+        artifact.get("price_implied_drivers"),
+        label="Damodaran price_implied_drivers",
+        errors=errors,
+    )
+    owner = _driver_table(
+        artifact.get("owner_case_drivers"),
+        label="Damodaran owner_case_drivers",
+        errors=errors,
+    )
+    if set(implied) != required_drivers:
+        errors.append(
+            f"Damodaran price-implied drivers must match the {archetype} archetype"
+        )
+    if set(owner) != required_drivers:
+        errors.append(
+            f"Damodaran owner-case drivers must match the {archetype} archetype"
+        )
+    bridge = artifact.get("story_to_numbers_bridge")
+    bridge_by_id: dict[str, dict[str, Any]] = {}
+    if not isinstance(bridge, list) or not bridge:
+        errors.append("Damodaran story_to_numbers_bridge must be non-empty")
+        bridge = []
+    bridge_keys = {
+        "driver_id",
+        "story",
+        "implied_value",
+        "owner_value",
+        "unit",
+        "directional_effect",
+        "evidence_ids",
+        "falsifier",
+    }
+    for index, row in enumerate(bridge):
+        prefix = f"Damodaran story_to_numbers_bridge[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(row, bridge_keys, prefix, errors)
+        driver_id = row.get("driver_id")
+        if not _nonempty_string(driver_id) or driver_id in bridge_by_id:
+            errors.append(f"{prefix}.driver_id must be non-empty and unique")
+            continue
+        bridge_by_id[driver_id] = row
+        _require_text_fields(row, ("story", "unit", "falsifier"), prefix, errors)
+        if not _allowed_string(
+            row.get("directional_effect"), {"upside", "downside", "neutral"}
+        ):
+            errors.append(f"{prefix}.directional_effect is invalid")
+        if not _number(row.get("implied_value")) or not _number(
+            row.get("owner_value")
+        ):
+            errors.append(f"{prefix} implied_value and owner_value must be numeric")
+    if set(bridge_by_id) != required_drivers:
+        errors.append("Damodaran story bridge must cover every archetype driver")
+    for driver_id in set(bridge_by_id) & set(implied) & set(owner):
+        row = bridge_by_id[driver_id]
+        if (
+            row.get("implied_value") != implied[driver_id].get("value")
+            or row.get("owner_value") != owner[driver_id].get("value")
+            or row.get("unit") != implied[driver_id].get("unit")
+            or row.get("unit") != owner[driver_id].get("unit")
+        ):
+            errors.append(
+                "Damodaran story bridge values must equal its driver tables"
+            )
+            break
+    value_range = artifact.get("fundamental_value_range")
+    if not isinstance(value_range, dict):
+        errors.append("Damodaran fundamental_value_range must be an object")
+    else:
+        _expect_keys(
+            value_range,
+            {"low", "base", "high", "currency", "evidence_ids"},
+            "Damodaran fundamental_value_range",
+            errors,
+        )
+        low, base, high = (
+            value_range.get("low"),
+            value_range.get("base"),
+            value_range.get("high"),
+        )
+        if not all(_number(row) and row > 0 for row in (low, base, high)):
+            errors.append("Damodaran value range must contain positive numbers")
+        elif not low <= base <= high:
+            errors.append("Damodaran value range must be ordered low <= base <= high")
+        if value_range.get("currency") != price.get("currency"):
+            errors.append("Damodaran value-range currency must match current price")
+    least_plausible = artifact.get("least_plausible_implied_driver")
+    if not _allowed_string(least_plausible, required_drivers):
+        errors.append(
+            "Damodaran least_plausible_implied_driver must name an archetype driver"
+        )
+
+
+def _validate_soros_artifact(
+    artifact: Any,
+    *,
+    completion: str,
+    horizon: Any,
+    allowed_evidence: set[str],
+    errors: list[str],
+) -> None:
+    if not isinstance(artifact, dict):
+        if completion == "Complete":
+            errors.append("soros Complete requires its named structured method artifact")
+        else:
+            errors.append(f"soros {completion} requires a structured gap artifact")
+        return
+    gap_only = completion == "Unavailable" or (
+        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
+    )
+    allowed_fields = METHOD_GAP_FIELDS if gap_only else SOROS_ARTIFACT_FIELDS
+    _reject_unexpected_keys(
+        artifact, allowed_fields, "Soros method artifact", errors
+    )
+    if artifact.get("artifact_type") != "soros_reflexivity_chain_v1":
+        errors.append("Soros method artifact_type is invalid")
+    if artifact.get("requested_horizon") != horizon:
+        errors.append("Soros requested_horizon must equal decision_horizon")
+    if not _nonempty_string(artifact.get("proposition_id")):
+        errors.append("Soros proposition_id must be a non-empty string")
+    _validate_artifact_evidence(
+        artifact, allowed=allowed_evidence, label="Soros", errors=errors
+    )
+    if gap_only:
+        _expect_keys(
+            artifact, METHOD_GAP_FIELDS, "Soros method gap artifact", errors
+        )
+        if not _nonempty_string(artifact.get("method_gap")):
+            errors.append("Soros Partial or Unavailable requires method_gap")
+        return
+    _expect_keys(artifact, SOROS_ARTIFACT_FIELDS, "Soros method artifact", errors)
+    if completion == "Complete" and artifact.get("method_gap") is not None:
+        errors.append("Soros Complete requires method_gap null")
+    elif completion == "Partial" and not _nonempty_string(
+        artifact.get("method_gap")
+    ):
+        errors.append("Soros Partial requires method_gap")
+    classification = artifact.get("classification")
+    if not _allowed_string(classification, {"reflexive", "non_reflexive"}):
+        errors.append("Soros classification must be reflexive or non_reflexive")
+    trend = artifact.get("current_trend")
+    if not isinstance(trend, dict):
+        errors.append("Soros current_trend must be an object")
+    else:
+        _expect_keys(
+            trend,
+            {"direction", "observation", "evidence_ids"},
+            "Soros current_trend",
+            errors,
+        )
+        if not _allowed_string(
+            trend.get("direction"), {"up", "down", "sideways", "mixed"}
+        ):
+            errors.append("Soros current_trend.direction is invalid")
+        _require_text_fields(trend, ("observation",), "Soros current_trend", errors)
+    bias = artifact.get("prevailing_bias")
+    if not isinstance(bias, dict):
+        errors.append("Soros prevailing_bias must be an object")
+    else:
+        _expect_keys(
+            bias,
+            {"belief", "reality_gap", "evidence_ids"},
+            "Soros prevailing_bias",
+            errors,
+        )
+        _require_text_fields(
+            bias, ("belief", "reality_gap"), "Soros prevailing_bias", errors
+        )
+    actors = artifact.get("marginal_actors")
+    if not isinstance(actors, list) or not actors:
+        errors.append("Soros marginal_actors must be a non-empty list")
+        actors = []
+    for index, actor in enumerate(actors):
+        prefix = f"Soros marginal_actors[{index}]"
+        if not isinstance(actor, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            actor,
+            {"actor", "incentive", "expected_action", "evidence_ids"},
+            prefix,
+            errors,
+        )
+        _require_text_fields(
+            actor, ("actor", "incentive", "expected_action"), prefix, errors
+        )
+    chain = artifact.get("feedback_chain")
+    tests = artifact.get("non_reflexive_tests")
+    if classification == "reflexive":
+        if not isinstance(chain, list) or [
+            row.get("step") if isinstance(row, dict) else None for row in chain
+        ] != SOROS_FEEDBACK_STEPS:
+            errors.append("Soros reflexive chain must contain all five ordered links")
+            chain = chain if isinstance(chain, list) else []
+        if tests != []:
+            errors.append("Soros reflexive classification requires empty non_reflexive_tests")
+        if not _allowed_string(
+            artifact.get("phase"), SOROS_PHASES - {"non_reflexive"}
+        ):
+            errors.append("Soros reflexive phase is invalid")
+    elif classification == "non_reflexive":
+        if chain != []:
+            errors.append("Soros non_reflexive classification requires empty feedback_chain")
+        if artifact.get("phase") != "non_reflexive":
+            errors.append("Soros non_reflexive classification requires non_reflexive phase")
+        if not isinstance(tests, list) or len(tests) < 2:
+            errors.append("Soros non-reflexive proof requires at least two broken-link tests")
+            tests = []
+        tested_links: set[str] = set()
+        for index, test in enumerate(tests):
+            prefix = f"Soros non_reflexive_tests[{index}]"
+            if not isinstance(test, dict):
+                errors.append(f"{prefix} must be an object")
+                continue
+            _expect_keys(
+                test,
+                {"candidate_link", "failure_reason", "evidence_ids"},
+                prefix,
+                errors,
+            )
+            if test.get("candidate_link") not in SOROS_FEEDBACK_STEPS:
+                errors.append(f"{prefix}.candidate_link is invalid")
+            else:
+                tested_links.add(test["candidate_link"])
+            _require_text_fields(test, ("failure_reason",), prefix, errors)
+        if len(tested_links) < 2:
+            errors.append("Soros non-reflexive proof must test distinct chain links")
+    if isinstance(chain, list):
+        for index, row in enumerate(chain):
+            prefix = f"Soros feedback_chain[{index}]"
+            if not isinstance(row, dict):
+                errors.append(f"{prefix} must be an object")
+                continue
+            _expect_keys(row, {"step", "claim", "evidence_ids"}, prefix, errors)
+            _require_text_fields(row, ("claim",), prefix, errors)
+    if not _allowed_string(artifact.get("phase"), SOROS_PHASES):
+        errors.append("Soros phase is invalid")
+    _require_text_fields(
+        artifact, ("phase_rationale",), "Soros method artifact", errors
+    )
+    trigger = artifact.get("reversal_trigger")
+    if not isinstance(trigger, dict):
+        errors.append("Soros reversal_trigger must be an object")
+    else:
+        _expect_keys(
+            trigger,
+            {"metric", "operator", "threshold", "unit", "observation_window", "evidence_ids"},
+            "Soros reversal_trigger",
+            errors,
+        )
+        _require_text_fields(
+            trigger,
+            ("metric", "unit", "observation_window"),
+            "Soros reversal_trigger",
+            errors,
+        )
+        if not _allowed_string(
+            trigger.get("operator"), COMPARISON_OPERATORS
+        ):
+            errors.append("Soros reversal_trigger.operator is invalid")
+        if not _number(trigger.get("threshold")):
+            errors.append("Soros reversal_trigger.threshold must be numeric")
+    paths = artifact.get("horizon_price_paths")
+    if not isinstance(paths, list) or len(paths) < 3:
+        errors.append("Soros horizon_price_paths must contain at least three states")
+        paths = []
+    probability_sum = 0.0
+    expected_return = 0.0
+    state_ids: set[str] = set()
+    for index, state in enumerate(paths):
+        prefix = f"Soros horizon_price_paths[{index}]"
+        if not isinstance(state, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            state,
+            {"state_id", "scenario_role", "condition", "probability_pct", "gross_return_pct", "mechanism", "evidence_ids"},
+            prefix,
+            errors,
+        )
+        state_id = state.get("state_id")
+        if not _nonempty_string(state_id) or state_id in state_ids:
+            errors.append(f"{prefix}.state_id must be non-empty and unique")
+        else:
+            state_ids.add(state_id)
+        _require_text_fields(state, ("condition", "mechanism"), prefix, errors)
+        probability = state.get("probability_pct")
+        payoff = state.get("gross_return_pct")
+        if not _number(probability) or not 0 < probability <= 100:
+            errors.append(
+                "Soros path probability must be greater than 0 and at most 100"
+            )
+            continue
+        if not _number(payoff):
+            errors.append(f"{prefix}.gross_return_pct must be numeric")
+            continue
+        probability_sum += probability
+        expected_return += probability * payoff / 100
+    _validate_scenario_roles(
+        paths,
+        label="Soros horizon_price_paths",
+        payoff_field="gross_return_pct",
+        errors=errors,
+    )
+    if paths and not math.isclose(probability_sum, 100.0, abs_tol=1e-6):
+        errors.append("Soros path probabilities must sum to 100")
+    if not _number(artifact.get("expected_path_return_pct")) or not math.isclose(
+        artifact.get("expected_path_return_pct", math.inf),
+        expected_return,
+        abs_tol=1e-6,
+    ):
+        errors.append("Soros expected_path_return_pct must equal recomputed path EV")
+
+
+def _validate_mauboussin_artifact(
+    artifact: Any,
+    *,
+    completion: str,
+    price: dict[str, Any],
+    horizon: Any,
+    allowed_evidence: set[str],
+    errors: list[str],
+) -> None:
+    if not isinstance(artifact, dict):
+        if completion == "Complete":
+            errors.append(
+                "mauboussin Complete requires its named structured method artifact"
+            )
+        else:
+            errors.append(
+                f"mauboussin {completion} requires a structured gap artifact"
+            )
+        return
+    gap_only = completion == "Unavailable" or (
+        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
+    )
+    allowed_fields = METHOD_GAP_FIELDS if gap_only else MAUBOUSSIN_ARTIFACT_FIELDS
+    _reject_unexpected_keys(
+        artifact, allowed_fields, "Mauboussin method artifact", errors
+    )
+    if artifact.get("artifact_type") != "mauboussin_expectations_distribution_v1":
+        errors.append("Mauboussin method artifact_type is invalid")
+    if artifact.get("requested_horizon") != horizon:
+        errors.append("Mauboussin requested_horizon must equal decision_horizon")
+    if not _nonempty_string(artifact.get("proposition_id")):
+        errors.append("Mauboussin proposition_id must be a non-empty string")
+    _validate_artifact_evidence(
+        artifact, allowed=allowed_evidence, label="Mauboussin", errors=errors
+    )
+    if gap_only:
+        _expect_keys(
+            artifact,
+            METHOD_GAP_FIELDS,
+            "Mauboussin method gap artifact",
+            errors,
+        )
+        if not _nonempty_string(artifact.get("method_gap")):
+            errors.append("Mauboussin Partial or Unavailable requires method_gap")
+        return
+    _expect_keys(
+        artifact, MAUBOUSSIN_ARTIFACT_FIELDS, "Mauboussin method artifact", errors
+    )
+    anchor = artifact.get("anchor_price")
+    price_value = price.get("value")
+    if (
+        not _number(anchor)
+        or not _number(price_value)
+        or not math.isclose(anchor, price_value, rel_tol=1e-9, abs_tol=1e-9)
+    ):
+        errors.append("Mauboussin anchor_price must equal current_price")
+    if artifact.get("currency") != price.get("currency"):
+        errors.append("Mauboussin currency must equal current_price.currency")
+    expectations = artifact.get("price_implied_expectations")
+    if not isinstance(expectations, list) or not expectations:
+        errors.append("Mauboussin price_implied_expectations must be non-empty")
+        expectations = []
+    for index, row in enumerate(expectations):
+        prefix = f"Mauboussin price_implied_expectations[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            row,
+            {"metric", "implied_value", "unit", "evidence_ids", "disconfirming_observation"},
+            prefix,
+            errors,
+        )
+        _require_text_fields(
+            row, ("metric", "unit", "disconfirming_observation"), prefix, errors
+        )
+        if not _number(row.get("implied_value")):
+            errors.append(f"{prefix}.implied_value must be numeric")
+    reference = artifact.get("reference_class")
+    reference_status = None
+    base_rate: float | None = None
+    if not isinstance(reference, dict):
+        errors.append("Mauboussin reference_class must be an object")
+    else:
+        _expect_keys(
+            reference,
+            {
+                "status",
+                "definition",
+                "inclusion_criteria",
+                "exclusion_criteria",
+                "sample_size",
+                "base_rate_label",
+                "base_rate_pct",
+                "evidence_ids",
+                "gap_reason",
+            },
+            "Mauboussin reference_class",
+            errors,
+        )
+        reference_status = reference.get("status")
+        if reference_status == "available":
+            if completion != "Complete":
+                errors.append(
+                    "Mauboussin available reference class requires Complete completion"
+                )
+            _require_text_fields(
+                reference,
+                ("definition", "base_rate_label"),
+                "Mauboussin reference_class",
+                errors,
+            )
+            if (
+                not _string_list(reference.get("inclusion_criteria"))
+                or len(reference["inclusion_criteria"]) < 2
+            ):
+                errors.append(
+                    "Mauboussin reference_class requires at least two inclusion criteria"
+                )
+            if not _string_list(reference.get("exclusion_criteria")):
+                errors.append("Mauboussin exclusion_criteria must be a string list")
+            if (
+                not isinstance(reference.get("sample_size"), int)
+                or isinstance(reference.get("sample_size"), bool)
+                or reference["sample_size"] < 10
+            ):
+                errors.append("Mauboussin reference-class sample_size must be at least 10")
+            if not _number(reference.get("base_rate_pct")) or not (
+                0 <= reference.get("base_rate_pct", -1) <= 100
+            ):
+                errors.append("Mauboussin base_rate_pct must be between 0 and 100")
+            else:
+                base_rate = reference["base_rate_pct"]
+            if reference.get("gap_reason") is not None:
+                errors.append("Available Mauboussin reference class requires gap_reason null")
+        elif reference_status == "gap":
+            if completion != "Partial":
+                errors.append("Mauboussin reference-class gap requires Partial completion")
+            if not _nonempty_string(reference.get("gap_reason")):
+                errors.append("Mauboussin reference-class gap requires gap_reason")
+        else:
+            errors.append("Mauboussin reference_class.status must be available or gap")
+    posterior_mode = artifact.get("posterior_mode")
+    if reference_status == "available" and posterior_mode != "base_rate_update":
+        errors.append(
+            "Mauboussin available reference class requires base_rate_update posterior mode"
+        )
+    if reference_status == "gap" and posterior_mode != "judgmental_override":
+        errors.append(
+            "Mauboussin reference-class gap requires judgmental_override posterior mode"
+        )
+    if completion == "Complete" and artifact.get("method_gap") is not None:
+        errors.append("Mauboussin Complete requires method_gap null")
+    if completion != "Complete" and not _nonempty_string(artifact.get("method_gap")):
+        errors.append("Mauboussin Partial or Unavailable requires method_gap")
+    updates = artifact.get("inside_view_updates")
+    if not isinstance(updates, list) or not updates:
+        errors.append("Mauboussin inside_view_updates must be non-empty")
+        updates = []
+    update_delta_sum = 0.0
+    update_state_ids: list[set[str]] = []
+    for index, row in enumerate(updates):
+        prefix = f"Mauboussin inside_view_updates[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            row,
+            {"signal", "direction", "probability_delta_pct", "affected_state_ids", "rationale", "evidence_ids"},
+            prefix,
+            errors,
+        )
+        _require_text_fields(row, ("signal", "rationale"), prefix, errors)
+        delta = row.get("probability_delta_pct")
+        affected = row.get("affected_state_ids")
+        if (
+            not _string_list(affected)
+            or not affected
+            or len(affected) != len(set(affected or []))
+        ):
+            errors.append(f"{prefix}.affected_state_ids must be unique and non-empty")
+            affected = []
+        update_state_ids.append(set(affected))
+        if not _allowed_string(
+            row.get("direction"), {"increase", "decrease", "unchanged"}
+        ):
+            errors.append(f"{prefix}.direction is invalid")
+        if not _number(delta) or not -100 <= delta <= 100:
+            errors.append(f"{prefix}.probability_delta_pct is invalid")
+        elif (
+            (row.get("direction") == "increase" and delta <= 0)
+            or (row.get("direction") == "decrease" and delta >= 0)
+            or (row.get("direction") == "unchanged" and delta != 0)
+        ):
+            errors.append(f"{prefix}.direction must match probability_delta_pct")
+        else:
+            update_delta_sum += delta
+    states = artifact.get("probability_payoff_states")
+    if not isinstance(states, list) or len(states) < 3:
+        errors.append(
+            "Mauboussin probability_payoff_states must contain at least three states"
+        )
+        states = []
+    probability_sum = 0.0
+    expected_return = 0.0
+    state_ids: set[str] = set()
+    state_probabilities: dict[str, float] = {}
+    for index, state in enumerate(states):
+        prefix = f"Mauboussin probability_payoff_states[{index}]"
+        if not isinstance(state, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            state,
+            {"state_id", "scenario_role", "definition", "probability_pct", "target_price", "gross_return_pct", "evidence_ids"},
+            prefix,
+            errors,
+        )
+        state_id = state.get("state_id")
+        if not _nonempty_string(state_id) or state_id in state_ids:
+            errors.append(f"{prefix}.state_id must be non-empty and unique")
+        else:
+            state_ids.add(state_id)
+        _require_text_fields(state, ("definition",), prefix, errors)
+        probability = state.get("probability_pct")
+        target = state.get("target_price")
+        gross = state.get("gross_return_pct")
+        if not _number(probability) or not 0 < probability <= 100:
+            errors.append(
+                "Mauboussin state probability must be greater than 0 and at most 100"
+            )
+            continue
+        if _nonempty_string(state_id) and state_id in state_ids:
+            state_probabilities[state_id] = probability
+        if not _number(target) or target <= 0:
+            errors.append(f"{prefix}.target_price must be positive numeric")
+            continue
+        if not _number(gross):
+            errors.append(f"{prefix}.gross_return_pct must be numeric")
+            continue
+        if _number(anchor) and anchor > 0:
+            recomputed = (target / anchor - 1) * 100
+            if not math.isclose(gross, recomputed, abs_tol=1e-6):
+                errors.append(
+                    "Mauboussin state gross return must equal target-price return"
+                )
+        probability_sum += probability
+        expected_return += probability * gross / 100
+    _validate_scenario_roles(
+        states,
+        label="Mauboussin probability_payoff_states",
+        payoff_field="gross_return_pct",
+        errors=errors,
+    )
+    if states and not math.isclose(probability_sum, 100.0, abs_tol=1e-6):
+        errors.append("Mauboussin state probabilities must sum to 100")
+    posterior = artifact.get("posterior_success_probability_pct")
+    if not _number(posterior) or not 0 < posterior < 100:
+        errors.append(
+            "Mauboussin posterior_success_probability_pct must be between 0 and 100"
+        )
+    success_ids = artifact.get("success_state_ids")
+    if (
+        not _string_list(success_ids)
+        or not success_ids
+        or len(success_ids) != len(set(success_ids or []))
+    ):
+        errors.append("Mauboussin success_state_ids must be unique and non-empty")
+        success_ids = []
+    unknown_success_ids = sorted(set(success_ids) - state_ids)
+    if unknown_success_ids:
+        errors.append(
+            "Mauboussin success_state_ids reference unknown states: "
+            + ", ".join(unknown_success_ids)
+        )
+    for affected_ids in update_state_ids:
+        if not affected_ids <= set(success_ids):
+            errors.append(
+                "Mauboussin inside-view updates must map only to success_state_ids"
+            )
+            break
+    if (
+        reference_status == "available"
+        and _number(base_rate)
+        and _number(posterior)
+        and not math.isclose(
+            posterior, base_rate + update_delta_sum, abs_tol=1e-6
+        )
+    ):
+        errors.append(
+            "Mauboussin posterior must equal base rate plus inside-view updates"
+        )
+    if not unknown_success_ids and _number(posterior) and success_ids:
+        success_probability = sum(
+            state_probabilities.get(state_id, 0.0) for state_id in success_ids
+        )
+        if not math.isclose(
+            posterior, success_probability, abs_tol=1e-6
+        ):
+            errors.append(
+                "Mauboussin success-state probability must equal posterior"
+            )
+    if not _number(artifact.get("expected_return_pct")) or not math.isclose(
+        artifact.get("expected_return_pct", math.inf), expected_return, abs_tol=1e-6
+    ):
+        errors.append(
+            "Mauboussin expected_return_pct must equal recomputed probability-payoff EV"
+        )
+    sensitivities = artifact.get("sign_sensitivity")
+    if not isinstance(sensitivities, list) or not sensitivities:
+        errors.append("Mauboussin sign_sensitivity must be non-empty")
+        sensitivities = []
+    for index, row in enumerate(sensitivities):
+        prefix = f"Mauboussin sign_sensitivity[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            row,
+            {"variable", "low_input", "base_input", "high_input", "unit", "low_expected_return_pct", "high_expected_return_pct", "sign_flips"},
+            prefix,
+            errors,
+        )
+        _require_text_fields(row, ("variable", "unit"), prefix, errors)
+        numeric_fields = (
+            "low_input",
+            "base_input",
+            "high_input",
+            "low_expected_return_pct",
+            "high_expected_return_pct",
+        )
+        if not all(_number(row.get(field)) for field in numeric_fields):
+            errors.append(f"{prefix} numeric fields must be finite")
+            continue
+        if not row["low_input"] <= row["base_input"] <= row["high_input"]:
+            errors.append(f"{prefix} inputs must be ordered low <= base <= high")
+        recomputed_flip = (
+            row["low_expected_return_pct"] < 0 < row["high_expected_return_pct"]
+            or row["high_expected_return_pct"] < 0 < row["low_expected_return_pct"]
+        )
+        if row.get("sign_flips") is not recomputed_flip:
+            errors.append(
+                "Mauboussin sign_flips must equal the recomputed sign range"
+            )
+
+
+def _state_by_id(value: Any, state_id: Any) -> dict[str, Any] | None:
+    if not isinstance(value, list) or not _nonempty_string(state_id):
+        return None
+    matches = [
+        row
+        for row in value
+        if isinstance(row, dict) and row.get("state_id") == state_id
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _resolve_target_component(
+    component: Any,
+    *,
+    prefix: str,
+    method_artifacts: dict[str, dict[str, Any]],
+    price: dict[str, Any],
+    errors: list[str],
+) -> tuple[float | None, float | None, set[str], str | None, str | None]:
+    if not isinstance(component, dict):
+        errors.append(f"{prefix} must be an object")
+        return None, None, set(), None, None
+    _expect_keys(
+        component,
+        {"seat", "proposition_id", "source_kind", "source_id", "weight_pct"},
+        prefix,
+        errors,
+    )
+    seat = component.get("seat")
+    if not _allowed_string(seat, SEATS):
+        errors.append(f"{prefix}.seat is invalid")
+        return None, None, set(), None, None
+    artifact = method_artifacts.get(seat)
+    if not isinstance(artifact, dict):
+        errors.append(f"{prefix} references an unavailable method artifact")
+        return None, None, set(), seat, None
+    if component.get("proposition_id") != artifact.get("proposition_id"):
+        errors.append(
+            "Chair target component proposition_id must match its method artifact"
+        )
+    weight = component.get("weight_pct")
+    if not _number(weight) or not 0 < weight <= 100:
+        errors.append(f"{prefix}.weight_pct must be greater than 0 and at most 100")
+        weight = None
+
+    source_kind = component.get("source_kind")
+    source_id = component.get("source_id")
+    target: float | None = None
+    source_evidence: set[str] = set()
+    source_role: str | None = None
+    if seat == "damodaran":
+        range_key = {
+            "fundamental_value_low": "low",
+            "fundamental_value_base": "base",
+            "fundamental_value_high": "high",
+        }.get(source_kind)
+        if range_key is None or source_id is not None:
+            errors.append(f"{prefix} has invalid Damodaran source selector")
+        else:
+            source_role = {
+                "low": "downside",
+                "base": "base",
+                "high": "upside",
+            }[range_key]
+            value_range = artifact.get("fundamental_value_range")
+            if isinstance(value_range, dict) and _number(value_range.get(range_key)):
+                target = value_range[range_key]
+                source_evidence = _collect_evidence_ids(value_range)
+            else:
+                errors.append(f"{prefix} cannot resolve Damodaran target input")
+    elif seat == "soros":
+        if source_kind != "horizon_path_return":
+            errors.append(f"{prefix} has invalid Soros source selector")
+        else:
+            path = _state_by_id(artifact.get("horizon_price_paths"), source_id)
+            price_value = price.get("value")
+            if (
+                isinstance(path, dict)
+                and _number(path.get("gross_return_pct"))
+                and _number(price_value)
+                and price_value > 0
+            ):
+                target = price_value * (1 + path["gross_return_pct"] / 100)
+                source_evidence = _collect_evidence_ids(path)
+                if _allowed_string(path.get("scenario_role"), SCENARIO_ROLES):
+                    source_role = path["scenario_role"]
+                else:
+                    errors.append(f"{prefix} source scenario_role is invalid")
+            else:
+                errors.append(f"{prefix} cannot resolve Soros path input")
+    else:
+        if source_kind != "probability_payoff_target":
+            errors.append(f"{prefix} has invalid Mauboussin source selector")
+        else:
+            state = _state_by_id(
+                artifact.get("probability_payoff_states"), source_id
+            )
+            if isinstance(state, dict) and _number(state.get("target_price")):
+                target = state["target_price"]
+                source_evidence = _collect_evidence_ids(state)
+                if _allowed_string(state.get("scenario_role"), SCENARIO_ROLES):
+                    source_role = state["scenario_role"]
+                else:
+                    errors.append(f"{prefix} source scenario_role is invalid")
+            else:
+                errors.append(f"{prefix} cannot resolve Mauboussin target input")
+    if target is not None and target <= 0:
+        errors.append(f"{prefix} resolved target must be positive")
+        target = None
+    if target is not None and not source_evidence:
+        errors.append(f"{prefix} resolved method input must have evidence_ids")
+    return target, weight, source_evidence, seat, source_role
+
+
+def _resolve_probability_component(
+    component: Any,
+    *,
+    prefix: str,
+    method_artifacts: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> tuple[float | None, float | None, set[str], str | None, str | None]:
+    if not isinstance(component, dict):
+        errors.append(f"{prefix} must be an object")
+        return None, None, set(), None, None
+    _expect_keys(
+        component,
+        {"seat", "proposition_id", "source_kind", "source_id", "weight_pct"},
+        prefix,
+        errors,
+    )
+    seat = component.get("seat")
+    if not _allowed_string(seat, {"soros", "mauboussin"}):
+        errors.append(f"{prefix}.seat must be soros or mauboussin")
+        return None, None, set(), None, None
+    artifact = method_artifacts.get(seat)
+    if not isinstance(artifact, dict):
+        errors.append(f"{prefix} references an unavailable method artifact")
+        return None, None, set(), seat, None
+    if component.get("proposition_id") != artifact.get("proposition_id"):
+        errors.append(
+            "Chair probability component proposition_id must match its method artifact"
+        )
+    weight = component.get("weight_pct")
+    if not _number(weight) or not 0 < weight <= 100:
+        errors.append(f"{prefix}.weight_pct must be greater than 0 and at most 100")
+        weight = None
+
+    source_kind = component.get("source_kind")
+    source_id = component.get("source_id")
+    if seat == "soros" and source_kind == "horizon_path_probability":
+        state = _state_by_id(artifact.get("horizon_price_paths"), source_id)
+    elif (
+        seat == "mauboussin"
+        and source_kind == "probability_payoff_probability"
+    ):
+        state = _state_by_id(artifact.get("probability_payoff_states"), source_id)
+    else:
+        errors.append(f"{prefix} has invalid probability source selector")
+        state = None
+    if not isinstance(state, dict) or not _number(state.get("probability_pct")):
+        errors.append(f"{prefix} cannot resolve method probability input")
+        return None, weight, set(), seat, None
+    probability = state["probability_pct"]
+    evidence_ids = _collect_evidence_ids(state)
+    if not evidence_ids:
+        errors.append(f"{prefix} resolved method input must have evidence_ids")
+    source_role = state.get("scenario_role")
+    if not _allowed_string(source_role, SCENARIO_ROLES):
+        errors.append(f"{prefix} source scenario_role is invalid")
+        source_role = None
+    return probability, weight, evidence_ids, seat, source_role
+
+
+def _validate_chair_matrix(
+    matrix: Any,
+    *,
+    chair: dict[str, Any],
+    price: dict[str, Any],
+    horizon: Any,
+    accepted_evidence: set[str],
+    method_artifacts: dict[str, dict[str, Any]],
+    method_completions: dict[str, str],
+    collaboration_available: bool,
+    errors: list[str],
+) -> None:
+    if not isinstance(matrix, dict):
+        errors.append("Chair requires a structured dominant-variable decision matrix")
+        return
+    expected = {
+        "artifact_type",
+        "requested_horizon",
+        "dominant_variable",
+        "dominant_variable_unit",
+        "dominance_rationale",
+        "transition",
+        "states",
+        "gross_expected_return_pct",
+        "strongest_disconfirming_state_id",
+        "reversal_triggers",
+    }
+    _expect_keys(matrix, expected, "Chair decision_matrix", errors)
+    if matrix.get("artifact_type") != "dominant_variable_state_matrix_v1":
+        errors.append("Chair decision_matrix.artifact_type is invalid")
+    if matrix.get("requested_horizon") != horizon:
+        errors.append("Chair matrix requested_horizon must equal decision_horizon")
+    if matrix.get("dominant_variable") != chair.get("dominant_variable"):
+        errors.append("Chair matrix dominant_variable must equal chair.dominant_variable")
+    _require_text_fields(
+        matrix,
+        ("dominant_variable", "dominant_variable_unit", "dominance_rationale"),
+        "Chair decision_matrix",
+        errors,
+    )
+    transition = matrix.get("transition")
+    if not isinstance(transition, dict):
+        errors.append("Chair transition must be an object")
+    else:
+        _expect_keys(
+            transition,
+            {"from", "to", "mechanism", "timing"},
+            "Chair transition",
+            errors,
+        )
+        _require_text_fields(
+            transition,
+            ("from", "to", "mechanism", "timing"),
+            "Chair transition",
+            errors,
+        )
+    states = matrix.get("states")
+    if not isinstance(states, list) or len(states) < 3:
+        errors.append("Chair state matrix must contain at least three states")
+        states = []
+    state_ids: set[str] = set()
+    state_returns: dict[str, float] = {}
+    intervals: list[dict[str, Any]] = []
+    probability_sum = 0.0
+    expected_return = 0.0
+    anchor = price.get("value")
+    matrix_component_seats: set[str] = set()
+    matrix_target_selectors: set[tuple[str, str, str, str]] = set()
+    matrix_probability_selectors: set[tuple[str, str, str, str]] = set()
+    chair_used_evidence = set(chair.get("used_evidence_ids") or [])
+    state_keys = {
+        "state_id",
+        "scenario_role",
+        "definition",
+        "dominant_variable_interval",
+        "probability_pct",
+        "target_price",
+        "gross_return_pct",
+        "decisive_mechanism",
+        "seat_inputs",
+        "target_components",
+        "probability_components",
+        "evidence_ids",
+    }
+    interval_keys = {"lower", "lower_inclusive", "upper", "upper_inclusive"}
+    for index, state in enumerate(states):
+        prefix = f"Chair decision_matrix.states[{index}]"
+        if not isinstance(state, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(state, state_keys, prefix, errors)
+        state_id = state.get("state_id")
+        if not _nonempty_string(state_id) or state_id in state_ids:
+            errors.append(f"{prefix}.state_id must be non-empty and unique")
+        else:
+            state_ids.add(state_id)
+        state_role = state.get("scenario_role")
+        _require_text_fields(
+            state, ("definition", "decisive_mechanism"), prefix, errors
+        )
+        interval = state.get("dominant_variable_interval")
+        if not isinstance(interval, dict):
+            errors.append(f"{prefix}.dominant_variable_interval must be an object")
+            interval = {}
+        else:
+            _expect_keys(
+                interval,
+                interval_keys,
+                f"{prefix}.dominant_variable_interval",
+                errors,
+            )
+        lower, upper = interval.get("lower"), interval.get("upper")
+        if lower is not None and not _number(lower):
+            errors.append(f"{prefix} interval lower must be numeric or null")
+        if upper is not None and not _number(upper):
+            errors.append(f"{prefix} interval upper must be numeric or null")
+        if not isinstance(interval.get("lower_inclusive"), bool) or not isinstance(
+            interval.get("upper_inclusive"), bool
+        ):
+            errors.append(f"{prefix} interval inclusivity must be boolean")
+        if _number(lower) and _number(upper) and lower >= upper:
+            errors.append(f"{prefix} interval lower must be below upper")
+        intervals.append(interval)
+
+        state_evidence = state.get("evidence_ids")
+        if not _string_list(state_evidence) or not state_evidence:
+            errors.append(f"{prefix}.evidence_ids must be non-empty")
+            state_evidence = []
+        outside_evidence = sorted(set(state_evidence) - accepted_evidence)
+        if outside_evidence:
+            errors.append(
+                "Chair state uses evidence outside accepted PEI inputs: "
+                + ", ".join(outside_evidence)
+            )
+        undeclared_evidence = sorted(set(state_evidence) - chair_used_evidence)
+        if undeclared_evidence:
+            errors.append(
+                "Chair state evidence must appear in chair.used_evidence_ids: "
+                + ", ".join(undeclared_evidence)
+            )
+
+        components = state.get("target_components")
+        if not isinstance(components, list):
+            errors.append(f"{prefix}.target_components must be a list")
+            components = []
+        if collaboration_available and not components:
+            errors.append(f"{prefix}.target_components must be non-empty")
+        if not collaboration_available and components:
+            errors.append("Unavailable Council cannot claim method target components")
+        component_weight_sum = 0.0
+        weighted_target = 0.0
+        component_seats: set[str] = set()
+        required_component_evidence: set[str] = set()
+        resolved_component_count = 0
+        target_component_selectors: set[tuple[str, str, str, str]] = set()
+        for component_index, component in enumerate(components):
+            if isinstance(component, dict):
+                selector = (
+                    repr(component.get("seat")),
+                    repr(component.get("proposition_id")),
+                    repr(component.get("source_kind")),
+                    repr(component.get("source_id")),
+                )
+                if selector in target_component_selectors:
+                    errors.append("Chair target components must use unique inputs")
+                elif selector in matrix_target_selectors:
+                    errors.append(
+                        "Chair target source state may be used by only one matrix state"
+                    )
+                target_component_selectors.add(selector)
+                matrix_target_selectors.add(selector)
+            target_input, weight, evidence_ids, component_seat, source_role = (
+                _resolve_target_component(
+                    component,
+                    prefix=f"{prefix}.target_components[{component_index}]",
+                    method_artifacts=method_artifacts,
+                    price=price,
+                    errors=errors,
+                )
+            )
+            if source_role is not None and source_role != state_role:
+                errors.append(
+                    f"{prefix} target component scenario_role must equal Chair state scenario_role"
+                )
+            if component_seat in SEATS:
+                component_seats.add(component_seat)
+                matrix_component_seats.add(component_seat)
+            required_component_evidence.update(evidence_ids)
+            if target_input is not None and weight is not None:
+                component_weight_sum += weight
+                weighted_target += target_input * weight / 100
+                resolved_component_count += 1
+        if collaboration_available and components and not math.isclose(
+            component_weight_sum, 100.0, abs_tol=1e-6
+        ):
+            errors.append("Chair target-component weights must sum to 100")
+
+        probability_components = state.get("probability_components")
+        if not isinstance(probability_components, list):
+            errors.append(f"{prefix}.probability_components must be a list")
+            probability_components = []
+        if collaboration_available and not probability_components:
+            errors.append(f"{prefix}.probability_components must be non-empty")
+        if not collaboration_available and probability_components:
+            errors.append(
+                "Unavailable Council cannot claim method probability components"
+            )
+        probability_weight_sum = 0.0
+        weighted_probability = 0.0
+        resolved_probability_count = 0
+        probability_component_selectors: set[tuple[str, str, str, str]] = set()
+        for component_index, component in enumerate(probability_components):
+            if isinstance(component, dict):
+                selector = (
+                    repr(component.get("seat")),
+                    repr(component.get("proposition_id")),
+                    repr(component.get("source_kind")),
+                    repr(component.get("source_id")),
+                )
+                if selector in probability_component_selectors:
+                    errors.append(
+                        "Chair probability components must use unique inputs"
+                    )
+                elif selector in matrix_probability_selectors:
+                    errors.append(
+                        "Chair probability source state may be used by only one matrix state"
+                    )
+                probability_component_selectors.add(selector)
+                matrix_probability_selectors.add(selector)
+            probability_input, weight, evidence_ids, component_seat, source_role = (
+                _resolve_probability_component(
+                    component,
+                    prefix=(
+                        f"{prefix}.probability_components[{component_index}]"
+                    ),
+                    method_artifacts=method_artifacts,
+                    errors=errors,
+                )
+            )
+            if source_role is not None and source_role != state_role:
+                errors.append(
+                    f"{prefix} probability component scenario_role must equal Chair state scenario_role"
+                )
+            if component_seat in SEATS:
+                component_seats.add(component_seat)
+                matrix_component_seats.add(component_seat)
+            required_component_evidence.update(evidence_ids)
+            if probability_input is not None and weight is not None:
+                probability_weight_sum += weight
+                weighted_probability += probability_input * weight / 100
+                resolved_probability_count += 1
+        if (
+            collaboration_available
+            and probability_components
+            and not math.isclose(probability_weight_sum, 100.0, abs_tol=1e-6)
+        ):
+            errors.append("Chair probability-component weights must sum to 100")
+        missing_component_evidence = sorted(
+            required_component_evidence - set(state_evidence)
+        )
+        if missing_component_evidence:
+            errors.append(
+                "Chair state evidence must include its method-component evidence: "
+                + ", ".join(missing_component_evidence)
+            )
+
+        seat_inputs = state.get("seat_inputs")
+        if (
+            not _string_list(seat_inputs)
+            or len(seat_inputs) != len(set(seat_inputs or []))
+            or not set(seat_inputs or []) <= SEATS
+        ):
+            errors.append(f"{prefix}.seat_inputs must be a unique Council seat list")
+            seat_inputs = []
+        elif collaboration_available and set(seat_inputs) != component_seats:
+            errors.append(
+                f"{prefix}.seat_inputs must equal its target-component seats"
+            )
+        elif not collaboration_available and seat_inputs:
+            errors.append("Unavailable Council cannot claim member seat inputs")
+
+        probability = state.get("probability_pct")
+        target = state.get("target_price")
+        gross = state.get("gross_return_pct")
+        if not _number(probability) or not 0 < probability <= 100:
+            errors.append(
+                "Chair state probability must be greater than 0 and at most 100"
+            )
+            continue
+        if (
+            collaboration_available
+            and resolved_probability_count
+            and not math.isclose(
+                probability, weighted_probability, abs_tol=1e-6
+            )
+        ):
+            errors.append(
+                "Chair state probability_pct must equal weighted method-artifact inputs"
+            )
+        if not _number(target) or target <= 0:
+            errors.append(f"{prefix}.target_price must be positive numeric")
+            continue
+        if (
+            collaboration_available
+            and resolved_component_count
+            and not math.isclose(target, weighted_target, abs_tol=1e-6)
+        ):
+            errors.append(
+                "Chair state target_price must equal weighted method-artifact inputs"
+            )
+        if not _number(gross):
+            errors.append(f"{prefix}.gross_return_pct must be numeric")
+            continue
+        if _number(anchor) and anchor > 0:
+            recomputed = (target / anchor - 1) * 100
+            if not math.isclose(gross, recomputed, abs_tol=1e-6):
+                errors.append("Chair state gross return must equal target-price return")
+        if _nonempty_string(state_id):
+            state_returns[state_id] = gross
+        probability_sum += probability
+        expected_return += probability * gross / 100
+    _validate_scenario_roles(
+        states,
+        label="Chair decision_matrix.states",
+        payoff_field="gross_return_pct",
+        errors=errors,
+    )
+    if collaboration_available:
+        complete_seats = {
+            seat
+            for seat, completion in method_completions.items()
+            if completion == "Complete"
+        }
+        missing_complete_seats = sorted(complete_seats - matrix_component_seats)
+        if missing_complete_seats:
+            errors.append(
+                "Chair matrix must use every Complete method artifact: "
+                + ", ".join(missing_complete_seats)
+            )
+    if intervals:
+        mece = intervals[0].get("lower") is None and intervals[-1].get("upper") is None
+        for left, right in zip(intervals, intervals[1:]):
+            boundary_equal = (
+                _number(left.get("upper"))
+                and _number(right.get("lower"))
+                and math.isclose(
+                    left["upper"], right["lower"], rel_tol=0.0, abs_tol=1e-9
+                )
+            )
+            exactly_one_inclusive = (
+                isinstance(left.get("upper_inclusive"), bool)
+                and isinstance(right.get("lower_inclusive"), bool)
+                and left["upper_inclusive"] != right["lower_inclusive"]
+            )
+            mece = mece and boundary_equal and exactly_one_inclusive
+        if not mece:
+            errors.append("Chair state intervals must be contiguous and non-overlapping")
+    if states and not math.isclose(probability_sum, 100.0, abs_tol=1e-6):
+        errors.append("Chair state probabilities must sum to 100")
+    matrix_ev = matrix.get("gross_expected_return_pct")
+    if not _number(matrix_ev) or not math.isclose(
+        matrix_ev, expected_return, abs_tol=1e-6
+    ):
+        errors.append(
+            "Chair matrix gross expected return must equal recomputed state EV"
+        )
+    if not _number(chair.get("gross_expected_return_pct")) or not _number(matrix_ev) or not math.isclose(
+        chair.get("gross_expected_return_pct", math.inf), matrix_ev, abs_tol=1e-6
+    ):
+        errors.append("Chair gross_expected_return_pct must equal decision matrix EV")
+    disconfirming_id = matrix.get("strongest_disconfirming_state_id")
+    if disconfirming_id not in state_returns:
+        errors.append("Chair strongest_disconfirming_state_id must name a state")
+    else:
+        disconfirming_return = state_returns[disconfirming_id]
+        stance = chair.get("research_stance")
+        opposes = (
+            (stance == "Long" and disconfirming_return < 0)
+            or (stance == "Short" and disconfirming_return > 0)
+            or (stance == "Avoid" and not math.isclose(disconfirming_return, 0.0))
+        )
+        if not opposes:
+            errors.append(
+                "Chair strongest disconfirming state must oppose the final stance"
+            )
+        elif stance == "Long":
+            most_adverse = min(state_returns.values())
+            if not math.isclose(disconfirming_return, most_adverse, abs_tol=1e-6):
+                errors.append(
+                    "Chair strongest disconfirming state must be the most adverse state"
+                )
+        elif stance == "Short":
+            most_adverse = max(state_returns.values())
+            if not math.isclose(disconfirming_return, most_adverse, abs_tol=1e-6):
+                errors.append(
+                    "Chair strongest disconfirming state must be the most adverse state"
+                )
+        elif stance == "Avoid":
+            most_adverse = max(state_returns.values(), key=abs)
+            if not math.isclose(disconfirming_return, most_adverse, abs_tol=1e-6):
+                errors.append(
+                    "Chair strongest disconfirming state must be the most adverse state"
+                )
+    triggers = matrix.get("reversal_triggers")
+    if not isinstance(triggers, list) or not triggers:
+        errors.append("Chair reversal_triggers must be non-empty")
+        triggers = []
+    observables: set[str] = set()
+    for index, trigger in enumerate(triggers):
+        prefix = f"Chair reversal_triggers[{index}]"
+        if not isinstance(trigger, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        _expect_keys(
+            trigger,
+            {"observable", "metric", "operator", "threshold", "unit", "observation_window", "resulting_stance", "evidence_ids"},
+            prefix,
+            errors,
+        )
+        _require_text_fields(
+            trigger,
+            ("observable", "metric", "unit", "observation_window"),
+            prefix,
+            errors,
+        )
+        if _nonempty_string(trigger.get("observable")):
+            observables.add(trigger["observable"])
+        if not _allowed_string(
+            trigger.get("operator"), COMPARISON_OPERATORS
+        ):
+            errors.append(f"{prefix}.operator is invalid")
+        if not _number(trigger.get("threshold")):
+            errors.append(f"{prefix}.threshold must be numeric")
+        if not _allowed_string(trigger.get("resulting_stance"), STANCES):
+            errors.append(f"{prefix}.resulting_stance is invalid")
+        evidence_ids = trigger.get("evidence_ids")
+        if not _string_list(evidence_ids) or not evidence_ids:
+            errors.append(f"{prefix}.evidence_ids must be non-empty")
+        else:
+            outside = sorted(set(evidence_ids) - accepted_evidence)
+            if outside:
+                errors.append(
+                    "Chair reversal trigger uses evidence outside accepted PEI inputs: "
+                    + ", ".join(outside)
+                )
+    if not _nonempty_string(chair.get("reversal_trigger")) or (
+        chair.get("reversal_trigger") not in observables
+    ):
+        errors.append("chair.reversal_trigger must equal a structured observable trigger")
 
 
 def validate(
@@ -425,10 +2099,14 @@ def validate(
     errors: list[str] = []
     if not isinstance(payload, dict):
         return ["root must be a JSON object"]
-    if payload.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    _expect_keys(payload, ROOT_FIELDS, "root", errors)
+    leaked_sealed_input = _find_leaked_sealed_input(payload)
+    if leaked_sealed_input:
+        errors.append(leaked_sealed_input)
+    if payload.get("schema_version") != COUNCIL_SCHEMA_VERSION:
+        errors.append(f"schema_version must be {COUNCIL_SCHEMA_VERSION}")
     council_runtime = payload.get("council_runtime")
-    if council_runtime not in COUNCIL_RUNTIMES:
+    if not _allowed_string(council_runtime, COUNCIL_RUNTIMES):
         errors.append(
             "council_runtime must be collaboration_available or unavailable"
         )
@@ -452,10 +2130,8 @@ def validate(
     if not isinstance(price, dict):
         errors.append("current_price must be an object")
         price = {}
-    if not isinstance(price.get("value"), (int, float)) or isinstance(
-        price.get("value"), bool
-    ):
-        errors.append("current_price.value must be numeric")
+    if not _number(price.get("value")) or price.get("value", 0) <= 0:
+        errors.append("current_price.value must be positive finite numeric")
     for field in ("currency", "source_id"):
         if not _nonempty_string(price.get(field)):
             errors.append(f"current_price.{field} must be a non-empty string")
@@ -547,7 +2223,9 @@ def validate(
     if payload.get("research_admission") != expected_admission:
         errors.append(f"research_admission must be {expected_admission}")
 
-    if price.get("source_id") not in accepted_evidence:
+    if not _nonempty_string(price.get("source_id")) or (
+        price.get("source_id") not in accepted_evidence
+    ):
         errors.append("current_price.source_id must be an accepted PEI input")
 
     sealed_inputs = payload.get("sealed_inputs")
@@ -568,6 +2246,8 @@ def validate(
     if not isinstance(spine, dict):
         errors.append("common_factual_spine must be an object")
         spine = {}
+    else:
+        _expect_keys(spine, {"fields"}, "common_factual_spine", errors)
     forbidden = _find_forbidden_key(spine)
     if forbidden:
         errors.append(forbidden)
@@ -612,10 +2292,17 @@ def validate(
         value = field.get("value")
         if isinstance(value, (dict, list)):
             errors.append("common factual spine values must be scalar")
-        elif field_id in COMMON_NUMERIC_FIELDS and (
-            not isinstance(value, (int, float)) or isinstance(value, bool)
+        elif field_id in COMMON_NUMERIC_FIELDS and not _number(value):
+            errors.append(f"{prefix}.value must be finite numeric for {field_id}")
+        elif field_id == "current_price" and (
+            not _number(price.get("value"))
+            or not math.isclose(
+                value, price["value"], rel_tol=1e-9, abs_tol=1e-9
+            )
         ):
-            errors.append(f"{prefix}.value must be numeric for {field_id}")
+            errors.append(
+                "common factual current_price must equal current_price.value"
+            )
         elif field_id in COMMON_TEXT_FIELDS:
             if not _nonempty_string(value) or "\n" in value or "\r" in value:
                 errors.append(f"{prefix}.value must be a single-line factual string")
@@ -714,26 +2401,51 @@ def validate(
     if not isinstance(first_round, dict):
         errors.append("first_round must be an object")
         first_round = {}
+    else:
+        _expect_keys(
+            first_round, {"unavailable_seats", "memos"}, "first_round", errors
+        )
     memos = first_round.get("memos")
     if not isinstance(memos, list):
         errors.append("first_round.memos must be a list")
         memos = []
     memos_by_seat: dict[str, dict[str, Any]] = {}
     contributions: dict[str, dict[str, Any]] = {}
+    method_artifacts: dict[str, dict[str, Any]] = {}
+    method_completions: dict[str, str] = {}
+    proposition_owners: dict[str, str] = {}
     latest_sealed_at: datetime | None = None
     for index, memo in enumerate(memos):
         prefix = f"first_round.memos[{index}]"
         if not isinstance(memo, dict):
             errors.append(f"{prefix} must be an object")
             continue
+        _expect_keys(
+            memo,
+            {
+                "seat",
+                "method_completion",
+                "work_product",
+                "method_artifact",
+                "sealed_at",
+                "browsed",
+                "added_evidence_ids",
+                "accepted_evidence_ids",
+                "research_lead_ids",
+                "contribution",
+                "provisional_direction",
+            },
+            prefix,
+            errors,
+        )
         seat = memo.get("seat")
-        if seat not in SEATS:
+        if not _allowed_string(seat, SEATS):
             errors.append(f"{prefix}.seat is invalid: {seat!r}")
             continue
         if seat in memos_by_seat:
             errors.append(f"duplicate first-round memo: {seat}")
         memos_by_seat[seat] = memo
-        if memo.get("method_completion") not in METHOD_COMPLETION:
+        if not _allowed_string(memo.get("method_completion"), METHOD_COMPLETION):
             errors.append(f"{prefix}.method_completion is invalid")
         if not _nonempty_string(memo.get("work_product")):
             errors.append(f"{prefix}.work_product must be a non-empty string")
@@ -782,6 +2494,46 @@ def validate(
             memo.get("contribution"), f"{prefix}.contribution", errors
         )
         contributions[seat] = contribution
+        method_artifact = memo.get("method_artifact")
+        method_evidence = set(accepted_ids)
+        completion = memo.get("method_completion")
+        method_completions[seat] = completion
+        if isinstance(method_artifact, dict):
+            method_artifacts[seat] = method_artifact
+            proposition_id = method_artifact.get("proposition_id")
+            if _nonempty_string(proposition_id):
+                prior_owner = proposition_owners.get(proposition_id)
+                if prior_owner is not None and prior_owner != seat:
+                    errors.append(
+                        "method artifact proposition_id must be unique across seats"
+                    )
+                proposition_owners[proposition_id] = seat
+        if seat == "damodaran":
+            _validate_damodaran_artifact(
+                method_artifact,
+                completion=completion,
+                price=price,
+                horizon=payload.get("decision_horizon"),
+                allowed_evidence=method_evidence,
+                errors=errors,
+            )
+        elif seat == "soros":
+            _validate_soros_artifact(
+                method_artifact,
+                completion=completion,
+                horizon=payload.get("decision_horizon"),
+                allowed_evidence=method_evidence,
+                errors=errors,
+            )
+        else:
+            _validate_mauboussin_artifact(
+                method_artifact,
+                completion=completion,
+                price=price,
+                horizon=payload.get("decision_horizon"),
+                allowed_evidence=method_evidence,
+                errors=errors,
+            )
     unavailable_seats = first_round.get("unavailable_seats")
     if not _string_list(unavailable_seats):
         errors.append("first_round.unavailable_seats must be a string list")
@@ -805,11 +2557,37 @@ def validate(
     if not isinstance(convergence, dict):
         errors.append("convergence must be an object")
         convergence = {}
+    else:
+        _expect_keys(
+            convergence,
+            {
+                "first_pass_status",
+                "implicated_seats",
+                "semantic_review",
+                "corrective_pass_count",
+                "corrective_memos",
+                "final_status",
+            },
+            "convergence",
+            errors,
+        )
     implicated_declared = convergence.get("implicated_seats")
     semantic_review = convergence.get("semantic_review")
     if not isinstance(semantic_review, dict):
         errors.append("convergence.semantic_review must be an object")
         semantic_review = {}
+    else:
+        _expect_keys(
+            semantic_review,
+            {
+                "reviewed",
+                "first_overlap_detected",
+                "final_overlap_detected",
+                "rationale",
+            },
+            "convergence.semantic_review",
+            errors,
+        )
     first_semantic_overlap = semantic_review.get("first_overlap_detected")
     final_semantic_overlap = semantic_review.get("final_overlap_detected")
     if not isinstance(first_semantic_overlap, bool):
@@ -833,7 +2611,11 @@ def validate(
             "unavailable Council requires semantic convergence review marked unreviewed"
         )
     corrective_count = convergence.get("corrective_pass_count")
-    if corrective_count not in {0, 1}:
+    if (
+        not isinstance(corrective_count, int)
+        or isinstance(corrective_count, bool)
+        or corrective_count not in {0, 1}
+    ):
         errors.append("corrective_pass_count must be 0 or 1")
 
     corrective_memos = convergence.get("corrective_memos")
@@ -852,6 +2634,12 @@ def validate(
         if not isinstance(memo, dict):
             errors.append(f"{prefix} must be an object")
             continue
+        _expect_keys(
+            memo,
+            {"seat", "browsed", "added_evidence_ids", "contribution"},
+            prefix,
+            errors,
+        )
         seat = memo.get("seat")
         if seat not in declared_implicated_set:
             errors.append(f"{prefix}.seat must be implicated in convergence")
@@ -953,6 +2741,35 @@ def validate(
     if not isinstance(chair, dict):
         errors.append("chair must be an object")
         chair = {}
+    else:
+        _expect_keys(
+            chair,
+            {
+                "name",
+                "public_method_persona",
+                "started_at",
+                "finalized_at",
+                "evidence_closed",
+                "browsed",
+                "added_evidence_ids",
+                "used_evidence_ids",
+                "seat_decisions",
+                "dominant_variable",
+                "strongest_disconfirming_path",
+                "reversal_trigger",
+                "decision_matrix",
+                "gross_expected_return_pct",
+                "research_stance",
+                "confidence",
+                "robustness",
+                "participation",
+                "implementation_readiness",
+                "implementation_blockers",
+                "independent_confirmation",
+            },
+            "chair",
+            errors,
+        )
     if chair.get("name") != "Stanley Druckenmiller — PM Chair":
         errors.append("chair.name must be Stanley Druckenmiller — PM Chair")
     if chair.get("public_method_persona") is not True:
@@ -1002,12 +2819,29 @@ def validate(
         if not isinstance(decision, dict):
             errors.append(f"{prefix} must be an object")
             continue
-        if decision.get("seat") not in SEATS:
+        _expect_keys(
+            decision,
+            {"seat", "decision", "proposition_id", "proposition", "reason"},
+            prefix,
+            errors,
+        )
+        decision_seat = decision.get("seat")
+        if not _allowed_string(decision_seat, SEATS):
             errors.append(f"{prefix}.seat is invalid")
+        elif decision_seat in decision_seats:
+            errors.append(f"duplicate chair seat decision: {decision_seat}")
         else:
-            decision_seats.add(decision["seat"])
-        if decision.get("decision") not in CHAIR_DECISIONS:
+            decision_seats.add(decision_seat)
+        if not _allowed_string(decision.get("decision"), CHAIR_DECISIONS):
             errors.append(f"{prefix}.decision is invalid")
+        artifact = method_artifacts.get(decision_seat)
+        if isinstance(artifact, dict) and decision.get(
+            "proposition_id"
+        ) != artifact.get("proposition_id"):
+            errors.append(
+                "chair seat decision proposition_id must match its method artifact"
+            )
+        _require_text_fields(decision, ("proposition", "reason"), prefix, errors)
     if collaboration_available and decision_seats != SEATS:
         errors.append("chair.seat_decisions must cover all three seats")
     if not collaboration_available and seat_decisions:
@@ -1020,22 +2854,36 @@ def validate(
     ):
         if not _nonempty_string(chair.get(field)):
             errors.append(f"chair.{field} must be a non-empty string")
-    if chair.get("research_stance") not in STANCES:
+    if not _allowed_string(chair.get("research_stance"), STANCES):
         errors.append("chair.research_stance must be Long, Short, or Avoid")
-    if chair.get("confidence") not in CONFIDENCE:
+    if not _allowed_string(chair.get("confidence"), CONFIDENCE):
         errors.append("chair.confidence must be High, Medium, or Low")
-    if chair.get("robustness") not in ROBUSTNESS:
+    if not _allowed_string(chair.get("robustness"), ROBUSTNESS):
         errors.append("chair.robustness must be Robust, Conditional, or Fragile")
-    if chair.get("participation") not in PARTICIPATION:
+    if not _allowed_string(chair.get("participation"), PARTICIPATION):
         errors.append(
             "chair.participation must be Eligible, Conditional, or Stand aside"
         )
-    if chair.get("implementation_readiness") not in IMPLEMENTATION_READINESS:
+    if not _allowed_string(
+        chair.get("implementation_readiness"), IMPLEMENTATION_READINESS
+    ):
         errors.append(
             "chair.implementation_readiness must be Ready, Conditional, or Blocked"
         )
     if not _string_list(chair.get("implementation_blockers")):
         errors.append("chair.implementation_blockers must be a string list")
+
+    _validate_chair_matrix(
+        chair.get("decision_matrix"),
+        chair=chair,
+        price=price,
+        horizon=payload.get("decision_horizon"),
+        accepted_evidence=accepted_evidence,
+        method_artifacts=method_artifacts,
+        method_completions=method_completions,
+        collaboration_available=collaboration_available,
+        errors=errors,
+    )
 
     gross_return = chair.get("gross_expected_return_pct")
     if not isinstance(gross_return, (int, float)) or isinstance(gross_return, bool):

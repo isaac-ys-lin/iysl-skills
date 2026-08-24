@@ -236,7 +236,7 @@ class EquityCouncilContractTest(unittest.TestCase):
 
     def test_council_run_template_exposes_admission_partitions_and_separate_outputs(self):
         template = self.run_template
-        self.assertEqual(template["schema_version"], 1)
+        self.assertEqual(template["schema_version"], 2)
         self.assertIn("council_runtime", template)
         self.assertIn("pei_input_receipt", template)
         self.assertEqual(set(template["private_partitions"]), {"damodaran", "soros", "mauboussin"})
@@ -255,15 +255,100 @@ class EquityCouncilContractTest(unittest.TestCase):
         for memo in template["first_round"]["memos"]:
             self.assertIn("primary_mechanism_tag", memo["contribution"])
             self.assertIn("mechanism_tags", memo["contribution"])
+            self.assertIn("method_artifact", memo)
+            self.assertIn("proposition_id", memo["method_artifact"])
+        artifacts = {
+            memo["seat"]: memo["method_artifact"]
+            for memo in template["first_round"]["memos"]
+        }
+        self.assertEqual(
+            artifacts["damodaran"]["artifact_type"],
+            "damodaran_reverse_valuation_v1",
+        )
+        self.assertIn("price_implied_drivers", artifacts["damodaran"])
+        self.assertIn("story_to_numbers_bridge", artifacts["damodaran"])
+        self.assertEqual(
+            artifacts["soros"]["artifact_type"], "soros_reflexivity_chain_v1"
+        )
+        self.assertIn("feedback_chain", artifacts["soros"])
+        self.assertIn("horizon_price_paths", artifacts["soros"])
+        self.assertEqual(
+            artifacts["mauboussin"]["artifact_type"],
+            "mauboussin_expectations_distribution_v1",
+        )
+        self.assertIn("reference_class", artifacts["mauboussin"])
+        self.assertIn("probability_payoff_states", artifacts["mauboussin"])
+        self.assertIn("posterior_success_probability_pct", artifacts["mauboussin"])
+        self.assertIn("success_state_ids", artifacts["mauboussin"])
+        for decision in template["chair"]["seat_decisions"]:
+            self.assertIn("proposition_id", decision)
         for field in (
             "research_stance",
             "confidence",
             "robustness",
             "participation",
             "implementation_readiness",
+            "decision_matrix",
         ):
             self.assertIn(field, template["chair"])
+        self.assertEqual(
+            template["chair"]["decision_matrix"]["artifact_type"],
+            "dominant_variable_state_matrix_v1",
+        )
+        self.assertIn("states", template["chair"]["decision_matrix"])
+        self.assertEqual(len(template["chair"]["decision_matrix"]["states"]), 3)
+        self.assertEqual(
+            [
+                state["scenario_role"]
+                for state in template["chair"]["decision_matrix"]["states"]
+            ],
+            ["downside", "base", "upside"],
+        )
+        for state in template["chair"]["decision_matrix"]["states"]:
+            self.assertIn("target_components", state)
+            self.assertIn("probability_components", state)
+            self.assertIn("evidence_ids", state)
+        self.assertIn(
+            "reversal_triggers", template["chair"]["decision_matrix"]
+        )
         self.assertIn("validate_council_run.py", self.skill)
+
+    def test_docs_make_structured_method_artifacts_and_recomputation_mandatory(self):
+        council = re.sub(r"\s+", " ", self.council).replace(TICK, "")
+        judgment = re.sub(r"\s+", " ", self.judgment).replace(TICK, "")
+        skill = re.sub(r"\s+", " ", self.skill).replace(TICK, "")
+        for phrase in (
+            "damodaran_reverse_valuation_v1",
+            "soros_reflexivity_chain_v1",
+            "mauboussin_expectations_distribution_v1",
+            "dominant_variable_state_matrix_v1",
+            "fluent prose is not a substitute",
+            "probabilities must sum to 100",
+            "recompute every target-price return and expected value",
+            "strongest disconfirming state must oppose the final stance",
+            "prior + signed updates = posterior",
+            "success-state probabilities = posterior",
+            "target_components",
+            "probability_components",
+            "weights must sum to 100",
+            "target price must equal the weighted resolved inputs",
+            "state probability must equal the weighted resolved inputs",
+            "scenario_role",
+            "each component source must have the same role",
+            "downside <= base <= upside",
+            "gap-only artifact",
+            "cannot supply Chair numeric components",
+            "each named method source state may be allocated to only one",
+            "does not permit split allocation or duplicate probability counting",
+        ):
+            self.assertIn(phrase, council)
+        for phrase in (
+            "Council run schema v2",
+            "named structured method_artifact",
+            "validator-recomputed arithmetic",
+        ):
+            self.assertIn(phrase, skill)
+        self.assertIn("machine-checkable structured artifact", judgment)
 
     def test_accepted_market_evidence_is_sealed_into_soros_partition(self):
         council = re.sub(r"\s+", " ", self.council)
@@ -542,6 +627,9 @@ class EquityCouncilContractTest(unittest.TestCase):
             "Stanley Druckenmiller PM Chair names expectations revision as the dominant variable",
             "Stanley Druckenmiller PM Chair issues Avoid from the balanced state matrix rather than member disagreement",
             "Stanley Druckenmiller PM Chair does not infer sizing concentration orders execution or a simulated personal position",
+            "every Chair state target resolves through weighted components to named method artifact proposition IDs and accepted evidence",
+            "Mauboussin base-rate prior plus signed state-mapped updates reconciles to posterior and success-state probability",
+            "Chair seat decisions bind each proposition ID to the matching named method artifact",
         ):
             self.assertIn(phrase, rendered_validations)
 

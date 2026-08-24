@@ -106,6 +106,60 @@ inspect in this run; it does not lower evidence standards or permit browsing.
 
 ## Method cards and required work products
 
+### Machine-checkable completion artifacts
+
+Council run schema v2 pairs each narrative `work_product` with one named
+structured `method_artifact`; fluent prose is not a substitute for a complete
+method. A member may claim `Complete` only when its artifact passes all of the
+following method-specific checks:
+
+- Damodaran returns `damodaran_reverse_valuation_v1`: one allowed company
+  archetype and valuation frame, the complete archetype driver set in both the
+  price-implied and owner-case tables, a numerically identical
+  story-to-numbers bridge, a fundamental-value range, the least plausible
+  implied driver, and requested-horizon transmission.
+- Soros returns `soros_reflexivity_chain_v1`: evidenced trend, bias, marginal
+  actors, all five ordered feedback links, phase, numeric reversal trigger, and
+  a requested-horizon path distribution. Every path carries a canonical
+  `scenario_role` (`downside`, `base`, or `upside`). A `non_reflexive` classification is
+  valid only with at least two evidenced, distinct broken-link tests.
+- Mauboussin returns `mauboussin_expectations_distribution_v1`: price-implied
+  expectations, an available reference class and base rate or an explicit gap,
+  inside-view updates, at least three probability-payoff states, and sign
+  sensitivity. Every payoff state carries the same canonical `scenario_role`
+  taxonomy. For an available reference class, `prior + signed updates =
+  posterior`, and `success-state probabilities = posterior`; each update names
+  the affected success states. A judgmental override is explicit and a
+  reference-class gap forces `Partial`.
+- The Chair returns `dominant_variable_state_matrix_v1`: a requested-horizon
+  transition, one numeric dominant variable, contiguous and non-overlapping
+  state intervals, member proposition decisions, one opposing state, and
+  threshold-based reversal triggers. Every state includes `target_components`
+  and `probability_components` that resolve to named method-artifact values;
+  their weights must sum to 100, the target price must equal the weighted
+  resolved inputs, and the state probability must equal the weighted resolved
+  inputs. Every Chair state carries a canonical `scenario_role`; each component
+  source must have the same role, and all method and Chair distributions must be
+  payoff-ordered `downside <= base <= upside`. Across the full matrix, each named
+  method source state may be allocated to only one mutually exclusive Chair
+  state; v1 does not permit split allocation or duplicate probability counting.
+  The state also carries the accepted
+  evidence IDs behind those inputs.
+
+A `Partial` artifact may expose numeric method outputs only when it carries the
+full named schema and every consumed field passes the same structural,
+arithmetic, evidence, and scenario-role validation as a complete artifact. A
+four-field gap-only artifact records the gap but cannot supply Chair numeric
+components. Root and nested schemas reject sealed upstream conclusions outside
+the explicit `sealed_inputs` declaration and the Chair's two legitimate final
+output fields.
+
+For every distribution, probabilities must sum to 100. The validator must
+recompute every target-price return and expected value. The Chair's strongest
+disconfirming state must oppose the final stance. Every nested `evidence_ids`
+list must stay inside that member's declared accepted evidence or the Chair's
+accepted PEI evidence set.
+
 ### Aswath Damodaran — Fundamental Committee Member
 
 **Persona status:** Public-method simulation of Aswath Damodaran, not Aswath

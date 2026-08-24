@@ -127,6 +127,19 @@ the gate passes.
    completed, creates a new accepted PEI baseline and a new Council run; do not
    start a second refill loop.
 5. Apply the method-completion and unique-contribution gates. Each seat must
+   write its named structured `method_artifact` in Council run schema v2; a
+   fluent narrative in `work_product` cannot satisfy `Complete`. Require
+   validator-recomputed arithmetic for all probability, target-return, and
+   expected-value outputs before synthesis. Bind Mauboussin's prior, signed
+   updates, posterior, and success states; bind each Chair target to weighted
+   numeric inputs from named member artifacts and accepted evidence. Each seat must
+   assign canonical `downside` / `base` / `upside` scenario roles to its
+   distribution. The validator orders those roles by payoff and permits each
+   Chair component to use only a source with the same role as the Chair state.
+   A named method source state may appear in only one mutually exclusive Chair
+   state, so one probability event cannot be counted twice.
+   A full `Partial` artifact is validated field by field before any numeric use;
+   a gap-only artifact cannot supply a Chair target or probability. Each seat must
    state a distinct causal mechanism, disconfirming condition, key metric, and
    source posture, plus one canonical `primary_mechanism_tag`. Perform an
    explicit semantic convergence review. Record every validator-derived
