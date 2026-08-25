@@ -12,11 +12,12 @@
     "reading_minutes",
     "brief",
     "evidence",
-    "blocks"
+    "blocks",
+    "topic_coverage"
   ],
   "properties": {
     "version": {
-      "const": "2.2"
+      "const": "2.3"
     },
     "title": {
       "$ref": "#/$defs/nonEmptyString"
@@ -68,6 +69,9 @@
       "type": "integer",
       "minimum": 1
     },
+    "topic_coverage": {
+      "$ref": "#/$defs/topicCoverage"
+    },
     "evidence": {
       "type": "array",
       "minItems": 1,
@@ -93,6 +97,9 @@
               },
               {
                 "$ref": "#/$defs/controlGapBlock"
+              },
+              {
+                "$ref": "#/$defs/spotlightBlock"
               }
             ]
           }
@@ -126,6 +133,9 @@
           },
           {
             "$ref": "#/$defs/controlGapBlock"
+          },
+          {
+            "$ref": "#/$defs/spotlightBlock"
           },
           {
             "$ref": "#/$defs/actionsBlock"
@@ -174,6 +184,67 @@
         "report_synthesis",
         "open_question"
       ]
+    },
+    "salienceSignal": {
+      "enum": [
+        "concrete_metric",
+        "decision",
+        "counterintuitive_claim",
+        "anecdote",
+        "tradeoff",
+        "specific_example",
+        "product_image",
+        "failure_or_recovery",
+        "core_claim",
+        "narrative_context",
+        "caveat",
+        "open_question"
+      ]
+    },
+    "topicCoverage": {
+      "$comment": "先完整掃過 opening、middle、ending，再把每個有語意的 topic 映射到實際 reader block；高顯著性只決定是否用 spotlight 放大。這是 semantic completeness contract，不是第五章。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sweep", "topics"],
+      "properties": {
+        "sweep": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opening", "middle", "ending"],
+          "properties": {
+            "opening": {"$ref": "#/$defs/topicIds"},
+            "middle": {"$ref": "#/$defs/topicIds"},
+            "ending": {"$ref": "#/$defs/topicIds"}
+          }
+        },
+        "topics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "title", "salience_signals", "evidence_refs", "block_ids"],
+            "properties": {
+              "id": {"$ref": "#/$defs/nonEmptyString"},
+              "title": {"$ref": "#/$defs/nonEmptyString"},
+              "salience_signals": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"$ref": "#/$defs/salienceSignal"}
+              },
+              "evidence_refs": {"$ref": "#/$defs/evidenceRefs"},
+              "block_ids": {"$ref": "#/$defs/topicIds"}
+            }
+          }
+        }
+      }
+    },
+    "topicIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/nonEmptyString"}
     },
     "evidence": {
       "type": "object",
@@ -499,6 +570,39 @@
                   "evidence_refs": {
                     "$ref": "#/$defs/evidenceRefs"
                   }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "spotlightBlock": {
+      "allOf": [
+        {"$ref": "#/$defs/blockBase"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type", "title", "claim_type", "evidence_refs", "angle", "items"],
+          "properties": {
+            "id": {"$ref": "#/$defs/nonEmptyString"},
+            "type": {"const": "spotlight"},
+            "title": {"$ref": "#/$defs/nonEmptyString"},
+            "summary": {"type": "string"},
+            "claim_type": {"$ref": "#/$defs/claimType"},
+            "evidence_refs": {"$ref": "#/$defs/evidenceRefs"},
+            "angle": {"$ref": "#/$defs/salienceSignal"},
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["heading", "text", "evidence_refs"],
+                "properties": {
+                  "heading": {"$ref": "#/$defs/nonEmptyString"},
+                  "text": {"$ref": "#/$defs/nonEmptyString"},
+                  "evidence_refs": {"$ref": "#/$defs/evidenceRefs"}
                 }
               }
             }

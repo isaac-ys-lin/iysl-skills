@@ -1,5 +1,5 @@
 {
-  "version": "2.2",
+  "version": "2.3",
   "title": "測試影片：從流程到行動",
   "subtitle": "把影片主線、關鍵關係與反思整理在一起",
   "language": "zh-Hant",
@@ -63,6 +63,43 @@
       "transcript_quote": "下次先用一個小案例跑完流程，再決定是否擴大。"
     }
   ],
+  "topic_coverage": {
+    "sweep": {
+      "opening": ["topic-order"],
+      "middle": ["topic-cost", "topic-control"],
+      "ending": ["topic-pilot"]
+    },
+    "topics": [
+      {
+        "id": "topic-order",
+        "title": "先定義問題與基準，再選工具",
+        "salience_signals": ["decision", "specific_example"],
+        "evidence_refs": ["E1"],
+        "block_ids": ["workflow"]
+      },
+      {
+        "id": "topic-cost",
+        "title": "速度與錯誤成本需要一起比較",
+        "salience_signals": ["tradeoff", "counterintuitive_claim"],
+        "evidence_refs": ["E2"],
+        "block_ids": ["tradeoffs", "key-points"]
+      },
+      {
+        "id": "topic-control",
+        "title": "沒有例外紀錄的清單不足以證明控制",
+        "salience_signals": ["failure_or_recovery", "specific_example"],
+        "evidence_refs": ["E3"],
+        "block_ids": ["controls", "key-points"]
+      },
+      {
+        "id": "topic-pilot",
+        "title": "先跑小案例再決定是否擴大",
+        "salience_signals": ["decision", "anecdote"],
+        "evidence_refs": ["E4"],
+        "block_ids": ["pilot-spotlight", "next-actions"]
+      }
+    ]
+  },
   "blocks": [
     {
       "id": "workflow",
@@ -148,6 +185,22 @@
           "evidence_refs": [
             "E3"
           ]
+        }
+      ]
+    },
+    {
+      "id": "pilot-spotlight",
+      "type": "spotlight",
+      "title": "一個不能被摘要掉的具體片段",
+      "summary": "先用最小案例取得真實流程證據，再決定是否擴大。",
+      "claim_type": "speaker_claim",
+      "evidence_refs": ["E4"],
+      "angle": "anecdote",
+      "items": [
+        {
+          "heading": "小案例是擴張前的決策點",
+          "text": "講者把下一步具體化成先跑完一個小案例，而不是直接擴大流程。",
+          "evidence_refs": ["E4"]
         }
       ]
     },

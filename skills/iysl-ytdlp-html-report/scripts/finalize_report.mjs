@@ -84,9 +84,16 @@ function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presen
   const sourceUrl = scalar(manifest.url || metadata.original_url || spec.source.url);
   const resolvedUrl = scalar(manifest.resolved_url || metadata.webpage_url || sourceUrl);
   const transcriptPath = scalar(manifest.transcript, "not-provided");
+  const transcriptRegions = transcriptPath !== "not-provided" && existsSync(transcriptPath)
+    ? "passed; transcript_regions=verified"
+    : "not-run; transcript_regions=unavailable";
   const subtitleSource = manifest.subtitle
     ? scalar(manifest.subtitle_status, "available")
     : scalar(manifest.subtitle_status, "captions-unavailable");
+  const coverage = spec.topic_coverage;
+  const coverageSummary = ["opening", "middle", "ending"]
+    .map((region) => `${region}=${coverage.sweep[region].length}`)
+    .join(",");
   return [
     "# Verification",
     "",
@@ -99,6 +106,7 @@ function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presen
     `- report_html_path: ${htmlPath}`,
     `- presentation_backend: ${scalar(presentationBackend)}`,
     `- presentation_fallback_reason: ${scalar(fallbackReason)}`,
+    `- topical_coverage_gate: ${transcriptRegions}; topics=${coverage.topics.length}; ${coverageSummary}`,
     `- subtitle_source: ${subtitleSource}`,
     `- extraction_tool: ${sidecarValue(manifest, metadata, "extraction_tool", "yt-dlp via extract_transcript.mjs")}`,
     `- transcription_method: ${sidecarValue(manifest, metadata, "transcription_method", "native captions")}`,
@@ -144,7 +152,13 @@ function main(args = process.argv.slice(2)) {
     if (existsSync(file)) rmSync(file);
   }
 
-  runNode("validate_report_v2.mjs", [options.spec]);
+  const transcriptPath = typeof manifest.transcript === "string" && existsSync(manifest.transcript)
+    ? manifest.transcript
+    : "";
+  if (!transcriptPath) {
+    throw new Error("finalization 需要 source manifest 指向存在的 clean transcript；semantic completeness gate 不可略過");
+  }
+  runNode("validate_report_v2.mjs", [options.spec, ...(transcriptPath ? ["--transcript", transcriptPath] : [])]);
   // 外部出稿時完全不渲染內建 HTML：交給讀者的那一份，就是被驗的那一份。驗證
   // 未過之前不把它寫進 out-dir，失敗的執行不會留下一份看起來可用的交付物。
   const externalHtml = options.htmlIn ? path.resolve(options.htmlIn) : "";

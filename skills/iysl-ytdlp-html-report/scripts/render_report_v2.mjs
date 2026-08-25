@@ -40,7 +40,7 @@ const escapeMarkdown = (value) => String(value ?? "")
   .replace(/([`*_[\]<>])/g, "\\$1");
 const escapeMarkdownTable = (value) => escapeMarkdown(value).replace(/\|/g, "\\|");
 const REPORT_SECTIONS = [
-  { id: "recap", title: "內容重述", types: new Set(["narrative", "process", "comparison", "control-gap"]) },
+  { id: "recap", title: "內容重述", types: new Set(["narrative", "process", "comparison", "control-gap", "spotlight"]) },
   { id: "key-points", title: "洞見", types: new Set(["key-points"]) },
   { id: "food-for-thought", title: "food for thoughts", types: new Set(["food-for-thought"]) },
   { id: "actions", title: "可行啟發", types: new Set(["actions"]) },
@@ -59,6 +59,8 @@ function blockMarkdown(block) {
   } else if (block.type === "control-gap") {
     lines.push("", "| 控制點 | 逐字稿觀察 | 缺口 |", "| --- | --- | --- |");
     block.rows.forEach((row) => lines.push(`| ${escapeMarkdownTable(row.control)} | ${escapeMarkdownTable(row.observed)} | ${escapeMarkdownTable(row.gap)} |`));
+  } else if (block.type === "spotlight") {
+    block.items.forEach((item) => lines.push("", `#### ${escapeMarkdown(item.heading)}`, "", escapeMarkdown(item.text)));
   } else if (block.type === "actions") {
     block.items.forEach((item) => lines.push("", `- **${escapeMarkdown(item.action)}**${item.when ? ` — ${escapeMarkdown(item.when)}` : ""}`));
   } else if (block.type === "key-points") {
@@ -84,6 +86,8 @@ function blockHtml(block) {
     body += tableHtml(["比較面向", ...block.columns], block.rows.map((row) => [escapeHtml(row.label), ...row.values.map(escapeHtml)]));
   } else if (block.type === "control-gap") {
     body += tableHtml(["控制點", "逐字稿觀察", "缺口"], block.rows.map((row) => [escapeHtml(row.control), escapeHtml(row.observed), escapeHtml(row.gap)]));
+  } else if (block.type === "spotlight") {
+    body += `<div class="spotlight" data-spotlight-angle="${escapeHtml(block.angle)}">${block.items.map((item) => `<article><h4>${escapeHtml(item.heading)}</h4><p>${escapeHtml(item.text)}</p></article>`).join("")}</div>`;
   } else if (block.type === "actions") {
     body += `<ul class="actions">${block.items.map((item) => `<li><strong>${escapeHtml(item.action)}</strong>${item.when ? `<p>${escapeHtml(item.when)}</p>` : ""}</li>`).join("")}</ul>`;
   } else if (block.type === "key-points") {
@@ -91,7 +95,7 @@ function blockHtml(block) {
   } else if (block.type === "food-for-thought") {
     body += `<div class="thoughts">${block.items.map((item) => `<article><span aria-hidden="true">?</span><div><h4>${escapeHtml(item.prompt)}</h4>${item.context ? `<p>${escapeHtml(item.context)}</p>` : ""}</div></article>`).join("")}</div>`;
   }
-  return `<article id="${escapeHtml(block.id)}" class="report-block block-${escapeHtml(block.type)}"><header><h3>${escapeHtml(block.title)}</h3></header>${body}</article>`;
+  return `<article id="${escapeHtml(block.id)}" class="report-block block-${escapeHtml(block.type)}" data-report-block="${escapeHtml(block.id)}" data-report-block-type="${escapeHtml(block.type)}"><header><h3>${escapeHtml(block.title)}</h3></header>${body}</article>`;
 }
 
 const spec = readAndValidateReportV2(specPath);
