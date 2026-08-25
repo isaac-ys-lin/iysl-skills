@@ -2,34 +2,72 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://iysl.local/schemas/ytdlp-html-report-v2.schema.json",
   "title": "iysl-ytdlp-html-report v2",
-  "description": "Transcript-grounded structured report contract. Thumbnail metadata is a media anchor and is never semantic evidence.",
+  "description": "Transcript-grounded structured report contract. The brief is the scan layer and is evidence-governed like every other reader-facing claim. Thumbnail metadata is a media anchor and is never semantic evidence.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "title", "source", "evidence", "blocks"],
+  "required": [
+    "version",
+    "title",
+    "source",
+    "brief",
+    "evidence",
+    "blocks"
+  ],
   "properties": {
-    "version": { "const": "2.0" },
-    "title": { "$ref": "#/$defs/nonEmptyString" },
-    "subtitle": { "type": "string" },
-    "language": { "const": "zh-Hant" },
+    "version": {
+      "const": "2.1"
+    },
+    "title": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "language": {
+      "const": "zh-Hant"
+    },
+    "brief": {
+      "$ref": "#/$defs/brief"
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["video_id", "url", "transcript_kind"],
+      "required": [
+        "video_id",
+        "url",
+        "transcript_kind"
+      ],
       "properties": {
-        "video_id": { "$ref": "#/$defs/nonEmptyString" },
-        "url": { "$ref": "#/$defs/httpUrl" },
-        "channel": { "type": "string" },
-        "duration": { "type": "string" },
-        "thumbnail_url": { "$ref": "#/$defs/mediaUrl" },
+        "video_id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "url": {
+          "$ref": "#/$defs/httpUrl"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
+        },
+        "thumbnail_url": {
+          "$ref": "#/$defs/mediaUrl"
+        },
         "transcript_kind": {
-          "enum": ["native_captions", "auto_captions", "audio_asr"]
+          "enum": [
+            "native_captions",
+            "auto_captions",
+            "audio_asr"
+          ]
         }
       }
     },
     "evidence": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/evidence" }
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
     },
     "blocks": {
       "type": "array",
@@ -38,39 +76,78 @@
         {
           "contains": {
             "oneOf": [
-              { "$ref": "#/$defs/narrativeBlock" },
-              { "$ref": "#/$defs/processBlock" },
-              { "$ref": "#/$defs/comparisonBlock" },
-              { "$ref": "#/$defs/controlGapBlock" }
+              {
+                "$ref": "#/$defs/narrativeBlock"
+              },
+              {
+                "$ref": "#/$defs/processBlock"
+              },
+              {
+                "$ref": "#/$defs/comparisonBlock"
+              },
+              {
+                "$ref": "#/$defs/controlGapBlock"
+              }
             ]
           }
         },
-        { "contains": { "$ref": "#/$defs/keyPointsBlock" } },
-        { "contains": { "$ref": "#/$defs/foodForThoughtBlock" } },
-        { "contains": { "$ref": "#/$defs/actionsBlock" } }
+        {
+          "contains": {
+            "$ref": "#/$defs/keyPointsBlock"
+          }
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/foodForThoughtBlock"
+          }
+        },
+        {
+          "contains": {
+            "$ref": "#/$defs/actionsBlock"
+          }
+        }
       ],
       "items": {
         "oneOf": [
-          { "$ref": "#/$defs/narrativeBlock" },
-          { "$ref": "#/$defs/processBlock" },
-          { "$ref": "#/$defs/comparisonBlock" },
-          { "$ref": "#/$defs/controlGapBlock" },
-          { "$ref": "#/$defs/actionsBlock" },
-          { "$ref": "#/$defs/keyPointsBlock" },
-          { "$ref": "#/$defs/foodForThoughtBlock" }
+          {
+            "$ref": "#/$defs/narrativeBlock"
+          },
+          {
+            "$ref": "#/$defs/processBlock"
+          },
+          {
+            "$ref": "#/$defs/comparisonBlock"
+          },
+          {
+            "$ref": "#/$defs/controlGapBlock"
+          },
+          {
+            "$ref": "#/$defs/actionsBlock"
+          },
+          {
+            "$ref": "#/$defs/keyPointsBlock"
+          },
+          {
+            "$ref": "#/$defs/foodForThoughtBlock"
+          }
         ]
       }
     }
   },
   "$defs": {
-    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
     "httpUrl": {
       "type": "string",
       "pattern": "^https?://[^\\s\\r\\n]+$"
     },
     "mediaUrl": {
       "anyOf": [
-        { "$ref": "#/$defs/httpUrl" },
+        {
+          "$ref": "#/$defs/httpUrl"
+        },
         {
           "type": "string",
           "pattern": "^(?!/)(?![A-Za-z]:[\\\\/])(?!file:)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._~!$&'()+,;=@%/-]+$"
@@ -81,64 +158,129 @@
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "$ref": "#/$defs/nonEmptyString" }
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
     },
     "claimType": {
-      "enum": ["speaker_claim", "report_synthesis", "open_question"]
+      "enum": [
+        "speaker_claim",
+        "report_synthesis",
+        "open_question"
+      ]
     },
     "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "transcript_quote"],
+      "required": [
+        "id",
+        "transcript_quote"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/nonEmptyString" },
-        "transcript_quote": { "$ref": "#/$defs/nonEmptyString" },
-        "timestamp": { "type": "string" }
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "transcript_quote": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "timestamp": {
+          "type": "string"
+        }
       }
     },
     "blockBase": {
       "type": "object",
-      "required": ["id", "type", "title", "claim_type", "evidence_refs"],
+      "required": [
+        "id",
+        "type",
+        "title",
+        "claim_type",
+        "evidence_refs"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/nonEmptyString" },
-        "type": { "$ref": "#/$defs/nonEmptyString" },
-        "title": { "$ref": "#/$defs/nonEmptyString" },
-        "summary": { "type": "string" },
-        "claim_type": { "$ref": "#/$defs/claimType" },
-        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "type": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "claim_type": {
+          "$ref": "#/$defs/claimType"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
       }
     },
     "visualItemBase": {
       "type": "object",
-      "required": ["evidence_refs"],
+      "required": [
+        "evidence_refs"
+      ],
       "properties": {
-        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
       }
     },
     "narrativeBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "paragraphs"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "paragraphs"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "narrative" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "narrative"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "paragraphs": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["text", "evidence_refs"],
+                "required": [
+                  "text",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "text": { "$ref": "#/$defs/nonEmptyString" },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "text": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
@@ -148,32 +290,64 @@
     },
     "processBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "nodes"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "nodes"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "process" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "process"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "nodes": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "allOf": [
-                  { "$ref": "#/$defs/visualItemBase" },
+                  {
+                    "$ref": "#/$defs/visualItemBase"
+                  },
                   {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["label", "evidence_refs"],
+                    "required": [
+                      "label",
+                      "evidence_refs"
+                    ],
                     "properties": {
-                      "label": { "$ref": "#/$defs/nonEmptyString" },
-                      "detail": { "type": "string" },
-                      "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                      "label": {
+                        "$ref": "#/$defs/nonEmptyString"
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "evidence_refs": {
+                        "$ref": "#/$defs/evidenceRefs"
+                      }
                     }
                   }
                 ]
@@ -185,22 +359,46 @@
     },
     "comparisonBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "columns", "rows"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "columns",
+            "rows"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "comparison" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "comparison"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "columns": {
               "type": "array",
               "minItems": 2,
-              "items": { "$ref": "#/$defs/nonEmptyString" }
+              "items": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
             },
             "rows": {
               "type": "array",
@@ -208,15 +406,25 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["label", "values", "evidence_refs"],
+                "required": [
+                  "label",
+                  "values",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "label": { "$ref": "#/$defs/nonEmptyString" },
+                  "label": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
                   "values": {
                     "type": "array",
                     "minItems": 2,
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
@@ -226,30 +434,64 @@
     },
     "controlGapBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "rows"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "rows"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "control-gap" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "control-gap"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "rows": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["control", "observed", "gap", "evidence_refs"],
+                "required": [
+                  "control",
+                  "observed",
+                  "gap",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "control": { "$ref": "#/$defs/nonEmptyString" },
-                  "observed": { "$ref": "#/$defs/nonEmptyString" },
-                  "gap": { "$ref": "#/$defs/nonEmptyString" },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "control": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "observed": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "gap": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
@@ -259,29 +501,59 @@
     },
     "actionsBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "items"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "items"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "actions" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "actions"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "items": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["action", "evidence_refs"],
+                "required": [
+                  "action",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "action": { "$ref": "#/$defs/nonEmptyString" },
-                  "when": { "type": "string" },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "action": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "when": {
+                    "type": "string"
+                  },
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
@@ -291,29 +563,60 @@
     },
     "keyPointsBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "items"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "items"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "key-points" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "key-points"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "items": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["heading", "text", "evidence_refs"],
+                "required": [
+                  "heading",
+                  "text",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "heading": { "$ref": "#/$defs/nonEmptyString" },
-                  "text": { "$ref": "#/$defs/nonEmptyString" },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "heading": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "text": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
@@ -323,35 +626,126 @@
     },
     "foodForThoughtBlock": {
       "allOf": [
-        { "$ref": "#/$defs/blockBase" },
+        {
+          "$ref": "#/$defs/blockBase"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "type", "title", "claim_type", "evidence_refs", "items"],
+          "required": [
+            "id",
+            "type",
+            "title",
+            "claim_type",
+            "evidence_refs",
+            "items"
+          ],
           "properties": {
-            "id": { "$ref": "#/$defs/nonEmptyString" },
-            "type": { "const": "food-for-thought" },
-            "title": { "$ref": "#/$defs/nonEmptyString" },
-            "summary": { "type": "string" },
-            "claim_type": { "$ref": "#/$defs/claimType" },
-            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+            "id": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "type": {
+              "const": "food-for-thought"
+            },
+            "title": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "claim_type": {
+              "$ref": "#/$defs/claimType"
+            },
+            "evidence_refs": {
+              "$ref": "#/$defs/evidenceRefs"
+            },
             "items": {
               "type": "array",
               "minItems": 1,
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["prompt", "evidence_refs"],
+                "required": [
+                  "prompt",
+                  "evidence_refs"
+                ],
                 "properties": {
-                  "prompt": { "$ref": "#/$defs/nonEmptyString" },
-                  "context": { "type": "string" },
-                  "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+                  "prompt": {
+                    "$ref": "#/$defs/nonEmptyString"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "evidence_refs": {
+                    "$ref": "#/$defs/evidenceRefs"
+                  }
                 }
               }
             }
           }
         }
       ]
+    },
+    "briefClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "claim_type",
+        "evidence_refs"
+      ],
+      "properties": {
+        "text": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "claim_type": {
+          "enum": [
+            "speaker_claim",
+            "report_synthesis"
+          ]
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
+      }
+    },
+    "briefTakeaway": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "evidence_refs"
+      ],
+      "properties": {
+        "text": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/evidenceRefs"
+        }
+      }
+    },
+    "brief": {
+      "$comment": "掃讀層。claim 回答「這支影片在吵什麼」，takeaways 是可單獨引用的一句話版；每一項各自帶 evidence_refs，不共用。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim",
+        "takeaways"
+      ],
+      "properties": {
+        "claim": {
+          "$ref": "#/$defs/briefClaim"
+        },
+        "takeaways": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/briefTakeaway"
+          }
+        }
+      }
     }
   }
 }

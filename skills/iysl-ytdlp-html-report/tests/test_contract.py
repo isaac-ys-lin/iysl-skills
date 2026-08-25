@@ -52,7 +52,6 @@ class YtdlpReportContractTest(unittest.TestCase):
         # never an author-specific absolute install path.
         self.assertIn("/path/to/skill/scripts/extract_transcript.mjs", self.skill)
         self.assertIn("/path/to/skill/scripts/transcribe_local_qwen.mjs", self.skill)
-        self.assertIn("/path/to/skill/scripts/render_html.mjs", self.skill)
 
     def test_two_core_principles_present(self):
         self.assertIn("逐字稿是唯一內容來源", self.skill)
@@ -82,12 +81,30 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("只保留一份 final report HTML", self.skill)
         self.assertNotIn("/path/to/kami", self.skill.lower())
 
+        # 交接契約是「不必抄」的介面定義，不是被抄進來的資產，所以它是唯一例外。
+        handoff = ROOT / "references" / "kami-handoff.md"
+        self.assertTrue(handoff.is_file())
         vendored = [
             path.relative_to(ROOT).as_posix()
             for path in ROOT.rglob("*")
-            if path.is_file() and "kami" in path.name.lower()
+            if path.is_file() and "kami" in path.name.lower() and path != handoff
         ]
         self.assertEqual(vendored, [], vendored)
+
+        # 契約只描述介面，不得夾帶 Kami 的樣式或模板。標籤名稱會以「規則」的身分
+        # 出現在散文裡（例如「必須包在 <main> 裡」），那不是夾帶，所以只看真正
+        # 屬於資產的痕跡：DOCTYPE、樣式表、字型宣告。
+        contract = handoff.read_text(encoding="utf-8")
+        for smell in ("<style", "font-family", "@page", "@font-face", "<!doctype"):
+            self.assertNotIn(smell, contract.lower(), smell)
+        for required in (
+            "data-report-section",
+            "data-report-brief",
+            "data-report-chrome",
+            "結構檢查，不是語意檢查",
+            "硬失敗",
+        ):
+            self.assertIn(required, contract, required)
 
     def test_four_reader_sections_named_in_order(self):
         positions = [self.skill.find(name) for name in SECTIONS]
@@ -97,7 +114,8 @@ class YtdlpReportContractTest(unittest.TestCase):
     def test_insufficient_transcript_stops_before_reader_artifacts(self):
         normalized_skill = " ".join(self.skill.split())
         for phrase in (
-            "confirm the transcript can support every required v2 section",
+            "confirm the transcript can support the `brief` and every required v2 section",
+            "If the brief or any required section lacks support",
             "retain the manifest and clean transcript",
             "create no v2 spec, reader report, or verification sidecar",
         ):
@@ -370,78 +388,17 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertIn("不存在的 evidence", rejected.stderr)
             self.assertFalse((invalid_out / "demo123.report.html").exists())
 
-    def test_renderer_keeps_enumerated_sections_as_single_bullet_lists(self):
-        report = """# 內容重述
-
-摘要。
-
-# 洞見
-
-1. 第一點。
-
-1. 第二點。
-
-# food for thoughts
-
-1. 思考提示。
-
-# 可行啟發
-
-1. 行動一。
-
-1. 行動二。
-
-# 驗證與限制
-
-1. /Users/example/private.txt 只能留在 sidecar。
-"""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp = Path(temp_dir)
-            report_path = temp / "report.md"
-            metadata_path = temp / "metadata.json"
-            output_path = temp / "report.html"
-            report_path.write_text(report, encoding="utf-8")
-            metadata_path.write_text(
-                json.dumps(
-                    {
-                        "title": "Test",
-                        "webpage_url": "https://example.com",
-                        "extracted_at": "2026-07-26T08:00:00+08:00",
-                    }
-                ),
-                encoding="utf-8",
-            )
-            subprocess.run(
-                [
-                    "node",
-                    str(ROOT / "scripts" / "render_html.mjs"),
-                    "--report", str(report_path),
-                    "--metadata", str(metadata_path),
-                    "--out", str(output_path),
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            html = output_path.read_text(encoding="utf-8")
-            for section_id in ("summary", "insights", "food", "actions"):
-                section = re.search(rf'<section id="{section_id}".*?</section>', html, re.DOTALL)
-                self.assertIsNotNone(section, section_id)
-                if section_id != "summary":
-                    self.assertIn("<ul>", section.group(0))
-                    self.assertNotIn("<ol>", section.group(0))
-            insights = re.search(r'<section id="insights".*?</section>', html, re.DOTALL).group(0)
-            self.assertEqual(insights.count("<ul>"), 1)
-            self.assertNotIn("驗證與限制", html)
-            self.assertNotIn("/Users/example/private.txt", html)
-            self.assertNotIn("2026-07-26T08:00:00+08:00", html)
-
     def test_v2_schema_fixture_validator_and_dual_renderer(self):
         schema = json.loads(
             (ROOT / "references" / "report-v2.schema.json").read_text(encoding="utf-8")
         )
         fixture = ROOT / "tests" / "fixtures" / "report-v2.valid.json"
-        self.assertEqual(schema["properties"]["version"]["const"], "2.0")
+        self.assertEqual(schema["properties"]["version"]["const"], "2.1")
+        self.assertIn("brief", schema["required"])
+        self.assertEqual(
+            set(schema["$defs"]["briefClaim"]["properties"]["claim_type"]["enum"]),
+            {"speaker_claim", "report_synthesis"},
+        )
         self.assertEqual(
             set(schema["$defs"]["claimType"]["enum"]),
             {"speaker_claim", "report_synthesis", "open_question"},
@@ -704,7 +661,9 @@ class YtdlpReportContractTest(unittest.TestCase):
             )
             leaked = subprocess.run(command, check=False, capture_output=True, text=True)
             self.assertNotEqual(leaked.returncode, 0)
-            self.assertIn("HTML 四章不完整或順序錯誤", leaked.stderr)
+            # 章節識別改用結構化錨點之後，多插一個 h2 不再是章節錯誤；它被擋下來
+            # 的理由是 reader-facing 禁止文字，這才是這個案例真正的缺陷。
+            self.assertIn("HTML 含 reader-facing 禁止文字：驗證與限制", leaked.stderr)
             self.assertIn("reader-facing 禁止文字", leaked.stderr)
 
             for name, injected, expected in (
@@ -921,6 +880,593 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn(r"\<script\>alert(1)\</script\>", markdown)
         self.assertNotIn('<b onclick="alert(2)">', html)
         self.assertNotIn("<em>反思</em>", html)
+
+
+    # --- Section anchor contract -------------------------------------------------
+    # 章節識別的權威是 data-report-section，不是標題文字或標題層級。所有案例
+    # 都走協調器 CLI，因為要證明的是「使用者真的跑起來時會不會被擋下」。
+
+    def _finalize_bundle(self, temp: Path):
+        fixture = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+        spec_path = temp / "spec.json"
+        manifest_path = temp / "manifest.json"
+        out_dir = temp / "out"
+        spec_path.write_text(json.dumps(fixture), encoding="utf-8")
+        manifest_path.write_text(
+            json.dumps({
+                "id": "demo123",
+                "url": "https://www.youtube.com/watch?v=demo123",
+                "resolved_url": "https://www.youtube.com/watch?v=demo123",
+                "metadata": None,
+                "transcript": None,
+                "subtitle": None,
+                "subtitle_status": "available",
+                "prepared_by": "test fixture",
+            }),
+            encoding="utf-8",
+        )
+        finalized = subprocess.run(
+            [
+                "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                "--spec", str(spec_path),
+                "--manifest", str(manifest_path),
+                "--out-dir", str(out_dir),
+            ],
+            check=True, capture_output=True, text=True,
+        )
+        return spec_path, json.loads(finalized.stdout)
+
+    def _revalidate(self, spec_path: Path, bundle: dict, html_path: Path):
+        """把一份外部最終 HTML 送進協調器 CLI，走使用者真正會走的那條路。"""
+        out_dir = html_path.parent / f"out-{html_path.stem}"
+        return subprocess.run(
+            [
+                "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                "--spec", str(spec_path),
+                "--manifest", str(spec_path.parent / "manifest.json"),
+                "--out-dir", str(out_dir),
+                "--html-in", str(html_path),
+                "--presentation-backend", "kami-long-doc",
+            ],
+            check=False, capture_output=True, text=True,
+        )
+
+    def test_section_anchors_are_the_channel_the_validator_reads(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+
+            anchors = re.findall(r'data-report-section="([a-z-]+)"', html)
+            self.assertEqual(anchors, ["recap", "key-points", "food-for-thought", "actions"])
+
+            # 標題層級任意但錨點正確：通過。h2 全部降成 h3 並插入額外小節。
+            free_form = html.replace("<h2>", "<h3>").replace("</h2>", "</h3>")
+            free_form = free_form.replace(
+                '<section id="key-points"',
+                '<h2>編輯自訂的小節</h2><section id="key-points"',
+            )
+            free_form_path = temp / "free-form.html"
+            free_form_path.write_text(free_form, encoding="utf-8")
+            self.assertEqual(self._revalidate(spec_path, bundle, free_form_path).returncode, 0)
+
+            # 標題文字完全正確但缺一個錨點：被拒，且訊息指出缺的是哪一個。
+            stripped = html.replace(' data-report-section="food-for-thought"', "")
+            stripped_path = temp / "stripped.html"
+            stripped_path.write_text(stripped, encoding="utf-8")
+            missing = self._revalidate(spec_path, bundle, stripped_path)
+            self.assertNotEqual(missing.returncode, 0)
+            self.assertIn("缺少章節錨點：food-for-thought", missing.stderr)
+
+            # 錨點順序錯誤：被拒。
+            reordered = html.replace(
+                'data-report-section="recap"', "data-report-section=\"__tmp__\""
+            ).replace(
+                'data-report-section="actions"', 'data-report-section="recap"'
+            ).replace(
+                'data-report-section="__tmp__"', 'data-report-section="actions"'
+            )
+            reordered_path = temp / "reordered.html"
+            reordered_path.write_text(reordered, encoding="utf-8")
+            out_of_order = self._revalidate(spec_path, bundle, reordered_path)
+            self.assertNotEqual(out_of_order.returncode, 0)
+            self.assertIn("章節錨點順序錯誤", out_of_order.stderr)
+
+            # 未定義的錨點值：被拒。
+            unknown = html.replace('data-report-section="actions"', 'data-report-section="appendix"')
+            unknown_path = temp / "unknown.html"
+            unknown_path.write_text(unknown, encoding="utf-8")
+            rejected = self._revalidate(spec_path, bundle, unknown_path)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("未定義的章節錨點：appendix", rejected.stderr)
+
+            # Markdown 端的四章掃描不受影響。
+            markdown = Path(bundle["report_markdown"]).read_text(encoding="utf-8")
+            self.assertEqual(
+                re.findall(r"^## (.+)$", markdown, re.MULTILINE),
+                ["內容重述", "洞見", "food for thoughts", "可行啟發"],
+            )
+
+
+    def test_brief_is_required_and_evidence_governed(self):
+        # 掃讀層受和其他讀者主張同一套證據治理。負向案例全部打在協調器 CLI 上，
+        # 因為要證明的是「使用者真的跑起來時會不會被擋下」。
+        base = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+        manifest = {
+            "id": "demo123",
+            "url": "https://www.youtube.com/watch?v=demo123",
+            "resolved_url": "https://www.youtube.com/watch?v=demo123",
+            "metadata": None,
+            "transcript": None,
+            "subtitle": None,
+            "subtitle_status": "available",
+            "prepared_by": "test fixture",
+        }
+
+        def finalize(mutate):
+            spec = json.loads(json.dumps(base))
+            mutate(spec)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp = Path(temp_dir)
+                spec_path = temp / "spec.json"
+                manifest_path = temp / "manifest.json"
+                out_dir = temp / "out"
+                spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                result = subprocess.run(
+                    [
+                        "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                        "--spec", str(spec_path),
+                        "--manifest", str(manifest_path),
+                        "--out-dir", str(out_dir),
+                    ],
+                    check=False, capture_output=True, text=True,
+                )
+                produced = sorted(path.name for path in out_dir.iterdir()) if out_dir.exists() else []
+                return result, produced
+
+        ok, produced = finalize(lambda spec: None)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        self.assertTrue(produced)
+
+        def drop_brief(spec):
+            del spec["brief"]
+
+        missing, produced = finalize(drop_brief)
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("brief", missing.stderr)
+        self.assertEqual(produced, [], "被 gate 擋下時不得留下任何交付物")
+
+        def too_few(spec):
+            spec["brief"]["takeaways"] = spec["brief"]["takeaways"][:2]
+
+        def too_many(spec):
+            extra = json.loads(json.dumps(spec["brief"]["takeaways"][0]))
+            spec["brief"]["takeaways"] = spec["brief"]["takeaways"] + [extra, extra]
+
+        for mutate in (too_few, too_many):
+            rejected, _ = finalize(mutate)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("$.brief.takeaways 必須有三到四項", rejected.stderr)
+
+        def claim_without_evidence(spec):
+            spec["brief"]["claim"]["evidence_refs"] = []
+
+        def takeaway_without_evidence(spec):
+            spec["brief"]["takeaways"][1]["evidence_refs"] = []
+
+        for mutate in (claim_without_evidence, takeaway_without_evidence):
+            rejected, _ = finalize(mutate)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("evidence ref", rejected.stderr)
+
+        def dangling_evidence(spec):
+            spec["brief"]["claim"]["evidence_refs"] = ["E-does-not-exist"]
+
+        dangling, _ = finalize(dangling_evidence)
+        self.assertNotEqual(dangling.returncode, 0)
+        self.assertIn("指向不存在的 evidence", dangling.stderr)
+
+        def open_question_claim(spec):
+            spec["brief"]["claim"]["claim_type"] = "open_question"
+
+        rejected, _ = finalize(open_question_claim)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("$.brief.claim.claim_type", rejected.stderr)
+
+        def synthesis_claim(spec):
+            spec["brief"]["claim"]["claim_type"] = "report_synthesis"
+
+        accepted, _ = finalize(synthesis_claim)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+        def legacy_version(spec):
+            spec["version"] = "2.0"
+
+        legacy, _ = finalize(legacy_version)
+        self.assertNotEqual(legacy.returncode, 0)
+        self.assertIn("$.version 必須是 2.1", legacy.stderr)
+
+
+    def test_undeclared_reader_regions_are_violations_and_chrome_must_be_enumerated(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+
+            # 保底路徑自己的輸出通過：它的 cover 已宣告，四章都有錨點。
+            baseline_path = temp / "baseline.html"
+            baseline_path.write_text(html, encoding="utf-8")
+            self.assertEqual(self._revalidate(spec_path, bundle, baseline_path).returncode, 0)
+
+            # 憑空多出來的一整段讀者內容：沒有錨點也沒有宣告，被擋下。
+            injected = html.replace(
+                "</main>",
+                "<section><h2>編輯補充</h2><p>逐字稿裡沒有的一段話。</p></section></main>",
+            )
+            injected_path = temp / "injected.html"
+            injected_path.write_text(injected, encoding="utf-8")
+            rejected = self._revalidate(spec_path, bundle, injected_path)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("沒有 spec 錨點也沒有 chrome 宣告", rejected.stderr)
+
+            # 同一段宣告成列舉內的 chrome：通過。
+            for kind in ("cover", "toc", "running-head"):
+                declared = html.replace(
+                    "</main>",
+                    f'<nav data-report-chrome="{kind}"><p>目錄</p></nav></main>',
+                )
+                declared_path = temp / f"declared-{kind}.html"
+                declared_path.write_text(declared, encoding="utf-8")
+                self.assertEqual(
+                    self._revalidate(spec_path, bundle, declared_path).returncode, 0, kind
+                )
+
+            # 列舉之外的宣告值：同樣被擋下，宣告本身不是通行證。
+            bogus = html.replace(
+                "</main>",
+                '<aside data-report-chrome="sidebar"><p>補充</p></aside></main>',
+            )
+            bogus_path = temp / "bogus.html"
+            bogus_path.write_text(bogus, encoding="utf-8")
+            bogus_result = self._revalidate(spec_path, bundle, bogus_path)
+            self.assertNotEqual(bogus_result.returncode, 0)
+            self.assertIn("chrome 宣告未定義：sidebar", bogus_result.stderr)
+
+            # 兩種宣告不能並存：一個區塊要嘛回指 spec，要嘛承認自己沒有證據。
+            both = html.replace(
+                'data-report-section="recap"',
+                'data-report-section="recap" data-report-chrome="cover"',
+                1,
+            )
+            self.assertNotEqual(both, html, "測試字串沒有命中，等於什麼都沒驗到")
+            both_path = temp / "both.html"
+            both_path.write_text(both, encoding="utf-8")
+            both_result = self._revalidate(spec_path, bundle, both_path)
+            self.assertNotEqual(both_result.returncode, 0)
+            self.assertIn("同時宣告", both_result.stderr)
+
+
+    def test_brief_appears_in_both_reader_outputs_and_is_not_a_fifth_section(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            spec = json.loads(spec_path.read_text(encoding="utf-8"))
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+            markdown = Path(bundle["report_markdown"]).read_text(encoding="utf-8")
+
+            claim = spec["brief"]["claim"]["text"]
+            takeaways = [item["text"] for item in spec["brief"]["takeaways"]]
+
+            for text in [claim, *takeaways]:
+                self.assertIn(text, markdown)
+                self.assertIn(text, html)
+
+            # Markdown 的 brief 不使用二級標題，四章掃描仍恰好四章。
+            self.assertEqual(
+                re.findall(r"^## (.+)$", markdown, re.MULTILINE),
+                ["內容重述", "洞見", "food for thoughts", "可行啟發"],
+            )
+            self.assertLess(markdown.index(claim), markdown.index("## 內容重述"))
+
+            # HTML 的 brief 沒有標題，帶自己的錨點，且位於四章之前。
+            brief_region = re.search(r'<section[^>]*data-report-brief[^>]*>(.*?)</section>', html, re.DOTALL)
+            self.assertIsNotNone(brief_region)
+            self.assertNotRegex(brief_region.group(1), r"<h[1-6]\b")
+            self.assertEqual(len(re.findall(r"data-report-brief\b", html)), 1)
+            self.assertLess(
+                html.index("data-report-brief"),
+                html.index('data-report-section="recap"'),
+            )
+
+            # brief 缺席、重複、或落在四章之後，三種情況各自被拒。
+            cases = {
+                "缺少 brief 掃讀層": re.sub(
+                    r'<section[^>]*data-report-brief[^>]*>.*?</section>', "", html, flags=re.DOTALL
+                ),
+                "必須恰好一個": html.replace(
+                    "<section class=\"report-brief\" data-report-brief>",
+                    "<section class=\"report-brief\" data-report-brief></section>"
+                    "<section class=\"report-brief\" data-report-brief>",
+                    1,
+                ),
+            }
+            moved = re.search(r'<section[^>]*data-report-brief[^>]*>.*?</section>', html, re.DOTALL).group(0)
+            cases["必須位於四章之前"] = html.replace(moved, "").replace("</main>", moved + "</main>")
+
+            for expected, mutated in cases.items():
+                path = temp / f"case-{abs(hash(expected))}.html"
+                path.write_text(mutated, encoding="utf-8")
+                result = self._revalidate(spec_path, bundle, path)
+                self.assertNotEqual(result.returncode, 0, expected)
+                self.assertIn(expected, result.stderr)
+
+
+    def test_external_final_html_is_the_validated_deliverable_and_failure_is_hard(self):
+        # 交給讀者的那一份就是被驗的那一份；驗不過就硬失敗，不偷偷退回內建。
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, baseline = self._finalize_bundle(temp)
+            manifest_path = temp / "manifest.json"
+            good_html = temp / "external-ok.html"
+            good_html.write_text(
+                Path(baseline["report_html"]).read_text(encoding="utf-8"), encoding="utf-8"
+            )
+
+            def finalize(out_name, *extra):
+                out_dir = temp / out_name
+                result = subprocess.run(
+                    [
+                        "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                        "--spec", str(spec_path),
+                        "--manifest", str(manifest_path),
+                        "--out-dir", str(out_dir),
+                        *extra,
+                    ],
+                    check=False, capture_output=True, text=True,
+                )
+                produced = sorted(path.name for path in out_dir.iterdir()) if out_dir.exists() else []
+                return result, out_dir, produced
+
+            accepted, out_dir, produced = finalize(
+                "external", "--html-in", str(good_html), "--presentation-backend", "kami-long-doc"
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            self.assertIn("demo123.report.html", produced)
+            # 交付的 HTML 逐字等於外部那一份，沒有被重新渲染過。
+            self.assertEqual(
+                (out_dir / "demo123.report.html").read_text(encoding="utf-8"),
+                good_html.read_text(encoding="utf-8"),
+            )
+            sidecar = (out_dir / "demo123.verification.md").read_text(encoding="utf-8")
+            self.assertIn("presentation_backend: kami-long-doc", sidecar)
+            self.assertIn("presentation_fallback_reason: not-applicable", sidecar)
+
+            bad_html = temp / "external-bad.html"
+            bad_html.write_text(
+                good_html.read_text(encoding="utf-8").replace(' data-report-section="actions"', ""),
+                encoding="utf-8",
+            )
+            rejected, _, produced = finalize(
+                "rejected", "--html-in", str(bad_html), "--presentation-backend", "kami-long-doc"
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("缺少章節錨點：actions", rejected.stderr)
+            self.assertNotIn(
+                "demo123.report.html", produced,
+                "外部出稿驗證失敗時不得留下任何 HTML，尤其不得偷偷退回內建",
+            )
+
+            missing_backend, _, _ = finalize("no-backend", "--html-in", str(good_html))
+            self.assertNotEqual(missing_backend.returncode, 0)
+            self.assertIn("必須以 --presentation-backend 指明", missing_backend.stderr)
+
+            mislabelled, _, _ = finalize(
+                "mislabelled", "--presentation-backend", "kami-long-doc"
+            )
+            self.assertNotEqual(mislabelled.returncode, 0)
+            self.assertIn("必須是 built-in-v2", mislabelled.stderr)
+
+            # 保底路徑要說清楚是哪一種：Kami 不可用，還是這次沒選 Kami。
+            for reason in ("kami-unavailable", "kami-not-selected"):
+                ok, out_dir, produced = finalize(f"fallback-{reason}", "--fallback-reason", reason)
+                self.assertEqual(ok.returncode, 0, ok.stderr)
+                self.assertIn("demo123.report.html", produced)
+                sidecar = (out_dir / "demo123.verification.md").read_text(encoding="utf-8")
+                self.assertIn("presentation_backend: built-in-v2", sidecar)
+                self.assertIn(f"presentation_fallback_reason: {reason}", sidecar)
+
+            bogus_reason, _, _ = finalize("bogus-reason", "--fallback-reason", "whatever")
+            self.assertNotEqual(bogus_reason.returncode, 0)
+            self.assertIn("kami-unavailable 或 kami-not-selected", bogus_reason.stderr)
+
+
+    def test_declaration_cannot_be_forged_and_bare_prose_cannot_slip_in(self):
+        # 這些是「排版器偷偷多寫內容」的實際手法。每一種都必須被擋下，否則
+        # 「沒有錨點就是違規」只是一句話。
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+
+            evasions = {
+                "comment-anchor": html.replace(
+                    'data-report-section="actions"', 'data-report-chrome="running-head"'
+                ).replace("</main>", '<!-- data-report-section="actions" --></main>'),
+                "forged-declaration": html.replace(
+                    "</main>",
+                    "<section title='data-report-chrome=\"cover\"'><p>捏造。</p></section></main>",
+                ),
+                "bare-paragraph": html.replace("</main>", "<p>逐字稿沒有的一段。</p></main>"),
+                "bare-div": html.replace("</main>", "<div><p>捏造。</p></div></main>"),
+                "table-of-invented-facts": html.replace(
+                    "</main>", "<table><tr><td>捏造數字</td></tr></table></main>"
+                ),
+                "prose-after-main": html.replace("</body>", "<p>捏造尾聲。</p></body>"),
+            }
+            for name, mutated in evasions.items():
+                path = temp / f"evade-{name}.html"
+                path.write_text(mutated, encoding="utf-8")
+                result = self._revalidate(spec_path, bundle, path)
+                self.assertNotEqual(result.returncode, 0, f"{name} 沒有被擋下")
+
+            # 單引號的合法宣告不該被誤殺——它是排版器最容易踩到的陷阱。
+            single_quoted = temp / "single-quoted.html"
+            single_quoted.write_text(
+                html.replace('data-report-chrome="cover"', "data-report-chrome='cover'"),
+                encoding="utf-8",
+            )
+            self.assertEqual(self._revalidate(spec_path, bundle, single_quoted).returncode, 0)
+
+    def test_a_failed_run_leaves_no_deliverable_behind(self):
+        # sidecar 的 Command Evidence 宣稱每一關都過了。驗證沒過卻把它留在
+        # out-dir，等於留下一份替失敗背書的紀錄。
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+            out_dir = Path(bundle["report_html"]).parent
+            self.assertTrue(sorted(path.name for path in out_dir.iterdir()))
+
+            broken = temp / "broken.html"
+            broken.write_text(html.replace(' data-report-section="actions"', ""), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                    "--spec", str(spec_path),
+                    "--manifest", str(temp / "manifest.json"),
+                    "--out-dir", str(out_dir),
+                    "--html-in", str(broken),
+                    "--presentation-backend", "kami-long-doc",
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("缺少章節錨點：actions", result.stderr)
+            self.assertEqual(
+                sorted(path.name for path in out_dir.iterdir()), [],
+                "失敗的執行不得留下任何交付物，包括上一次執行的殘骸",
+            )
+
+    def test_sidecar_cannot_claim_a_backend_or_a_fallback_that_did_not_happen(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            external = temp / "external.html"
+            external.write_text(
+                Path(bundle["report_html"]).read_text(encoding="utf-8"), encoding="utf-8"
+            )
+
+            def finalize(*extra):
+                return subprocess.run(
+                    [
+                        "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                        "--spec", str(spec_path),
+                        "--manifest", str(temp / "manifest.json"),
+                        "--out-dir", str(temp / "guard"),
+                        "--html-in", str(external),
+                        *extra,
+                    ],
+                    check=False, capture_output=True, text=True,
+                )
+
+            mislabelled = finalize("--presentation-backend", "built-in-v2")
+            self.assertNotEqual(mislabelled.returncode, 0)
+            self.assertIn("不能標成 built-in-v2", mislabelled.stderr)
+
+            fake_fallback = finalize(
+                "--presentation-backend", "kami-long-doc",
+                "--fallback-reason", "kami-unavailable",
+            )
+            self.assertNotEqual(fake_fallback.returncode, 0)
+            self.assertIn("不能宣稱 fallback 發生過", fake_fallback.stderr)
+
+    def test_rendered_html_has_no_duplicate_ids(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+            ids = re.findall(r'\sid\s*=\s*"([^"]*)"', html)
+            self.assertEqual(sorted(ids), sorted(set(ids)), "重複的 id 讓片段連結指向不明")
+
+            collided = temp / "collided.html"
+            collided.write_text(html.replace('id="section-recap"', 'id="workflow"', 1), encoding="utf-8")
+            result = self._revalidate(spec_path, bundle, collided)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("重複的 id", result.stderr)
+
+    def test_brief_takeaways_are_not_verbatim_copies_of_block_text(self):
+        # 逐字重複會讓「brief 內容有沒有出現在輸出裡」失效：文字在別處也找得到，
+        # 所以整個掃讀層被丟掉也驗得過。
+        spec = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+        block_text = json.dumps(spec["blocks"], ensure_ascii=False)
+        for takeaway in spec["brief"]["takeaways"]:
+            self.assertNotIn(takeaway["text"], block_text, takeaway["text"])
+        self.assertNotIn(spec["brief"]["claim"]["text"], block_text)
+
+
+    def test_block_content_must_sit_in_its_own_section(self):
+        # 錯置不會被「文字有沒有出現在文件裡」抓到，但 Markdown 版是照真正的
+        # 對應渲染的，錯置會讓兩份交付物講不同的故事。
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+
+            actions = re.search(
+                r'(<section[^>]*data-report-section="actions"[^>]*>)(.*?)(</section>)', html, re.S
+            )
+            self.assertIsNotNone(actions)
+            moved = html.replace(
+                actions.group(0),
+                actions.group(1) + "<article><header><h3>佔位</h3></header></article>" + actions.group(3),
+            ).replace("</section>", actions.group(2) + "</section>", 1)
+            self.assertNotEqual(moved, html)
+
+            path = temp / "misfiled.html"
+            path.write_text(moved, encoding="utf-8")
+            result = self._revalidate(spec_path, bundle, path)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("放錯章節，它屬於 actions", result.stderr)
+
+    def test_structural_gate_names_what_is_missing(self):
+        # SKILL.md 承諾失敗時說得出缺什麼。最常見的失敗如果只回一句
+        # "check failed"，那個承諾就是空的。
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+
+            cases = {
+                "缺少 <main> 區塊": html.replace("<main", "<div").replace("</main>", "</div>"),
+                "含有 <script>": html.replace("</main>", "</main><script>void 0;</script>"),
+            }
+            for expected, mutated in cases.items():
+                path = temp / f"structural-{abs(hash(expected))}.html"
+                path.write_text(mutated, encoding="utf-8")
+                result = self._revalidate(spec_path, bundle, path)
+                self.assertNotEqual(result.returncode, 0, expected)
+                self.assertIn(expected, result.stderr)
+
+    def test_handoff_contract_states_every_rule_the_code_enforces(self):
+        # 契約與程式碼各說各話，比契約不完整更糟：排版器照做卻失敗。
+        contract = (ROOT / "references" / "kami-handoff.md").read_text(encoding="utf-8")
+        for rule in (
+            "<main>",
+            "<script>",
+            "雙引號或單引號都可以",
+            "不能重複",
+            "章節歸屬",
+            "narrative",
+            "絕對本機路徑",
+        ):
+            self.assertIn(rule, contract, rule)
 
     def test_declared_relative_resources_exist(self):
         pattern = re.compile(r"(?<![A-Za-z0-9_.-])((?:references|scripts|assets)/[A-Za-z0-9_./-]+)")

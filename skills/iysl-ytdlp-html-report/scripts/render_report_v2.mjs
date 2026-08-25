@@ -40,9 +40,9 @@ const escapeMarkdown = (value) => String(value ?? "")
   .replace(/([`*_[\]<>])/g, "\\$1");
 const escapeMarkdownTable = (value) => escapeMarkdown(value).replace(/\|/g, "\\|");
 const REPORT_SECTIONS = [
-  { id: "summary", title: "內容重述", types: new Set(["narrative", "process", "comparison", "control-gap"]) },
-  { id: "insights", title: "洞見", types: new Set(["key-points"]) },
-  { id: "food", title: "food for thoughts", types: new Set(["food-for-thought"]) },
+  { id: "recap", title: "內容重述", types: new Set(["narrative", "process", "comparison", "control-gap"]) },
+  { id: "key-points", title: "洞見", types: new Set(["key-points"]) },
+  { id: "food-for-thought", title: "food for thoughts", types: new Set(["food-for-thought"]) },
   { id: "actions", title: "可行啟發", types: new Set(["actions"]) },
 ];
 
@@ -102,11 +102,18 @@ if (markdownOut) {
     const blocks = spec.blocks.filter((block) => section.types.has(block.type));
     return `## ${section.title}\n\n${blocks.map(blockMarkdown).join("\n\n")}`;
   }).join("\n\n");
+  const briefMarkdown = [
+    escapeMarkdown(spec.brief.claim.text),
+    "",
+    ...spec.brief.takeaways.map((takeaway) => `- **${escapeMarkdown(takeaway.text)}**`),
+  ].join("\n");
   const markdown = [
     `# ${escapeMarkdown(spec.title)}`,
     spec.subtitle ? `\n${escapeMarkdown(spec.subtitle)}` : "",
     "",
     `來源：${spec.source.url}`,
+    "",
+    briefMarkdown,
     "",
     markdownSections,
     "",
@@ -126,9 +133,17 @@ if (htmlOut) {
     thumbnailHtml: spec.source.thumbnail_url
       ? `<a class="media-anchor" href="${escapeHtml(spec.source.url)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(spec.source.thumbnail_url)}" alt="${escapeHtml(spec.title)} 的影片縮圖"></a>`
       : "",
+    briefHtml: [
+      '<section class="report-brief" data-report-brief>',
+      `<p class="brief-claim">${escapeHtml(spec.brief.claim.text)}</p>`,
+      "<ul class=\"brief-takeaways\">",
+      ...spec.brief.takeaways.map((takeaway) => `<li>${escapeHtml(takeaway.text)}</li>`),
+      "</ul>",
+      "</section>",
+    ].join(""),
     sectionsHtml: REPORT_SECTIONS.map((section) => {
       const blocks = spec.blocks.filter((block) => section.types.has(block.type));
-      return `<section id="${section.id}" class="report-section"><header><h2>${section.title}</h2></header>${blocks.map(blockHtml).join("\n")}</section>`;
+      return `<section id="section-${section.id}" class="report-section" data-report-section="${section.id}"><header><h2>${section.title}</h2></header>${blocks.map(blockHtml).join("\n")}</section>`;
     }).join("\n"),
   };
   for (const [key, value] of Object.entries(replacements)) template = template.replaceAll(`{{${key}}}`, value);

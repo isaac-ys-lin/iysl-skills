@@ -8,7 +8,6 @@
 - Watch-equivalent 內容分流
 - 內容輸出與去 AI 味
 - v2 structured report contract
-- v1 四區塊相容格式
 - 通用品質、交付自檢與禁止內容
 
 ## 讀者假設
@@ -72,14 +71,24 @@
 
 ## v2 structured report contract
 
-預設以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。四個 reader-facing 章節固定依序為 `內容重述`、`洞見`、`food for thoughts`、`可行啟發`。
+以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。
+
+報告是兩層閱讀。上層是 `brief`：一句 claim 回答「這支影片在吵什麼、值不值得往下讀」，加三到四個可單獨引用的 takeaways。claim 的 claim type 只能是 `speaker_claim` 或 `report_synthesis`；claim 與每個 takeaway 各自帶 `evidence_refs`，不共用一組，因為 takeaway 是讀者最可能單獨引用的一句。
+
+下層是四個 reader-facing 章節，固定依序為 `內容重述`、`洞見`、`food for thoughts`、`可行啟發`。`brief` 不是第五章：四章是理解 → 分析 → 反思 → 行動的認知流，`brief` 不參與那個流程。
+
+takeaway 允許和 `key-points` 講同一件事，但措辭必須不同：上層是一句話版，下層是帶脈絡版。
 
 ### Evidence sufficiency gate
 
-建立 v2 spec 前，先把逐字稿證據映射到 schema 要求的最小內容：至少一個
-`內容重述` block、一個 `key-points` item、一個 `food-for-thought` item，
-以及一個 `actions` item；每一項都必須有可回指 clean transcript 的
-`evidence_refs`。這是 evidence gate，不使用字數或片長作代理門檻。
+建立 spec 前，先把逐字稿證據映射到 schema 要求的最小內容：一個 `brief`
+（claim 加三到四個 takeaways）、至少一個 `內容重述` block、一個 `key-points`
+item、一個 `food-for-thought` item，以及一個 `actions` item；每一項都必須有
+可回指 clean transcript 的 `evidence_refs`。這是 evidence gate，不使用字數或
+片長作代理門檻。
+
+`brief` 撐不起來時同樣停止，不得只產出四章。掃讀層是讀者最先看、也最可能
+只看的一層，讓它可選等於讓兩層閱讀可選。
 
 若任何必填項沒有逐字稿證據，停止於 source preparation。保留 source
 manifest 與 clean transcript，在最終回覆指出缺少支撐的 section；不要建立
@@ -126,28 +135,6 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 - 預設 acceptance surface 是 desktop browser；不預設執行 mobile viewport 或 screenshot QA。
 - 不顯示字幕/ASR、未檢視畫面、轉錄品質或其他來源限制；全部寫進 verification sidecar。
 
-## v1 四區塊相容格式
-
-讀者沒看過影片，報告順序遵循 **理解 → 分析 → 反思 → 行動** 的認知流：
-
-```markdown
-# 內容重述
-
-忠於逐字稿，但重新規劃內容順序，把主線、例子、轉折、比較與結論講得更清楚。讀者還沒看過影片，這個區塊先建立脈絡。這不是短摘要，也不是逐句改寫。
-
-## 洞見
-
-5-8 點以逐字稿為根據的分析觀點。每一點都要包含「觀點」與「為什麼重要」。不要只複述講者說了什麼。
-
-## food for thoughts
-
-3-6 點短句。這裡放思考提示、內容張力、矛盾、值得帶走的問題或記憶點。每一點應該像可以拿去想一整天的 prompt。
-
-## 可行啟發
-
-整理可以實際採用的啟發，可能是工作方式、產品判斷、研究方法、寫作、決策或團隊流程。
-```
-
 ## 區塊設計邏輯
 
 `內容重述` 回答：「影片講了什麼？主線怎麼展開？」
@@ -160,7 +147,9 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 
 ## 各區塊品質約束
 
-### 內容重述
+以下約束針對 v2 spec 的各類 block。這裡的數量是**品質目標**，evidence sufficiency gate 的最小必要是另一回事：gate 決定「素材夠不夠產出報告」，品質目標決定「產得出來的報告好不好」。長度與數量是內容判斷，Markdown 與 HTML 的呈現形式由渲染器決定，不在這裡規範。
+
+### narrative（內容重述）
 
 - 長度約 clean transcript 的 15-25%，依影片密度調整。影片 < 10 分鐘時可以較短，但仍需重建脈絡。
 - 重建主線、例子、轉折、比較與結論；可以重排順序，但不能加入逐字稿沒有的新事實。
@@ -169,27 +158,28 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 ❌「講者討論了 AI 的發展趨勢和挑戰。」（空洞，讀者不知道討論了什麼）
 ✅「講者用印刷術類比 AI 的衝擊，主張瓶頸在分發而非生產——他舉了報紙編輯室的例子⋯⋯」
 
-### 洞見
+### key-points（洞見）
 
-- 5-8 點。每點包含「觀點」+「為什麼重要」。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
+- 三到五點真正影響理解的重點。每點用 heading 先交付判斷，再用 text 保留具體內容與「為什麼重要」。
 - 需要時用一句關鍵引述或時間標記支撐，不需要每點都引。
 - 分析的是「逐字稿透露了什麼判斷和邏輯」，不是「講者說了什麼」。
 
 ❌「講者認為 AI 會改變世界。」（複述，不是洞見）
 ✅「講者把 AI 的衝擊類比成印刷術而非電力，暗示他認為瓶頸在分發而非生產——這和主流『算力即一切』的論述相反，值得注意他的推論前提。」
 
-### food for thoughts
+### food-for-thought
 
-- 3-6 點。每點應該像一個可以想一整天的 prompt。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
+- 一到三題實質張力。每題應該像一個可以想一整天的 prompt。
 - 挖矛盾、張力、未回答的問題、隱含的取捨。
-- 不是摘要 bullet，不是洞見的重複。
+- 每題不能靠重述影片直接回答，答案應該會改變決策、流程或控制設計。
+- 不是摘要，也不是 key-points 的重複。
 
 ❌「這支影片談了 AI 的未來，值得深思。」（太泛，沒有張力）
 ✅「如果訓練成本降到接近零，品質控制的價值會上升還是消失？」
 
-### 可行啟發
+### actions
 
-- 至少 3 點。每點需要有具體場景或判斷條件。使用扁平 Markdown bullet（`- `），不要使用編號；項目之間不要插入空白段落或巢狀清單。
+- 至少三點。每點需要有具體場景或判斷條件，可用 `when` 限定適用場景。
 - 可操作 = 讀者看完知道「在什麼情境下做什麼」。
 
 ❌「要持續學習新技術。」（抽象價值觀，不是啟發）

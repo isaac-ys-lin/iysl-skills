@@ -10,6 +10,8 @@ const REQUIRED_READER_SECTIONS = [
   ["可行啟發", new Set(["actions"])],
 ];
 const CLAIM_TYPES = new Set(["speaker_claim", "report_synthesis", "open_question"]);
+// brief 的 claim 是一句判讀，不是懸而未決的問題，所以不接受 open_question。
+const BRIEF_CLAIM_TYPES = new Set(["speaker_claim", "report_synthesis"]);
 const TRANSCRIPT_KINDS = new Set(["native_captions", "auto_captions", "audio_asr"]);
 const LOCAL_PATH = /(?:file:\/\/|(?:^|[\s"'(])\/(?!\/)\S+|(?:^|[\s"'(])[A-Za-z]:[\\/]\S*)/i;
 
@@ -98,11 +100,11 @@ function validateItems(items, at, allowed, required, evidenceIds, errors) {
 
 export function validateReportV2(spec) {
   const errors = [];
-  const rootAllowed = ["version", "title", "subtitle", "language", "source", "evidence", "blocks"];
-  if (!requireKeys(spec, rootAllowed, ["version", "title", "source", "evidence", "blocks"], "$", errors)) {
+  const rootAllowed = ["version", "title", "subtitle", "language", "source", "brief", "evidence", "blocks"];
+  if (!requireKeys(spec, rootAllowed, ["version", "title", "source", "brief", "evidence", "blocks"], "$", errors)) {
     return errors;
   }
-  if (spec.version !== "2.0") errors.push("$.version 必須是 2.0");
+  if (spec.version !== "2.1") errors.push("$.version 必須是 2.1");
   if (!hasText(spec.title)) errors.push("$.title 必須是非空字串");
   if ("subtitle" in spec && typeof spec.subtitle !== "string") errors.push("$.subtitle 必須是字串");
   if ("language" in spec && spec.language !== "zh-Hant") errors.push("$.language 必須是 zh-Hant");
@@ -133,6 +135,25 @@ export function validateReportV2(spec) {
       if (evidenceIds.has(item.id)) errors.push(`${at}.id 重複：${item.id}`);
       evidenceIds.add(item.id);
     });
+  }
+
+  // 掃讀層和其他讀者主張受同一套證據治理：讀者最先看、也最可能只看的那一層，
+  // 如果是唯一不受 evidence gate 管的一層，gate 就形同虛設。
+  if (requireKeys(spec.brief, ["claim", "takeaways"], ["claim", "takeaways"], "$.brief", errors)) {
+    if (requireKeys(spec.brief.claim, ["text", "claim_type", "evidence_refs"], ["text", "claim_type", "evidence_refs"], "$.brief.claim", errors)) {
+      if (!hasText(spec.brief.claim.text)) errors.push("$.brief.claim.text 必須是非空字串");
+      if (!BRIEF_CLAIM_TYPES.has(spec.brief.claim.claim_type)) {
+        errors.push("$.brief.claim.claim_type 必須是 speaker_claim 或 report_synthesis");
+      }
+      validateRefs(spec.brief.claim.evidence_refs, "$.brief.claim.evidence_refs", evidenceIds, errors);
+    }
+    if (!Array.isArray(spec.brief.takeaways)) {
+      errors.push("$.brief.takeaways 必須是陣列");
+    } else if (spec.brief.takeaways.length < 3 || spec.brief.takeaways.length > 4) {
+      errors.push("$.brief.takeaways 必須有三到四項");
+    } else {
+      validateItems(spec.brief.takeaways, "$.brief.takeaways", ["text", "evidence_refs"], ["text", "evidence_refs"], evidenceIds, errors);
+    }
   }
 
   if (!Array.isArray(spec.blocks) || spec.blocks.length === 0) {
