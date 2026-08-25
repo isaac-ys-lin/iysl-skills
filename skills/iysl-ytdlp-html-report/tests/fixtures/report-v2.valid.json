@@ -1,5 +1,5 @@
 {
-  "version": "2.1",
+  "version": "2.2",
   "title": "測試影片：從流程到行動",
   "subtitle": "把影片主線、關鍵關係與反思整理在一起",
   "language": "zh-Hant",
@@ -11,6 +11,7 @@
     "thumbnail_url": "https://i.ytimg.com/vi/demo123/maxresdefault.jpg",
     "transcript_kind": "native_captions"
   },
+  "reading_minutes": 2,
   "brief": {
     "claim": {
       "text": "工具選擇要排在問題界定與基準之後，否則比較出來的效率是假的。",
@@ -171,7 +172,7 @@
     {
       "id": "key-points",
       "type": "key-points",
-      "title": "先抓住這三件事",
+      "title": "順序、成本、紀錄，三件事決定比較有沒有意義",
       "claim_type": "report_synthesis",
       "evidence_refs": [
         "E1",
@@ -205,7 +206,7 @@
     {
       "id": "reflection",
       "type": "food-for-thought",
-      "title": "Food for thoughts",
+      "title": "還沒被回答的兩個問題",
       "claim_type": "open_question",
       "evidence_refs": [
         "E2",

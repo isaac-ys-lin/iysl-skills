@@ -393,7 +393,8 @@ class YtdlpReportContractTest(unittest.TestCase):
             (ROOT / "references" / "report-v2.schema.json").read_text(encoding="utf-8")
         )
         fixture = ROOT / "tests" / "fixtures" / "report-v2.valid.json"
-        self.assertEqual(schema["properties"]["version"]["const"], "2.1")
+        self.assertEqual(schema["properties"]["version"]["const"], "2.2")
+        self.assertIn("reading_minutes", schema["required"])
         self.assertIn("brief", schema["required"])
         self.assertEqual(
             set(schema["$defs"]["briefClaim"]["properties"]["claim_type"]["enum"]),
@@ -450,8 +451,8 @@ class YtdlpReportContractTest(unittest.TestCase):
                 "方案取捨",
                 "控制與缺口",
                 "下一步",
-                "先抓住這三件事",
-                "Food for thoughts",
+                "順序、成本、紀錄，三件事決定比較有沒有意義",
+                "還沒被回答的兩個問題",
             ):
                 self.assertIn(heading, markdown)
                 self.assertIn(heading, html)
@@ -555,6 +556,15 @@ class YtdlpReportContractTest(unittest.TestCase):
             spec_path = temp / "narrative.json"
             markdown_path = temp / "report.md"
             html_path = temp / "report.html"
+            spec_path.write_text(json.dumps(fixture), encoding="utf-8")
+            # 改動 block 會改變讀者文字長度，reading_minutes 必須跟著重算。
+            fixture["reading_minutes"] = int(subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "validate_report_v2.mjs"),
+                    str(spec_path), "--print-reading-minutes",
+                ],
+                check=True, capture_output=True, text=True,
+            ).stdout.strip())
             spec_path.write_text(json.dumps(fixture), encoding="utf-8")
             subprocess.run(
                 ["node", str(ROOT / "scripts" / "validate_report_v2.mjs"), str(spec_path)],
@@ -1089,7 +1099,7 @@ class YtdlpReportContractTest(unittest.TestCase):
 
         legacy, _ = finalize(legacy_version)
         self.assertNotEqual(legacy.returncode, 0)
-        self.assertIn("$.version 必須是 2.1", legacy.stderr)
+        self.assertIn("$.version 必須是 2.2", legacy.stderr)
 
 
     def test_undeclared_reader_regions_are_violations_and_chrome_must_be_enumerated(self):
@@ -1498,6 +1508,64 @@ class YtdlpReportContractTest(unittest.TestCase):
             cap = case["expected"].get("max_subagents")
             if cap is not None:
                 self.assertGreaterEqual(cap, 1, case["id"])
+
+
+    def test_style_and_layout_contract_is_stated_and_enforced_where_it_can_be(self):
+        # 風格有兩種：能被機器擋的（標題撞名、閱讀時間造假）與只能寫成契約的
+        # （版面節奏）。兩種都要有，而且要分清楚哪一種是哪一種。
+        contract = (ROOT / "references" / "kami-handoff.md").read_text(encoding="utf-8")
+        for rule in ("## 版面契約", "封面", "表格保持表格", "不要加互動", "reading_minutes"):
+            self.assertIn(rule, contract, rule)
+
+        structure = (ROOT / "references" / "report-structure.md").read_text(encoding="utf-8")
+        for rule in ("三層閱讀深度", "heading 必須自帶判斷，不能是分類詞", "不可與它所屬章節同名"):
+            self.assertIn(rule, structure, rule)
+
+    def test_block_title_may_not_echo_its_section_and_reading_time_may_not_be_invented(self):
+        base = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+
+        def validate(mutate):
+            spec = json.loads(json.dumps(base))
+            mutate(spec)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "spec.json"
+                path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+                return subprocess.run(
+                    ["node", str(ROOT / "scripts" / "validate_report_v2.mjs"), str(path)],
+                    check=False, capture_output=True, text=True,
+                )
+
+        self.assertEqual(validate(lambda spec: None).returncode, 0)
+
+        for block_type, section in (
+            ("key-points", "洞見"),
+            ("food-for-thought", "food for thoughts"),
+            ("actions", "可行啟發"),
+        ):
+            def echo(spec, block_type=block_type, section=section):
+                for block in spec["blocks"]:
+                    if block["type"] == block_type:
+                        block["title"] = section
+            result = validate(echo)
+            self.assertNotEqual(result.returncode, 0, block_type)
+            self.assertIn(f"不可與所屬章節同名：{section}", result.stderr)
+
+        def inflate(spec):
+            spec["reading_minutes"] = 99
+
+        faked = validate(inflate)
+        self.assertNotEqual(faked.returncode, 0)
+        self.assertIn("不可自行填寫", faked.stderr)
+
+        # 拉長內容就必須跟著改；否則舊值會靜悄悄地錯下去。
+        def lengthen(spec):
+            spec["blocks"][0]["summary"] = "補充說明。" * 400
+
+        stale = validate(lengthen)
+        self.assertNotEqual(stale.returncode, 0)
+        self.assertIn("$.reading_minutes 必須是", stale.stderr)
 
     def test_declared_relative_resources_exist(self):
         pattern = re.compile(r"(?<![A-Za-z0-9_.-])((?:references|scripts|assets)/[A-Za-z0-9_./-]+)")

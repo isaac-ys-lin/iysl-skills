@@ -75,6 +75,12 @@
 
 報告是兩層閱讀。上層是 `brief`：一句 claim 回答「這支影片在吵什麼、值不值得往下讀」，加三到四個可單獨引用的 takeaways。claim 的 claim type 只能是 `speaker_claim` 或 `report_synthesis`；claim 與每個 takeaway 各自帶 `evidence_refs`，不共用一組，因為 takeaway 是讀者最可能單獨引用的一句。
 
+報告有**三層閱讀深度**：brief 在三秒內交付主張；掃過各 block 的 heading 在十秒內
+交付結構；細讀內文才拿到例子與條件。中間那一層靠 heading 自己成立，不靠章節標題。
+
+`reading_minutes` 回答讀者的第二個問題「要花我多久」——它由讀者文字長度推導，
+驗證器會重算並要求相符，不是可以自行填寫的欄位。
+
 下層是四個 reader-facing 章節，固定依序為 `內容重述`、`洞見`、`food for thoughts`、`可行啟發`。`brief` 不是第五章：四章是理解 → 分析 → 反思 → 行動的認知流，`brief` 不參與那個流程。
 
 takeaway 允許和 `key-points` 講同一件事，但措辭必須不同：上層是一句話版，下層是帶脈絡版。
@@ -116,6 +122,7 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 - `可行啟發`：放入 `actions`，至少要有一個。
 
 - `key-points`：通常保留 3–5 個真正影響理解的重點，每點用 heading 先交付判斷，再用 text 保留具體內容。
+- 任何 block 的 `title` 都不可與它所屬章節同名；同一句話講兩次會讓掃標題那一層失效。
 - `narrative`：用一個以上有各自 evidence refs 的段落重建主線、例子與轉折；它是內容重述的正常文字載體，不是 visual fallback 的失敗狀態。
 - `process`：只在逐字稿有至少三個相依步驟，或三個以上順序會改變意義的事件時使用。論證鏈或 timeline 只有符合這個條件才可用 process 重畫。
 - `comparison`：只有各方案共享明確共同維度時使用 columns/rows；沒有共同維度就改用 key points。
@@ -161,6 +168,12 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 ### key-points（洞見）
 
 - 三到五點真正影響理解的重點。每點用 heading 先交付判斷，再用 text 保留具體內容與「為什麼重要」。
+- **heading 必須自帶判斷，不能是分類詞。** 報告有三層閱讀深度：brief 是掃讀層，
+  內文是細讀層，而**掃過 heading 就該抓得到重點**是中間那一層。heading 寫成
+  「三個重點」「先抓住這幾件事」「主要發現」這類分類詞，中間那層就等於不存在。
+
+❌「先抓住這三件事」（分類詞，掃過去等於沒讀）
+✅「順序、成本、紀錄，三件事決定比較有沒有意義」（掃過去就拿到判斷）
 - 需要時用一句關鍵引述或時間標記支撐，不需要每點都引。
 - 分析的是「逐字稿透露了什麼判斷和邏輯」，不是「講者說了什麼」。
 

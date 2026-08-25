@@ -98,13 +98,47 @@ function validateItems(items, at, allowed, required, evidenceIds, errors) {
   });
 }
 
+// 報告本身要花多久讀，是讀者決定要不要往下讀的第二個問題（第一個由 brief 回答）。
+// 它完全由 spec 的讀者文字推導，所以不需要證據，但也不能是隨手填的數字：
+// 驗證器算一次，spec 必須寫出同一個值。
+export function readerCharacterCount(spec) {
+  const parts = [];
+  const walk = (value, key) => {
+    if (typeof value === "string") {
+      if (!["id", "type", "claim_type", "video_id", "url", "thumbnail_url", "transcript_kind", "language", "version", "duration", "channel"].includes(key)) {
+        parts.push(value);
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item) => walk(item, key));
+      return;
+    }
+    if (isObject(value)) {
+      for (const [childKey, child] of Object.entries(value)) {
+        if (childKey === "evidence_refs") continue;
+        walk(child, childKey);
+      }
+    }
+  };
+  walk(spec.brief, "brief");
+  walk(spec.blocks, "blocks");
+  walk(spec.title, "title");
+  walk(spec.subtitle, "subtitle");
+  return parts.join("").replace(/\s+/g, "").length;
+}
+
+export function readingMinutes(spec) {
+  return Math.max(1, Math.ceil(readerCharacterCount(spec) / 350));
+}
+
 export function validateReportV2(spec) {
   const errors = [];
-  const rootAllowed = ["version", "title", "subtitle", "language", "source", "brief", "evidence", "blocks"];
-  if (!requireKeys(spec, rootAllowed, ["version", "title", "source", "brief", "evidence", "blocks"], "$", errors)) {
+  const rootAllowed = ["version", "title", "subtitle", "language", "source", "reading_minutes", "brief", "evidence", "blocks"];
+  if (!requireKeys(spec, rootAllowed, ["version", "title", "source", "reading_minutes", "brief", "evidence", "blocks"], "$", errors)) {
     return errors;
   }
-  if (spec.version !== "2.1") errors.push("$.version 必須是 2.1");
+  if (spec.version !== "2.2") errors.push("$.version 必須是 2.2");
   if (!hasText(spec.title)) errors.push("$.title 必須是非空字串");
   if ("subtitle" in spec && typeof spec.subtitle !== "string") errors.push("$.subtitle 必須是字串");
   if ("language" in spec && spec.language !== "zh-Hant") errors.push("$.language 必須是 zh-Hant");
@@ -123,6 +157,11 @@ export function validateReportV2(spec) {
     }
   }
 
+  const sectionTitleFor = new Map();
+  for (const [title, types] of REQUIRED_READER_SECTIONS) {
+    for (const type of types) sectionTitleFor.set(type, title);
+  }
+
   const evidenceIds = new Set();
   if (!Array.isArray(spec.evidence) || spec.evidence.length === 0) {
     errors.push("$.evidence 必須至少有一筆逐字稿證據");
@@ -135,6 +174,11 @@ export function validateReportV2(spec) {
       if (evidenceIds.has(item.id)) errors.push(`${at}.id 重複：${item.id}`);
       evidenceIds.add(item.id);
     });
+  }
+
+  const expectedMinutes = readingMinutes(spec);
+  if (spec.reading_minutes !== expectedMinutes) {
+    errors.push(`$.reading_minutes 必須是 ${expectedMinutes}（由讀者文字長度推導，不可自行填寫）`);
   }
 
   // 掃讀層和其他讀者主張受同一套證據治理：讀者最先看、也最可能只看的那一層，
@@ -172,6 +216,11 @@ export function validateReportV2(spec) {
         return;
       }
       presentBlockTypes.add(block.type);
+      const sectionTitle = sectionTitleFor.get(block.type);
+      if (sectionTitle && typeof block.title === "string"
+          && block.title.trim().toLowerCase() === sectionTitle.toLowerCase()) {
+        errors.push(`${at}.title 不可與所屬章節同名：${sectionTitle}`);
+      }
       const common = ["id", "type", "title", "summary", "claim_type", "evidence_refs"];
       const typeFields = {
         narrative: ["paragraphs"],
@@ -236,13 +285,19 @@ export function readAndValidateReportV2(inputPath) {
 }
 
 function usage() {
-  console.error("用法：validate_report_v2.mjs <report-v2.json>");
+  console.error("用法：validate_report_v2.mjs <report-v2.json> [--print-reading-minutes]");
   process.exit(2);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   const inputPath = process.argv[2] || usage();
   try {
+    // reading_minutes 必須和推導值相符，所以要有一個正式的取值管道，
+    // 而不是叫作者去猜或從錯誤訊息裡抄。
+    if (process.argv.includes("--print-reading-minutes")) {
+      console.log(String(readingMinutes(JSON.parse(readFileSync(inputPath, "utf8")))));
+      process.exit(0);
+    }
     const spec = readAndValidateReportV2(inputPath);
     console.log(JSON.stringify({ valid: true, version: spec.version, blocks: spec.blocks.length }, null, 2));
   } catch (error) {
