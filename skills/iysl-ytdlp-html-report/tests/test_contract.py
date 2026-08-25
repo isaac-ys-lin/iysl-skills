@@ -1468,6 +1468,37 @@ class YtdlpReportContractTest(unittest.TestCase):
         ):
             self.assertIn(rule, contract, rule)
 
+
+    def test_presentation_runs_in_an_isolated_context(self):
+        # 「排版器不能加事實」原本只是一條規則。把逐字稿排除在它的 context 之外，
+        # 那件事才變成它做不到，而不是它被要求別做。
+        normalized_skill = " ".join(self.skill.split())
+        for phrase in (
+            "排版在隔離的 context 裡進行",
+            "dispatch the presentation to a subagent",
+            "never receives the clean transcript, the metadata, or the source manifest",
+            "Do not pass it the transcript, the metadata, or the manifest",
+            "the **only** subagent the standard path uses",
+        ):
+            self.assertIn(phrase, normalized_skill, phrase)
+
+        contract = (ROOT / "references" / "kami-handoff.md").read_text(encoding="utf-8")
+        self.assertIn("排版在隔離的 context 裡進行", contract)
+        self.assertIn("拿不到 clean transcript、metadata 或 source manifest", contract)
+        # 契約要誠實說出這條保證是 context 隔離守的，不是驗證器守的。
+        self.assertIn("這一段是 context 隔離守住的，不是驗證器守住的", contract)
+
+        cases = json.loads(
+            (ROOT / "evals" / "behavior_cases.json").read_text(encoding="utf-8")
+        )["cases"]
+        by_id = {case["id"]: case for case in cases}
+        self.assertIn("presentation-subagent-gets-no-transcript", by_id)
+        # 標準路徑現在必須用到那一個排版 subagent，舊的 0 上限會把正確行為判成錯。
+        for case in cases:
+            cap = case["expected"].get("max_subagents")
+            if cap is not None:
+                self.assertGreaterEqual(cap, 1, case["id"])
+
     def test_declared_relative_resources_exist(self):
         pattern = re.compile(r"(?<![A-Za-z0-9_.-])((?:references|scripts|assets)/[A-Za-z0-9_./-]+)")
         for rel in pattern.findall(self.skill):
