@@ -101,6 +101,38 @@ manifest 與 clean transcript，在最終回覆指出缺少支撐的 section；�
 v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此 gate
 的素材才適用下方完整 v2 contract，不得為了通過 schema 硬編問題、洞見或行動。
 
+### Topical completeness gate
+
+Evidence sufficiency 只回答「能不能寫」，不回答「影片的語意是否都被帶走」。先從第一性
+問題出發：讀者看完報告後，是否能重建看完影片會得到的主張、背景、例子、數字、轉折、
+限制、問題與講者質地？建立 reader blocks 前，先用 `topic_coverage` 掃過逐字稿的
+opening、middle、ending。**每個有語意的 topic 都必須映射到 reader block**；只能省略逐字
+重複、填充語與不改變理解的寒暄。下面的 signal 是納入理由，不是刪除門檻：
+
+- `concrete_metric`：具體數字、價格、速度、規模或時間；
+- `decision`：產品、組織、資源或風險決策；
+- `counterintuitive_claim`：反直覺或與常見說法不同的判斷；
+- `anecdote`：能保留講者個性或文化質地的故事、玩笑與現場片段；
+- `tradeoff`：成本、速度、風險、控制或注意力之間的取捨；
+- `specific_example`：讓抽象主張落地的實例；
+- `product_image`：讓讀者能想像實際互動或產品狀態的描述；
+- `failure_or_recovery`：故障、補償、暫停、復原或控制條件。
+- `core_claim`：影片成立所依賴的核心主張；
+- `narrative_context`：若拿掉會讓後續判斷失去因果或人物背景的脈絡；
+- `caveat`：會限制主張適用範圍的但書；
+- `open_question`：訪談明確留下、且會改變理解的未決問題。
+
+兩個以上高顯著性 signal 通常表示適合用 `spotlight` 放大，但 spotlight 只決定閱讀層級，
+不能決定內容是否存在。一般內容仍要進 narrative、comparison 或其他合適 block。
+
+`topic_coverage` 不是第五章，也不進 reader output。它是 spec 內的 coverage contract：
+每個 topic 都要列出 evidence refs 與 block IDs，validator 會檢查 evidence 是否真的出現在
+那些 blocks。以 `--transcript` 執行時，validator 也會用 exact quote 的實際位置確認 sweep
+不是自我宣告。opening、middle、ending 任一為空、topic 只列在 map 裡卻沒寫進報告，或
+region 裡的 topic 沒有該區段證據，都必須失敗。這個機械 gate 仍不能自行發現「作者根本沒
+列出的語意單元」，所以 finalization 前必須再從逐字稿開頭掃到結尾，逐項對照 map；不得把
+validator pass 說成語意完整性的單獨證明。
+
 ### Evidence registry
 
 - `evidence[].transcript_quote` 只能摘自 clean transcript；metadata、縮圖、留言或外部知識不可成為語意或視覺證據。
@@ -116,7 +148,10 @@ v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此
 
 ### Adaptive blocks 與固定章節
 
-- `內容重述`：至少放入一個 `narrative`、`process`、`comparison` 或 `control-gap`。一般敘事、訪談與沒有結構性視覺關係的影片用 `narrative`；只有逐字稿真的支撐關係時才用視覺 block。
+- `內容重述`：至少放入一個 `narrative`、`process`、`comparison`、`control-gap` 或 `spotlight`。一般敘事、訪談與沒有結構性視覺關係的影片用 `narrative`；只有逐字稿真的支撐關係時才用視覺 block。
+- `spotlight`：屬於 `內容重述`，承接若被壓進主線就會失去價值的具體數字、決策、趣事、
+  反直覺觀點或產品畫面。它仍是逐字稿重述，不是額外評論；每個 item 用 heading 交付
+  判斷、text 保留片段與脈絡。
 - `洞見`：放入 `key-points`，至少要有一個。
 - `food for thoughts`：放入 `food-for-thought`，至少要有一個。
 - `可行啟發`：放入 `actions`，至少要有一個。

@@ -24,6 +24,15 @@ class YtdlpReportContractTest(unittest.TestCase):
             (ROOT / "evals" / "trigger_cases.json").read_text(encoding="utf-8")
         )
 
+    @staticmethod
+    def _write_fixture_transcript(temp: Path, fixture: dict) -> Path:
+        quotes = {item["id"]: item["transcript_quote"] for item in fixture["evidence"]}
+        transcript = (quotes["E1"] + "開" * 1000 + quotes["E2"] + "中" * 1000
+                      + quotes["E3"] + "後" * 1000 + quotes["E4"])
+        path = temp / "clean-transcript.md"
+        path.write_text(transcript, encoding="utf-8")
+        return path
+
     def test_frontmatter_name_matches_directory_and_is_iysl_prefixed(self):
         match = re.search(r"^name:\s*([a-z0-9-]+)$", self.skill, re.MULTILINE)
         self.assertIsNotNone(match)
@@ -347,13 +356,14 @@ class YtdlpReportContractTest(unittest.TestCase):
             manifest_path = temp / "manifest.json"
             out_dir = temp / "out"
             spec_path.write_text(json.dumps(fixture), encoding="utf-8")
+            transcript_path = self._write_fixture_transcript(temp, fixture)
             manifest_path.write_text(
                 json.dumps({
                     "id": "demo123",
                     "url": "https://www.youtube.com/watch?v=demo123",
                     "resolved_url": "https://www.youtube.com/watch?v=demo123",
                     "metadata": None,
-                    "transcript": None,
+                    "transcript": str(transcript_path),
                     "subtitle": None,
                     "subtitle_status": "available",
                     "prepared_by": "test fixture",
@@ -371,7 +381,33 @@ class YtdlpReportContractTest(unittest.TestCase):
                 self.assertTrue(Path(result[key]).is_file(), key)
             sidecar = Path(result["verification_sidecar"]).read_text(encoding="utf-8")
             self.assertIn("presentation_backend: built-in-v2", sidecar)
+            self.assertIn(
+                "topical_coverage_gate: passed; transcript_regions=verified; topics=4",
+                sidecar,
+            )
             self.assertIn("deterministic_verification: v2 validator and artifact validator passed", sidecar)
+
+            missing_transcript_manifest = temp / "missing-transcript-manifest.json"
+            missing_transcript_manifest.write_text(
+                json.dumps({
+                    "id": "demo123",
+                    "url": "https://www.youtube.com/watch?v=demo123",
+                    "resolved_url": "https://www.youtube.com/watch?v=demo123",
+                    "metadata": None,
+                    "transcript": None,
+                }),
+                encoding="utf-8",
+            )
+            missing_transcript = subprocess.run(
+                [
+                    "node", str(helper), "--spec", str(spec_path),
+                    "--manifest", str(missing_transcript_manifest),
+                    "--out-dir", str(temp / "missing-transcript-out"),
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertNotEqual(missing_transcript.returncode, 0)
+            self.assertIn("semantic completeness gate 不可略過", missing_transcript.stderr)
 
             invalid = json.loads(json.dumps(fixture))
             invalid["blocks"][0]["evidence_refs"] = ["E404"]
@@ -393,7 +429,7 @@ class YtdlpReportContractTest(unittest.TestCase):
             (ROOT / "references" / "report-v2.schema.json").read_text(encoding="utf-8")
         )
         fixture = ROOT / "tests" / "fixtures" / "report-v2.valid.json"
-        self.assertEqual(schema["properties"]["version"]["const"], "2.2")
+        self.assertEqual(schema["properties"]["version"]["const"], "2.3")
         self.assertIn("reading_minutes", schema["required"])
         self.assertIn("brief", schema["required"])
         self.assertEqual(
@@ -474,6 +510,102 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertNotRegex(html, r"/Users/|/home/")
             self.assertNotIn("<script", html.lower())
 
+    def test_v23_topic_coverage_maps_salient_topics_to_reader_blocks(self):
+        schema = json.loads(
+            (ROOT / "references" / "report-v2.schema.json").read_text(encoding="utf-8")
+        )
+        fixture = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(schema["properties"]["version"]["const"], "2.3")
+        self.assertIn("topic_coverage", schema["required"])
+        block_refs = {
+            entry["$ref"] for entry in schema["properties"]["blocks"]["items"]["oneOf"]
+        }
+        self.assertIn("#/$defs/spotlightBlock", block_refs)
+        self.assertIn("topic_coverage", fixture)
+        self.assertTrue(any(block["type"] == "spotlight" for block in fixture["blocks"]))
+        handoff = (ROOT / "references" / "kami-handoff.md").read_text(encoding="utf-8")
+        self.assertIn("topic_coverage", handoff)
+        self.assertIn("不是讀者內容", handoff)
+
+        def validate(spec, transcript=None):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "spec.json"
+                path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+                command = ["node", str(ROOT / "scripts" / "validate_report_v2.mjs"), str(path)]
+                if transcript is not None:
+                    transcript_path = Path(temp_dir) / "transcript.md"
+                    transcript_path.write_text(transcript, encoding="utf-8")
+                    command.extend(["--transcript", str(transcript_path)])
+                return subprocess.run(
+                    command,
+                    check=False, capture_output=True, text=True,
+                )
+
+        self.assertEqual(validate(fixture).returncode, 0)
+
+        missing = json.loads(json.dumps(fixture))
+        del missing["topic_coverage"]
+        rejected = validate(missing)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("topic_coverage", rejected.stderr)
+
+        empty_middle = json.loads(json.dumps(fixture))
+        empty_middle["topic_coverage"]["sweep"]["middle"] = []
+        rejected = validate(empty_middle)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("middle", rejected.stderr)
+
+        missing_block = json.loads(json.dumps(fixture))
+        missing_block["topic_coverage"]["topics"][0]["block_ids"] = ["not-a-block"]
+        rejected = validate(missing_block)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("not-a-block", rejected.stderr)
+
+        quotes = {item["id"]: item["transcript_quote"] for item in fixture["evidence"]}
+        transcript = (quotes["E1"] + "開" * 1000 + quotes["E2"] + "中" * 1000
+                      + quotes["E3"] + "後" * 1000 + quotes["E4"])
+        self.assertEqual(validate(fixture, transcript).returncode, 0)
+        self_declared = json.loads(json.dumps(fixture))
+        topic_ids = [topic["id"] for topic in self_declared["topic_coverage"]["topics"]]
+        self_declared["topic_coverage"]["sweep"] = {
+            "opening": topic_ids,
+            "middle": [topic_ids[0]],
+            "ending": [topic_ids[0]],
+        }
+        rejected = validate(self_declared, transcript)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("transcript", rejected.stderr)
+
+    def test_spotlight_is_reader_visible_inside_content_restatement(self):
+        fixture = ROOT / "tests" / "fixtures" / "report-v2.valid.json"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            markdown_path = temp / "report.md"
+            html_path = temp / "report.html"
+            rendered = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "render_report_v2.mjs"),
+                    "--spec", str(fixture),
+                    "--markdown-out", str(markdown_path),
+                    "--html-out", str(html_path),
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            markdown = markdown_path.read_text(encoding="utf-8")
+            html = html_path.read_text(encoding="utf-8")
+            self.assertIn("一個不能被摘要掉的具體片段", markdown)
+            self.assertIn("一個不能被摘要掉的具體片段", html)
+            self.assertIn('class="spotlight"', html)
+            self.assertIn('data-report-block="pilot-spotlight"', html)
+            self.assertIn('data-report-block-type="spotlight"', html)
+            self.assertLess(
+                html.index('class="spotlight"'),
+                html.index('data-report-section="key-points"'),
+            )
+
     def test_v2_renderer_supports_markdown_only_kami_handoff(self):
         fixture = ROOT / "tests" / "fixtures" / "report-v2.valid.json"
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -510,7 +642,7 @@ class YtdlpReportContractTest(unittest.TestCase):
             (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
         )
         cases = [
-            ("內容重述", {"narrative", "process", "comparison", "control-gap"}),
+            ("內容重述", {"narrative", "process", "comparison", "control-gap", "spotlight"}),
             ("洞見", {"key-points"}),
             ("food for thoughts", {"food-for-thought"}),
             ("可行啟發", {"actions"}),
@@ -551,6 +683,14 @@ class YtdlpReportContractTest(unittest.TestCase):
             },
             *[block for block in fixture["blocks"] if block["type"] in {"actions", "key-points", "food-for-thought"}],
         ]
+        coverage_blocks = {
+            "topic-order": ["story"],
+            "topic-cost": ["story", "key-points"],
+            "topic-control": ["key-points"],
+            "topic-pilot": ["next-actions"],
+        }
+        for topic in fixture["topic_coverage"]["topics"]:
+            topic["block_ids"] = coverage_blocks[topic["id"]]
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = Path(temp_dir)
             spec_path = temp / "narrative.json"
@@ -629,6 +769,7 @@ class YtdlpReportContractTest(unittest.TestCase):
                 "source_url", "resolved_url", "video_id", "metadata_path",
                 "transcript_path", "report_markdown_path", "report_html_path",
                 "presentation_backend", "presentation_fallback_reason",
+                "topical_coverage_gate",
                 "subtitle_source", "extraction_tool", "transcription_method",
                 "asr_backend", "asr_model", "asr_network_policy",
                 "transcript_normalization",
@@ -858,8 +999,8 @@ class YtdlpReportContractTest(unittest.TestCase):
         )
         fixture["title"] = '<img src=x onerror="alert(1)">'
         fixture["blocks"][0]["nodes"][0]["detail"] = "<script>alert(1)</script>"
-        fixture["blocks"][4]["items"][0]["text"] = '<b onclick="alert(2)">重點</b>'
-        fixture["blocks"][5]["items"][0]["context"] = "<em>反思</em>"
+        fixture["blocks"][5]["items"][0]["text"] = '<b onclick="alert(2)">重點</b>'
+        fixture["blocks"][6]["items"][0]["context"] = "<em>反思</em>"
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = Path(temp_dir)
             spec_path = temp / "escaped.json"
@@ -904,13 +1045,14 @@ class YtdlpReportContractTest(unittest.TestCase):
         manifest_path = temp / "manifest.json"
         out_dir = temp / "out"
         spec_path.write_text(json.dumps(fixture), encoding="utf-8")
+        transcript_path = self._write_fixture_transcript(temp, fixture)
         manifest_path.write_text(
             json.dumps({
                 "id": "demo123",
                 "url": "https://www.youtube.com/watch?v=demo123",
                 "resolved_url": "https://www.youtube.com/watch?v=demo123",
                 "metadata": None,
-                "transcript": None,
+                "transcript": str(transcript_path),
                 "subtitle": None,
                 "subtitle_status": "available",
                 "prepared_by": "test fixture",
@@ -942,6 +1084,22 @@ class YtdlpReportContractTest(unittest.TestCase):
             ],
             check=False, capture_output=True, text=True,
         )
+
+    def test_external_spotlight_requires_a_typed_block_marker(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec_path, bundle = self._finalize_bundle(temp)
+            html = Path(bundle["report_html"]).read_text(encoding="utf-8")
+            mistyped = html.replace(
+                'data-report-block-type="spotlight"',
+                'data-report-block-type="narrative"',
+                1,
+            )
+            html_path = temp / "mistyped-spotlight.html"
+            html_path.write_text(mistyped, encoding="utf-8")
+            rejected = self._revalidate(spec_path, bundle, html_path)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("type 應為 spotlight", rejected.stderr)
 
     def test_section_anchors_are_the_channel_the_validator_reads(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1026,7 +1184,9 @@ class YtdlpReportContractTest(unittest.TestCase):
                 manifest_path = temp / "manifest.json"
                 out_dir = temp / "out"
                 spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
-                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                run_manifest = dict(manifest)
+                run_manifest["transcript"] = str(self._write_fixture_transcript(temp, base))
+                manifest_path.write_text(json.dumps(run_manifest), encoding="utf-8")
                 result = subprocess.run(
                     [
                         "node", str(ROOT / "scripts" / "finalize_report.mjs"),
@@ -1099,7 +1259,7 @@ class YtdlpReportContractTest(unittest.TestCase):
 
         legacy, _ = finalize(legacy_version)
         self.assertNotEqual(legacy.returncode, 0)
-        self.assertIn("$.version 必須是 2.2", legacy.stderr)
+        self.assertIn("$.version 必須是 2.3", legacy.stderr)
 
 
     def test_undeclared_reader_regions_are_violations_and_chrome_must_be_enumerated(self):

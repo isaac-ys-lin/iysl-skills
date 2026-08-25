@@ -53,13 +53,17 @@ prompt。這不是禮貌性的規定，而是這份契約的地基：排版器�
 
 | block type | 必須放在哪一章 |
 | --- | --- |
-| `narrative`、`process`、`comparison`、`control-gap` | `recap` |
+| `narrative`、`process`、`comparison`、`control-gap`、`spotlight` | `recap` |
 | `key-points` | `key-points` |
 | `food-for-thought` | `food-for-thought` |
 | `actions` | `actions` |
 
 每個 block 的 `title` 必須逐字出現在**它該在的那一章之內**。放到別章即使文字還在文件裡
 也會被擋下——因為 Markdown 版是照真正的對應渲染的，錯置會讓兩份交付物講不同的故事。
+
+每個 block 的最外層元素還必須同時帶 `data-report-block="<block.id>"` 與
+`data-report-block-type="<block.type>"`。block 的 title、summary 與所有 item 文字都必須在
+這個元素裡；validator 會逐 block 檢查，不能只把文字散落在同一章裡。
 
 ## 版面契約
 
@@ -79,6 +83,13 @@ prompt。這不是禮貌性的規定，而是這份契約的地基：排版器�
 5. **表格保持表格**。`comparison` 與 `control-gap` 的欄列關係就是它的內容，改寫成
    卡片或條列會把「同一維度可比較」這件事弄丟。
 6. **引述**（`transcript_quote` 呈現）全文一種樣式，不要一段一個花樣。
+
+`spotlight` 是內容重述中的編輯插頁。它要比 narrative 醒目，但不能升格成第五章，也不能
+拆離 `recap`；保留 block title、item heading 與 text，並用一致的 callout 語法呈現。
+
+`topic_coverage` 是 coordinator 的 completeness contract，不是讀者內容。不要呈現 topic
+title、sweep、salience signals、block IDs 或 coverage 摘要；它只用來證明所有有語意的
+內容都已映射到 blocks，也會標示哪些細節適合放大。真正可排版的語意仍是 brief 與 blocks。
 
 **基調**
 

@@ -197,6 +197,24 @@
           "let the typesetter choose which facts to add"
         ]
       }
+    },
+    {
+      "id": "topic-dense-interview-keeps-salient-details",
+      "kind": "simple",
+      "prompt": "這是一支很長的訪談，除了主線，具體數字、產品決策、趣事和安全取捨也不能漏掉。",
+      "expected": {
+        "max_questions": 0,
+        "max_subagents": 1,
+        "must_do": [
+          "sweep opening middle and ending into topic coverage",
+          "map every semantically distinct topic to transcript evidence and a reader block",
+          "validate sweep regions against exact quote positions in the clean transcript",
+          "use spotlight blocks when compression would erase the value of a detail"
+        ],
+        "must_not_do": [
+          "treat a passing minimum evidence gate as topical completeness"
+        ]
+      }
     }
   ]
 }

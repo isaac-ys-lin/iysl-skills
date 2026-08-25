@@ -15,7 +15,7 @@ const CHROME_KINDS = ["cover", "toc", "running-head"];
 // 擺進 recap 也能通過「文字有出現」的檢查，但 Markdown 版會照真正的對應渲染，
 // 兩份交付物就會講不同的故事。
 const BLOCK_SECTION = new Map([
-  ["narrative", "recap"], ["process", "recap"], ["comparison", "recap"], ["control-gap", "recap"],
+  ["narrative", "recap"], ["process", "recap"], ["comparison", "recap"], ["control-gap", "recap"], ["spotlight", "recap"],
   ["key-points", "key-points"],
   ["food-for-thought", "food-for-thought"],
   ["actions", "actions"],
@@ -30,6 +30,7 @@ const SIDECAR_FIELDS = [
   "report_html_path",
   "presentation_backend",
   "presentation_fallback_reason",
+  "topical_coverage_gate",
   "subtitle_source",
   "extraction_tool",
   "transcription_method",
@@ -57,6 +58,9 @@ const FORBIDDEN_READER_TEXT = [
   "transcript_path",
   "presentation_backend",
   "presentation_fallback_reason",
+  "topic_coverage",
+  "salience_signals",
+  "block_ids",
 ];
 const FORBIDDEN_READER_PATTERNS = [
   /本報告使用(?:原生|自動)?字幕/,
@@ -100,6 +104,8 @@ function describeElement(tag, attributes, excerpt) {
 function auditDocument(html) {
   const problems = [];
   const anchors = [];
+  const blockDeclarations = new Map();
+  const blockText = new Map();
   const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "");
   const bodyMatch = /<body\b[^>]*>([\s\S]*)<\/body>/i.exec(withoutComments);
   const body = bodyMatch ? bodyMatch[1] : withoutComments;
@@ -122,6 +128,7 @@ function auditDocument(html) {
     if (!opaque && between.trim()) {
       for (const entry of stack) {
         if (entry.anchor) sectionText.set(entry.anchor, (sectionText.get(entry.anchor) || "") + between);
+        if (entry.blockId) blockText.set(entry.blockId, (blockText.get(entry.blockId) || "") + between);
       }
     }
     if (!opaque && between.trim() && !stack.some((entry) => entry.declared)) {
@@ -149,8 +156,23 @@ function auditDocument(html) {
     const section = attributes.get("data-report-section");
     const chrome = attributes.get("data-report-chrome");
     const brief = attributes.has("data-report-brief");
+    const blockId = attributes.get("data-report-block");
+    const blockType = attributes.get("data-report-block-type");
     const declarations = [section !== undefined, chrome !== undefined, brief].filter(Boolean).length;
     let declared = false;
+
+    if ((blockId !== undefined) !== (blockType !== undefined)) {
+      problems.push(`${describeElement(tag, attributes)} 必須同時宣告 data-report-block 與 data-report-block-type`);
+    } else if (blockId !== undefined && blockType !== undefined) {
+      const id = blockId.trim();
+      const type = blockType.trim();
+      const parentSection = [...stack].reverse().find((entry) => entry.anchor)?.anchor || null;
+      if (!id || !type) problems.push(`${describeElement(tag, attributes)} 的 block id 與 type 不可為空`);
+      if (blockDeclarations.has(id)) problems.push(`HTML block marker 重複：${id}`);
+      else blockDeclarations.set(id, { type, section: parentSection });
+      if (!parentSection) problems.push(`${describeElement(tag, attributes)} 的 block marker 必須放在 reader section 內`);
+      if (selfClosing) problems.push(`${describeElement(tag, attributes)} 的 block marker 不可是 self-closing element`);
+    }
 
     if (declarations > 1) {
       problems.push(`${describeElement(tag, attributes)} 同時宣告了一個以上的 data-report-* 錨點`);
@@ -182,7 +204,12 @@ function auditDocument(html) {
 
     if (!selfClosing) {
       const anchor = declarations === 1 && section !== undefined && !covered ? section.trim() : null;
-      stack.push({ tag, declared, anchor: anchor || stack.find((entry) => entry.anchor)?.anchor || null });
+      stack.push({
+        tag,
+        declared,
+        anchor: anchor || stack.find((entry) => entry.anchor)?.anchor || null,
+        blockId: blockId !== undefined && blockType !== undefined ? blockId.trim() : null,
+      });
     }
   }
 
@@ -190,7 +217,7 @@ function auditDocument(html) {
   if (tail.trim()) {
     problems.push(`未經宣告的讀者內容：「${tail.replace(/\s+/g, " ").trim().slice(0, 24)}」`);
   }
-  return { problems, anchors, briefCount, briefBeforeSections, sectionText };
+  return { problems, anchors, briefCount, briefBeforeSections, sectionText, blockDeclarations, blockText };
 }
 
 function usage() {
@@ -251,7 +278,8 @@ function blockAnchors(block) {
     block.rows.forEach((item) => anchors.push(item.label, ...item.values));
   } else if (block.type === "control-gap") {
     block.rows.forEach((item) => anchors.push(item.control, item.observed, item.gap));
-  } else if (block.type === "actions") block.items.forEach((item) => anchors.push(item.action, item.when));
+  } else if (block.type === "spotlight") block.items.forEach((item) => anchors.push(item.heading, item.text));
+  else if (block.type === "actions") block.items.forEach((item) => anchors.push(item.action, item.when));
   else if (block.type === "key-points") block.items.forEach((item) => anchors.push(item.heading, item.text));
   else if (block.type === "food-for-thought") block.items.forEach((item) => anchors.push(item.prompt, item.context));
   return anchors.filter((value) => typeof value === "string" && value.trim());
@@ -325,6 +353,25 @@ try {
     if (expected && !region.includes(normalize(block.title))) {
       errors.push(`HTML 把 ${block.type} 區塊「${block.title}」放錯章節，它屬於 ${expected}`);
     }
+    const declaration = audit.blockDeclarations.get(block.id);
+    if (!declaration) {
+      errors.push(`HTML 缺少 block marker：${block.id}`);
+      continue;
+    }
+    if (declaration.type !== block.type) {
+      errors.push(`HTML block marker ${block.id} 的 type 應為 ${block.type}，實際為 ${declaration.type}`);
+    }
+    if (declaration.section !== expected) {
+      errors.push(`HTML block marker ${block.id} 放錯章節，它屬於 ${expected}`);
+    }
+    const markedText = normalize(htmlToText(audit.blockText.get(block.id) || ""));
+    for (const anchor of blockAnchors(block).map(normalize)) {
+      if (!markedText.includes(anchor)) errors.push(`HTML block marker ${block.id} 遺漏 spec 內容：${anchor}`);
+    }
+  }
+
+  for (const id of audit.blockDeclarations.keys()) {
+    if (!spec.blocks.some((block) => block.id === id)) errors.push(`HTML 含未定義的 block marker：${id}`);
   }
 
   for (const anchor of spec.blocks.flatMap(blockAnchors).map(normalize)) {
