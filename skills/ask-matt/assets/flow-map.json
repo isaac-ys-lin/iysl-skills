@@ -1,0 +1,483 @@
+{
+  "version": 1,
+  "title": "Skill 路線圖",
+  "subtitle": "從一個想法到出貨的主線，兩條匯入的入口，以及不在主線上的工具。",
+  "lanes": [
+    {
+      "id": "main",
+      "label": "主線：想法 → 出貨",
+      "blurb": "大部分工作走的路。你有一個想法，想把它做出來。"
+    },
+    {
+      "id": "onramp",
+      "label": "入口匝道",
+      "blurb": "會產生工作的起始情境，處理完後匯入主線。"
+    },
+    {
+      "id": "health",
+      "label": "codebase 健康",
+      "blurb": "不是功能開發，是讓 codebase 保持好給 agent 操作。"
+    },
+    {
+      "id": "vocabulary",
+      "label": "底層詞彙",
+      "blurb": "跑在其他 skill 底下的兩份詞彙來源。當卡住的是「用詞」而不是「流程」時直接用。"
+    },
+    {
+      "id": "standalone",
+      "label": "獨立工具",
+      "blurb": "完全不在主線上，需要時單獨叫。"
+    },
+    {
+      "id": "precondition",
+      "label": "前置條件",
+      "blurb": "跑第一條工程流程之前先做一次。"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "grill-with-docs",
+      "label": "/grill-with-docs",
+      "lane": "main",
+      "kind": "flow",
+      "invocation": "user",
+      "one_line": "用訪談把想法磨利，並且把學到的留在 CONTEXT.md 與 ADR。",
+      "when": "人在工作目錄裡，想法還沒清楚到能寫規格。",
+      "not_when": "沒有工作目錄時改用 /grill-me；它們跑同一個 /grilling 原語，差別只在留不留紙本。",
+      "drives": [
+        "grilling",
+        "domain-modeling"
+      ]
+    },
+    {
+      "id": "prototype",
+      "label": "/prototype",
+      "lane": "main",
+      "kind": "detour",
+      "invocation": "model",
+      "one_line": "用丟棄式程式碼回答一個設計問題。",
+      "when": "答案要跑起來才知道：狀態模型、商業邏輯、必須看到的 UI。",
+      "not_when": "紙上談得完的問題不要繞這一趟。",
+      "note": "丟棄是對寫法的限制，不是承諾銷毀：程式留在 prototype/<name> 分支當 primary source，從實作 issue 指過去。"
+    },
+    {
+      "id": "handoff",
+      "label": "/handoff",
+      "lane": "main",
+      "kind": "bridge",
+      "invocation": "user",
+      "one_line": "寫一份可攜的 markdown，讓工作能搬到別的地方繼續。",
+      "when": "換 harness、換目錄、交給同事，或在 phase 中途分岔出支線。",
+      "not_when": "沒有東西要「搬家」就不需要它。"
+    },
+    {
+      "id": "to-spec",
+      "label": "/to-spec",
+      "lane": "main",
+      "kind": "flow",
+      "invocation": "user",
+      "one_line": "把整串討論收斂成一份可建置的規格。",
+      "when": "這是跨工作階段的建置，或 /wayfinder 的地圖已經清楚。"
+    },
+    {
+      "id": "to-tickets",
+      "label": "/to-tickets",
+      "lane": "main",
+      "kind": "flow",
+      "invocation": "user",
+      "one_line": "把規格切成 tracer-bullet 票，每張票宣告自己的 blocking edges。",
+      "when": "規格已經寫完，要拆成一張張能獨立開工的票。",
+      "note": "本機 tracker 就是 .scratch/<feature>/issues/ 下一票一檔，先做沒有 blocker 的；真 tracker 則把邊變成原生 blocking link。"
+    },
+    {
+      "id": "implement",
+      "label": "/implement",
+      "lane": "main",
+      "kind": "flow",
+      "invocation": "user",
+      "one_line": "依一張票建置，內部驅動 /tdd，收尾用 /code-review 審 diff 再 commit。",
+      "when": "有一張 agent-ready 的票，或這件事小到不需要規格。",
+      "note": "一票一個 context：每張票之間 /clear，上一張的 context 是可拋的。",
+      "drives": [
+        "tdd",
+        "code-review"
+      ]
+    },
+    {
+      "id": "tdd",
+      "label": "/tdd",
+      "lane": "main",
+      "kind": "internal",
+      "invocation": "model",
+      "one_line": "一次一個 red-green 切片。",
+      "when": "只想 test-first 做出一個具體行為，不需要整套規格時可以單獨叫。"
+    },
+    {
+      "id": "code-review",
+      "label": "/code-review",
+      "lane": "main",
+      "kind": "internal",
+      "invocation": "model",
+      "one_line": "對 diff 做 Standards 與 Spec 兩軸審查。",
+      "when": "想針對某個固定基準點審一條分支或一個 PR 時可以單獨叫。"
+    },
+    {
+      "id": "triage",
+      "label": "/triage",
+      "lane": "onramp",
+      "kind": "onramp",
+      "invocation": "user",
+      "one_line": "把外來的 bug 與需求推過 triage 角色，變成 agent-ready 的 issue。",
+      "when": "bug 與需求堆起來了，而且那些 issue 不是你自己開的。",
+      "not_when": "/to-tickets 產出的票已經 agent-ready，不要再 triage 一次。",
+      "merges_into": "implement"
+    },
+    {
+      "id": "diagnosing-bugs",
+      "label": "/diagnosing-bugs",
+      "lane": "onramp",
+      "kind": "onramp",
+      "invocation": "model",
+      "one_line": "難 bug 專用：先要有一個現在就會紅的指令，才准開始推論，最後用回歸測試鎖住。",
+      "when": "看一眼看不出來的 bug、偶發的 flake、兩個已知良好狀態之間爬進來的回歸。",
+      "not_when": "顯而易見的錯字或一眼可見的錯誤不需要整套流程。",
+      "merges_into": "improve-codebase-architecture",
+      "note": "如果 post-mortem 的結論是「根本沒有好的接縫可以鎖住這個 bug」，就交棒給 /improve-codebase-architecture。"
+    },
+    {
+      "id": "wayfinder",
+      "label": "/wayfinder",
+      "lane": "onramp",
+      "kind": "onramp",
+      "invocation": "user",
+      "one_line": "在 issue tracker 上畫一張決策票的共同地圖，一次解一題，產出決策而不是交付物。",
+      "when": "一片霧的大工程：全新專案或大到裝不進一個工作階段的功能。",
+      "not_when": "well-scoped 的功能絕對不要用；它比 /grill-with-docs 慢也重得多。",
+      "merges_into": "to-spec",
+      "note": "地圖清了就交棒，不自己建置：回到主線的 /to-spec 把連起來的決策收斂成計畫。直接跳 /implement 會把地圖的細節丟掉。"
+    },
+    {
+      "id": "improve-codebase-architecture",
+      "label": "/improve-codebase-architecture",
+      "lane": "health",
+      "kind": "flow",
+      "invocation": "user",
+      "one_line": "盤點 codebase，找出可以「加深模組」的候選。",
+      "when": "有空檔想維持 codebase 對 agent 的可操作性。",
+      "note": "它是找候選的普查；挑中一個就變成一個想法，從 /grill-with-docs 進主線。設計那一個模組的工作檯是 /codebase-design。",
+      "merges_into": "grill-with-docs"
+    },
+    {
+      "id": "domain-modeling",
+      "label": "/domain-modeling",
+      "lane": "vocabulary",
+      "kind": "reference",
+      "invocation": "model",
+      "one_line": "磨利專案的領域語言：挑戰模糊的詞、拆開一詞多義、把難以回頭的決定寫成 ADR。",
+      "when": "同一個詞在專案裡做了三件事，或一個決定貴到需要留 ADR。"
+    },
+    {
+      "id": "codebase-design",
+      "label": "/codebase-design",
+      "lane": "vocabulary",
+      "kind": "reference",
+      "invocation": "model",
+      "one_line": "深模組的詞彙：module、interface、depth、seam、adapter、leverage、locality。",
+      "when": "要設計一個模組的形狀——大量行為藏在小介面後、接縫乾淨。"
+    },
+    {
+      "id": "grill-me",
+      "label": "/grill-me",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "user",
+      "one_line": "和 /grill-with-docs 同一套訪談，但無狀態，什麼都不寫。",
+      "when": "不在工作目錄裡：磨一份計畫、一個設計、一篇文章。",
+      "not_when": "在工作目錄裡就用 /grill-with-docs，它嚴格較好。"
+    },
+    {
+      "id": "grilling",
+      "label": "/grilling",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "model",
+      "one_line": "訪談原語本身：回合、frontier、事實是 agent 的事而決定是你的事。",
+      "when": "只想要訪談、不想要任何外殼時才直接用。"
+    },
+    {
+      "id": "resolving-merge-conflicts",
+      "label": "/resolving-merge-conflicts",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "model",
+      "one_line": "一個 hunk 一個 hunk 地依「意圖」解衝突，追回兩邊的 primary source，最後把操作收掉。",
+      "when": "你已經卡在 merge 或 rebase 衝突中間。",
+      "note": "它不會跑 --abort。"
+    },
+    {
+      "id": "research",
+      "label": "/research",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "model",
+      "one_line": "把讀資料的苦工交給背景 agent，對著 primary source 查完留下一份有引用的 Markdown。",
+      "when": "有一個需要讀很多東西才能回答的問題，而你想同時做別的事。",
+      "note": "產出是拿進 /grill-with-docs 的材料；研究餵思考，不取代思考。"
+    },
+    {
+      "id": "to-questionnaire",
+      "label": "/to-questionnaire",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "user",
+      "one_line": "把卡住你的問題寫成一份給別人填的問卷。",
+      "when": "缺的東西不在你腦裡也不在 codebase 裡，而在別人腦裡。",
+      "note": "它是 /grill-me 的反向：訪談的是這次「寄送」——寄給誰、要拿回什麼。"
+    },
+    {
+      "id": "wizard",
+      "label": "/wizard",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "model",
+      "one_line": "產生互動式 bash 腳本，帶人走過只有人能做的步驟，把值寫進 .env 與 GitHub secrets。",
+      "when": "開通基礎設施、設定憑證或 CI secret、點過陌生的第三方後台、跑一次性的遷移或切換。",
+      "not_when": "agent 自己做得到的事就自己做，這是給人真的在迴圈裡的情況。"
+    },
+    {
+      "id": "wait-what",
+      "label": "/wait-what",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "user",
+      "one_line": "剛剛那段話沒聽懂時，讓 agent 用 CONTEXT.md 的詞彙、用白話重講一次。",
+      "when": "對話中途，任何 skill 裡面都能用。",
+      "note": "它是事後補救；事前的解法是 /grill-with-docs 早早談好共同語言。"
+    },
+    {
+      "id": "teach",
+      "label": "/teach",
+      "lane": "standalone",
+      "kind": "standalone",
+      "invocation": "user",
+      "one_line": "跨多個工作階段學一個概念，把當前目錄當成有狀態的學習工作區。",
+      "when": "要把一個概念真的學起來，而不是問一次就算。"
+    },
+    {
+      "id": "writing-for-agents",
+      "label": "/writing-for-agents",
+      "lane": "standalone",
+      "kind": "reference",
+      "invocation": "model",
+      "one_line": "寫給 agent 讀的文件的參考：skill、AGENTS.md、被指過去的 docs。",
+      "when": "要新增或修改 skill 與 agent 文件。"
+    },
+    {
+      "id": "setup-matt-pocock-skills",
+      "label": "/setup-matt-pocock-skills",
+      "lane": "precondition",
+      "kind": "precondition",
+      "invocation": "user",
+      "one_line": "設定其他 skill 預設存在的 issue tracker、triage 標籤與文件配置。",
+      "when": "跑第一條工程流程之前。自訂的 issue tracker 也可以。"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "node": "grill-with-docs",
+      "headline": "把想法磨利"
+    },
+    {
+      "n": 2,
+      "branch": "runnable-question",
+      "headline": "分岔：定案的方式"
+    },
+    {
+      "n": 3,
+      "branch": "multi-session",
+      "headline": "分岔：建置的規模"
+    }
+  ],
+  "branches": [
+    {
+      "id": "runnable-question",
+      "question": "每一個問題都能在對話裡談定嗎？",
+      "options": [
+        {
+          "label": "可以",
+          "targets": [],
+          "why": "留在原地，直接往下一個分岔走。"
+        },
+        {
+          "label": "不行，要跑起來才知道",
+          "targets": [
+            "handoff",
+            "prototype",
+            "handoff"
+          ],
+          "why": "/handoff 出去，開新的工作階段對著那份檔案跑 /prototype，再 /handoff 把學到的帶回來，並從原本的想法討論串指過去。"
+        }
+      ]
+    },
+    {
+      "id": "multi-session",
+      "question": "這是跨工作階段的建置嗎？",
+      "options": [
+        {
+          "label": "是",
+          "targets": [
+            "to-spec",
+            "to-tickets",
+            "implement"
+          ],
+          "why": "先收斂成規格，切成宣告 blocking edges 的票，再一票一個 context 跑 /implement。"
+        },
+        {
+          "label": "否",
+          "targets": [
+            "implement"
+          ],
+          "why": "就在這個 context window 裡直接 /implement。"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "grill-with-docs",
+      "to": "to-spec",
+      "kind": "flow"
+    },
+    {
+      "from": "grill-with-docs",
+      "to": "implement",
+      "kind": "flow"
+    },
+    {
+      "from": "to-spec",
+      "to": "to-tickets",
+      "kind": "flow"
+    },
+    {
+      "from": "to-tickets",
+      "to": "implement",
+      "kind": "flow"
+    },
+    {
+      "from": "implement",
+      "to": "tdd",
+      "kind": "internal"
+    },
+    {
+      "from": "implement",
+      "to": "code-review",
+      "kind": "internal"
+    },
+    {
+      "from": "grill-with-docs",
+      "to": "handoff",
+      "kind": "detour"
+    },
+    {
+      "from": "handoff",
+      "to": "prototype",
+      "kind": "detour"
+    },
+    {
+      "from": "prototype",
+      "to": "handoff",
+      "kind": "detour"
+    },
+    {
+      "from": "triage",
+      "to": "implement",
+      "kind": "merge"
+    },
+    {
+      "from": "diagnosing-bugs",
+      "to": "improve-codebase-architecture",
+      "kind": "merge"
+    },
+    {
+      "from": "wayfinder",
+      "to": "to-spec",
+      "kind": "merge"
+    },
+    {
+      "from": "improve-codebase-architecture",
+      "to": "grill-with-docs",
+      "kind": "merge"
+    },
+    {
+      "from": "research",
+      "to": "grill-with-docs",
+      "kind": "merge"
+    },
+    {
+      "from": "to-questionnaire",
+      "to": "to-spec",
+      "kind": "merge"
+    },
+    {
+      "from": "grill-with-docs",
+      "to": "grilling",
+      "kind": "internal"
+    },
+    {
+      "from": "grill-me",
+      "to": "grilling",
+      "kind": "internal"
+    },
+    {
+      "from": "grill-with-docs",
+      "to": "domain-modeling",
+      "kind": "internal"
+    },
+    {
+      "from": "tdd",
+      "to": "codebase-design",
+      "kind": "internal"
+    },
+    {
+      "from": "improve-codebase-architecture",
+      "to": "codebase-design",
+      "kind": "internal"
+    }
+  ],
+  "context_hygiene": {
+    "rule": "第 1 到第 3 步留在同一個沒有中斷的 context window，到 /to-tickets 之前不要 compact 或 clear，讓訪談、規格、票都建立在同一段思考上。之後每個 /implement 才各自從票開始。",
+    "limit": "限制是 smart zone：模型還能敏銳推理的視窗，最新模型大約 15 萬 token。如果在 /to-tickets 之前就逼近它，不要硬撐，在最近的 phase 邊界 /compact 再繼續。"
+  },
+  "phase_boundary": {
+    "reference": "references/phase-boundaries.md",
+    "rule": "決定要在 phase 的邊界上做；phase 中途只有兩個選擇：繼續，或把剩下的工作切成 subagent。",
+    "options": [
+      {
+        "option": "Continue",
+        "does": "留在原地，完全不換 context。",
+        "pick_when": "下一個 phase 需要這個 phase 當 primary source，或 smart zone 還夠用。不花成本也不損失，所以第一個排除它。"
+      },
+      {
+        "option": "/clear",
+        "does": "清空 context window，從零開始。",
+        "pick_when": "這裡的一切對接下來都無關。它最便宜，而且舊的工作階段還能 resume；但清掉相關 context 會永久失去「為什麼」。"
+      },
+      {
+        "option": "/handoff",
+        "does": "寫一份可攜的 markdown，在任何地方種下新工作階段。",
+        "pick_when": "換 harness、換目錄、交給同事，或 phase 中途分岔支線。買到的是可攜性。"
+      },
+      {
+        "option": "Subagent",
+        "does": "把任務丟到自己的 context window 並拿回報告。",
+        "pick_when": "範圍夠緊、可以離開鍵盤跑完，不需要你在旁邊轉向。"
+      },
+      {
+        "option": "/compact",
+        "does": "壓縮這段 context，用摘要種下新的工作階段。",
+        "pick_when": "context 相關、同 harness、同目錄，而且你要留在迴圈裡。它是預設，但排在最後才伸手。"
+      }
+    ]
+  }
+}

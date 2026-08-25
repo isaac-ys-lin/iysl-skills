@@ -1,0 +1,5 @@
+interface:
+  display_name: "ask-matt"
+  short_description: "Route a situation to the right skill, with an HTML map"
+policy:
+  allow_implicit_invocation: false

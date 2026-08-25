@@ -121,7 +121,7 @@ def test_frontmatter_allows_top_level_yaml_comments(tmp_path: Path):
 
 def test_manifest_separates_maintainer_from_origin():
     manifest = load_manifest()
-    assert forked_skill_names(manifest) == {"iysl-grill", "writing-great-skills"}
+    assert forked_skill_names(manifest) == {"ask-matt", "iysl-grill", "writing-great-skills"}
     assert implicit_repo_skill_names(manifest) == {
         name
         for name, entry in manifest["skills"].items()
