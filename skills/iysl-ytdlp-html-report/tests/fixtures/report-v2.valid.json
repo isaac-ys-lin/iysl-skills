@@ -1,5 +1,5 @@
 {
-  "version": "2.0",
+  "version": "2.1",
   "title": "測試影片：從流程到行動",
   "subtitle": "把影片主線、關鍵關係與反思整理在一起",
   "language": "zh-Hant",
@@ -10,6 +10,35 @@
     "duration": "12:34",
     "thumbnail_url": "https://i.ytimg.com/vi/demo123/maxresdefault.jpg",
     "transcript_kind": "native_captions"
+  },
+  "brief": {
+    "claim": {
+      "text": "工具選擇要排在問題界定與基準之後，否則比較出來的效率是假的。",
+      "claim_type": "speaker_claim",
+      "evidence_refs": [
+        "E1"
+      ]
+    },
+    "takeaways": [
+      {
+        "text": "順序錯了，後面的比較就沒有意義。",
+        "evidence_refs": [
+          "E1"
+        ]
+      },
+      {
+        "text": "只比速度會漏掉錯誤成本這一半的帳。",
+        "evidence_refs": [
+          "E2"
+        ]
+      },
+      {
+        "text": "沒有例外紀錄的清單，證明不了控制有在運作。",
+        "evidence_refs": [
+          "E4"
+        ]
+      }
+    ]
   },
   "evidence": [
     {
@@ -39,11 +68,31 @@
       "type": "process",
       "title": "講者提出的工作流程",
       "claim_type": "speaker_claim",
-      "evidence_refs": ["E1"],
+      "evidence_refs": [
+        "E1"
+      ],
       "nodes": [
-        { "label": "確認問題", "detail": "先界定真正要解的問題。", "evidence_refs": ["E1"] },
-        { "label": "建立基準", "detail": "保留可比較的 baseline。", "evidence_refs": ["E1"] },
-        { "label": "選擇工具", "detail": "最後才評估工具。", "evidence_refs": ["E1"] }
+        {
+          "label": "確認問題",
+          "detail": "先界定真正要解的問題。",
+          "evidence_refs": [
+            "E1"
+          ]
+        },
+        {
+          "label": "建立基準",
+          "detail": "保留可比較的 baseline。",
+          "evidence_refs": [
+            "E1"
+          ]
+        },
+        {
+          "label": "選擇工具",
+          "detail": "最後才評估工具。",
+          "evidence_refs": [
+            "E1"
+          ]
+        }
       ]
     },
     {
@@ -52,11 +101,34 @@
       "title": "方案取捨",
       "summary": "逐字稿只提供定性比較，因此保留文字比較，不繪製 chart。",
       "claim_type": "report_synthesis",
-      "evidence_refs": ["E2"],
-      "columns": ["快速方案", "穩健方案"],
+      "evidence_refs": [
+        "E2"
+      ],
+      "columns": [
+        "快速方案",
+        "穩健方案"
+      ],
       "rows": [
-        { "label": "速度", "values": ["較快", "較慢"], "evidence_refs": ["E2"] },
-        { "label": "錯誤成本", "values": ["可能較高", "較易控制"], "evidence_refs": ["E2"] }
+        {
+          "label": "速度",
+          "values": [
+            "較快",
+            "較慢"
+          ],
+          "evidence_refs": [
+            "E2"
+          ]
+        },
+        {
+          "label": "錯誤成本",
+          "values": [
+            "可能較高",
+            "較易控制"
+          ],
+          "evidence_refs": [
+            "E2"
+          ]
+        }
       ]
     },
     {
@@ -64,13 +136,17 @@
       "type": "control-gap",
       "title": "控制與缺口",
       "claim_type": "report_synthesis",
-      "evidence_refs": ["E3"],
+      "evidence_refs": [
+        "E3"
+      ],
       "rows": [
         {
           "control": "審查清單",
           "observed": "團隊已有清單",
           "gap": "沒有例外紀錄",
-          "evidence_refs": ["E3"]
+          "evidence_refs": [
+            "E3"
+          ]
         }
       ]
     },
@@ -79,12 +155,16 @@
       "type": "actions",
       "title": "下一步",
       "claim_type": "speaker_claim",
-      "evidence_refs": ["E4"],
+      "evidence_refs": [
+        "E4"
+      ],
       "items": [
         {
           "action": "先跑一個小案例",
           "when": "在擴大流程或採購工具之前。",
-          "evidence_refs": ["E4"]
+          "evidence_refs": [
+            "E4"
+          ]
         }
       ]
     },
@@ -93,22 +173,32 @@
       "type": "key-points",
       "title": "先抓住這三件事",
       "claim_type": "report_synthesis",
-      "evidence_refs": ["E1", "E2", "E3"],
+      "evidence_refs": [
+        "E1",
+        "E2",
+        "E3"
+      ],
       "items": [
         {
           "heading": "順序比工具重要",
           "text": "先確認問題與基準，再比較工具。",
-          "evidence_refs": ["E1"]
+          "evidence_refs": [
+            "E1"
+          ]
         },
         {
           "heading": "速度不是唯一成本",
           "text": "比較方案時要把錯誤成本一起算進去。",
-          "evidence_refs": ["E2"]
+          "evidence_refs": [
+            "E2"
+          ]
         },
         {
           "heading": "控制需要留下紀錄",
           "text": "只有清單、不記錄例外，無法知道控制是否真的運作。",
-          "evidence_refs": ["E3"]
+          "evidence_refs": [
+            "E3"
+          ]
         }
       ]
     },
@@ -117,16 +207,23 @@
       "type": "food-for-thought",
       "title": "Food for thoughts",
       "claim_type": "open_question",
-      "evidence_refs": ["E2", "E3"],
+      "evidence_refs": [
+        "E2",
+        "E3"
+      ],
       "items": [
         {
           "prompt": "如果速度提高，但錯誤更難被看見，這還算效率嗎？",
           "context": "把修正成本和發現錯誤所需時間一起納入判斷。",
-          "evidence_refs": ["E2"]
+          "evidence_refs": [
+            "E2"
+          ]
         },
         {
           "prompt": "沒有例外紀錄的審查清單，究竟控制了什麼？",
-          "evidence_refs": ["E3"]
+          "evidence_refs": [
+            "E3"
+          ]
         }
       ]
     }

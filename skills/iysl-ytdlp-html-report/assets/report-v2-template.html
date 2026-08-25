@@ -20,6 +20,10 @@
     .media-anchor { display:block; overflow:hidden; border-radius:12px; background:#20272b; box-shadow:0 16px 40px #19212622; }
     .media-anchor img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
     main { padding:28px 0 68px; }
+    .report-brief { margin:0 0 44px; border-left:4px solid var(--accent); padding:4px 0 4px 20px; }
+    .brief-claim { margin:0; font-size:1.16rem; line-height:1.55; }
+    .brief-takeaways { margin:14px 0 0; padding-left:1.15rem; display:grid; gap:6px; }
+    .brief-takeaways li { font-weight:700; }
     .report-section { margin:0 0 54px; }
     .report-section > header { margin-bottom:18px; border-bottom:2px solid var(--accent); padding-bottom:10px; }
     .report-block { margin:0 0 30px; border:1px solid var(--line); border-radius:12px; background:var(--card); padding:24px; }
@@ -50,7 +54,7 @@
   </style>
 </head>
 <body>
-  <header class="page hero">
+  <header class="page hero" data-report-chrome="cover">
     <div>
       <p class="eyebrow">影片閱讀摘要</p>
       <h1>{{title}}</h1>
@@ -61,6 +65,7 @@
     {{thumbnailHtml}}
   </header>
   <main class="page">
+    {{briefHtml}}
     {{sectionsHtml}}
   </main>
 </body>

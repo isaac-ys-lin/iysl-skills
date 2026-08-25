@@ -1,32 +1,56 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 function usage(exitCode = 2) {
-  console.error("用法：finalize_report.mjs --spec <report-v2.json> --manifest <source-manifest.json> --out-dir <run-dir> [--presentation-backend <name>] [--fallback-reason <text>]");
+  console.error("用法：finalize_report.mjs --spec <report-v2.json> --manifest <source-manifest.json> --out-dir <run-dir> [--html-in <final.html> --presentation-backend <name>] [--fallback-reason <kami-unavailable|kami-not-selected>]");
   process.exit(exitCode);
 }
 
 function parseArgs(args) {
-  const options = { spec: "", manifest: "", outDir: "", presentationBackend: "built-in-v2", fallbackReason: "not-applicable" };
+  const options = { spec: "", manifest: "", outDir: "", htmlIn: "", presentationBackend: "", fallbackReason: "" };
   for (let index = 0; index < args.length; index += 1) {
     const key = args[index];
     const value = args[index + 1];
-    if (["--spec", "--manifest", "--out-dir", "--presentation-backend", "--fallback-reason"].includes(key)) {
+    if (["--spec", "--manifest", "--out-dir", "--html-in", "--presentation-backend", "--fallback-reason"].includes(key)) {
       if (!value || value.startsWith("--")) usage();
       if (key === "--spec") options.spec = value;
       else if (key === "--manifest") options.manifest = value;
       else if (key === "--out-dir") options.outDir = value;
+      else if (key === "--html-in") options.htmlIn = value;
       else if (key === "--presentation-backend") options.presentationBackend = value;
       else options.fallbackReason = value;
       index += 1;
     } else usage();
   }
   if (!options.spec || !options.manifest || !options.outDir) usage();
+  // 外部出稿時不猜是誰產的：backend 必須指明，否則 sidecar 會記錄一個假的來源。
+  if (options.htmlIn && !options.presentationBackend) {
+    throw new Error("使用 --html-in 時必須以 --presentation-backend 指明出稿的 presentation backend");
+  }
+  if (options.htmlIn && options.presentationBackend === "built-in-v2") {
+    throw new Error("--html-in 交付的不是內建輸出，presentation backend 不能標成 built-in-v2");
+  }
+  if (options.htmlIn && ["kami-unavailable", "kami-not-selected"].includes(options.fallbackReason)) {
+    throw new Error("這次沒有走保底路徑，--fallback-reason 不能宣稱 fallback 發生過");
+  }
+  if (!options.htmlIn) {
+    if (options.presentationBackend && options.presentationBackend !== "built-in-v2") {
+      throw new Error("沒有 --html-in 時只會產生內建保底輸出，presentation backend 必須是 built-in-v2");
+    }
+    options.presentationBackend = "built-in-v2";
+    // 保底路徑要說清楚是「Kami 不可用」還是「這次沒選 Kami」，兩種事故不能長成同一行紀錄。
+    if (!options.fallbackReason) options.fallbackReason = "kami-not-selected";
+    if (!["kami-unavailable", "kami-not-selected"].includes(options.fallbackReason)) {
+      throw new Error("保底路徑的 --fallback-reason 必須是 kami-unavailable 或 kami-not-selected");
+    }
+  } else if (!options.fallbackReason) {
+    options.fallbackReason = "not-applicable";
+  }
   return options;
 }
 
@@ -113,11 +137,30 @@ function main(args = process.argv.slice(2)) {
   const htmlPath = path.join(outDir, `${videoId}.report.html`);
   const sidecarPath = path.join(outDir, `${videoId}.verification.md`);
 
+  // 上一次執行的殘骸會讓這次的失敗看起來像成功：同名的舊 HTML 還在，sidecar 卻
+  // 已經換成這次的 backend。開工前先清掉這三份同名交付物。
+  const deliverables = [markdownPath, htmlPath, sidecarPath];
+  for (const file of deliverables) {
+    if (existsSync(file)) rmSync(file);
+  }
+
   runNode("validate_report_v2.mjs", [options.spec]);
-  runNode("render_report_v2.mjs", ["--spec", options.spec, "--markdown-out", markdownPath, "--html-out", htmlPath]);
-  const html = readFileSync(htmlPath, "utf8");
-  if (!/<html\b/i.test(html) || !/<\/html>/i.test(html) || !/<main\b/i.test(html) || !/<\/main>/i.test(html) || /<script\b/i.test(html)) {
-    throw new Error("HTML basic parse/embedded-script check failed");
+  // 外部出稿時完全不渲染內建 HTML：交給讀者的那一份，就是被驗的那一份。驗證
+  // 未過之前不把它寫進 out-dir，失敗的執行不會留下一份看起來可用的交付物。
+  const externalHtml = options.htmlIn ? path.resolve(options.htmlIn) : "";
+  if (externalHtml) {
+    runNode("render_report_v2.mjs", ["--spec", options.spec, "--markdown-out", markdownPath]);
+  } else {
+    runNode("render_report_v2.mjs", ["--spec", options.spec, "--markdown-out", markdownPath, "--html-out", htmlPath]);
+  }
+  const validatedHtmlPath = externalHtml || htmlPath;
+  const html = readFileSync(validatedHtmlPath, "utf8");
+  const structuralProblems = [];
+  if (!/<html\b/i.test(html) || !/<\/html>/i.test(html)) structuralProblems.push("缺少完整的 <html> 文件外殼");
+  if (!/<main\b/i.test(html) || !/<\/main>/i.test(html)) structuralProblems.push("缺少 <main> 區塊");
+  if (/<script\b/i.test(html)) structuralProblems.push("含有 <script>，最終報告不得內嵌腳本");
+  if (structuralProblems.length) {
+    throw new Error(`最終 HTML 未通過基本結構檢查：${structuralProblems.join("；")}`);
   }
   const sidecar = buildSidecar({
     manifest, metadata, spec, markdownPath, htmlPath,
@@ -125,12 +168,24 @@ function main(args = process.argv.slice(2)) {
     fallbackReason: options.fallbackReason,
   });
   writeFileSync(sidecarPath, sidecar, "utf8");
-  runNode("validate_report_artifacts.mjs", [
-    "--spec", options.spec,
-    "--markdown", markdownPath,
-    "--html", htmlPath,
-    "--sidecar", sidecarPath,
-  ]);
+  try {
+    runNode("validate_report_artifacts.mjs", [
+      "--spec", options.spec,
+      "--markdown", markdownPath,
+      "--html", validatedHtmlPath,
+      "--sidecar", sidecarPath,
+    ]);
+  } catch (error) {
+    // sidecar 的 Command Evidence 宣稱每一關都過了。驗證沒過就不能把它留下來
+    // 當作那次執行的紀錄。
+    for (const file of deliverables) {
+      if (existsSync(file)) rmSync(file);
+    }
+    throw error;
+  }
+  if (externalHtml && path.resolve(htmlPath) !== externalHtml) {
+    copyFileSync(externalHtml, htmlPath);
+  }
   const result = {
     valid: true,
     video_id: videoId,
