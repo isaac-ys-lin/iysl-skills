@@ -130,6 +130,7 @@ if (htmlOut) {
     sourceUrl: escapeHtml(spec.source.url),
     channel: escapeHtml(spec.source.channel || ""),
     duration: escapeHtml(spec.source.duration || ""),
+    readingMinutes: `閱讀約 ${escapeHtml(String(spec.reading_minutes))} 分鐘`,
     thumbnailHtml: spec.source.thumbnail_url
       ? `<a class="media-anchor" href="${escapeHtml(spec.source.url)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(spec.source.thumbnail_url)}" alt="${escapeHtml(spec.title)} 的影片縮圖"></a>`
       : "",

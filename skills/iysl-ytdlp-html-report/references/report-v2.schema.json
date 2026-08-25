@@ -9,13 +9,14 @@
     "version",
     "title",
     "source",
+    "reading_minutes",
     "brief",
     "evidence",
     "blocks"
   ],
   "properties": {
     "version": {
-      "const": "2.1"
+      "const": "2.2"
     },
     "title": {
       "$ref": "#/$defs/nonEmptyString"
@@ -61,6 +62,11 @@
           ]
         }
       }
+    },
+    "reading_minutes": {
+      "$comment": "讀完這份報告的預估分鐘數，由讀者文字長度推導；validate_report_v2.mjs 會重算並要求相符，不可自行填寫。",
+      "type": "integer",
+      "minimum": 1
     },
     "evidence": {
       "type": "array",
@@ -216,7 +222,8 @@
         "evidence_refs": {
           "$ref": "#/$defs/evidenceRefs"
         }
-      }
+      },
+      "$comment": "block 的 title 不可與它所屬章節同名（內容重述／洞見／food for thoughts／可行啟發）：同一句話講兩次會讓掃標題那一層的閱讀失效。這條由 validate_report_v2.mjs 強制。"
     },
     "visualItemBase": {
       "type": "object",
