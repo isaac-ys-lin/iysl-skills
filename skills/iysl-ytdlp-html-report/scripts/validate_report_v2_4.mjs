@@ -18,6 +18,7 @@ const DISPOSITIONS = new Set(["included", "compressed_duplicate", "excluded_nons
 const COGNITIVE_JOBS = new Set(["explain", "sequence", "compare", "control", "emphasize", "derive_insight", "raise_question", "prompt_action"]);
 const INTERPRETATION_KINDS = new Set(["insight", "question", "action"]);
 const REGIONS = ["opening", "middle", "ending"];
+export const SOURCE_LIMITATION_NOTICE = "本報告以逐字稿為唯一內容來源，可能未涵蓋純畫面、語氣與示範細節；需要核對時請回到原影片。";
 
 const hasText = (value) => typeof value === "string" && value.trim().length > 0;
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -195,8 +196,8 @@ export function validateReportV24(spec, options = {}) {
 
   const interpretationIds = new Set();
   const interpretedBlocks = new Set();
-  if (!Array.isArray(spec.interpretations) || spec.interpretations.length === 0) {
-    errors.push("$.interpretations 必須至少有一項報告推導");
+  if (!Array.isArray(spec.interpretations)) {
+    errors.push("$.interpretations 必須是陣列");
   } else {
     spec.interpretations.forEach((item, index) => {
       const at = `$.interpretations[${index}]`;
@@ -226,7 +227,7 @@ export function validateReportV24(spec, options = {}) {
     });
   }
   for (const block of spec.blocks || []) {
-    if (block.claim_type !== "speaker_claim" && !interpretedBlocks.has(block.id)) {
+    if (block.claim_type === "report_synthesis" && !interpretedBlocks.has(block.id)) {
       errors.push(`$.blocks 的推導區塊 ${block.id} 沒有 interpretation`);
     }
   }
@@ -237,7 +238,7 @@ export function validateReportV24(spec, options = {}) {
     const positions = evidencePositionMap(spec, options.transcript || "");
     if (requireKeys(spec.completeness_review.sweep, REGIONS, REGIONS, "$.completeness_review.sweep", errors)) {
       for (const region of REGIONS) {
-        const ids = uniqueTextArray(spec.completeness_review.sweep[region], `$.completeness_review.sweep.${region}`, errors, { min: 1 });
+        const ids = uniqueTextArray(spec.completeness_review.sweep[region], `$.completeness_review.sweep.${region}`, errors);
         const [start, end] = { opening: [0, 0.34], middle: [0.25, 0.78], ending: [0.66, 1.01] }[region];
         ids.forEach((id) => {
           const unit = unitById.get(id);
@@ -252,14 +253,18 @@ export function validateReportV24(spec, options = {}) {
         });
       }
     }
-    for (const id of unitById.keys()) {
-      if (!swept.has(id)) errors.push(`$.semantic_inventory 的 ${id} 沒有出現在 completeness review sweep`);
+    for (const [id, unit] of unitById) {
+      if (unit.disposition !== "excluded_nonsemantic" && !swept.has(id)) {
+        errors.push(`$.semantic_inventory 的 ${id} 沒有出現在 completeness review sweep`);
+      }
     }
   }
 
   if (requireKeys(spec.source_limitation, ["scope", "notice"], ["scope", "notice"], "$.source_limitation", errors)) {
     if (spec.source_limitation.scope !== "transcript_only") errors.push("$.source_limitation.scope 必須是 transcript_only");
-    if (!hasText(spec.source_limitation.notice)) errors.push("$.source_limitation.notice 必須明示逐字稿證據邊界");
+    if (spec.source_limitation.notice !== SOURCE_LIMITATION_NOTICE) {
+      errors.push("$.source_limitation.notice 必須使用固定警語，完整明示逐字稿邊界與畫面、語氣、示範盲點");
+    }
   }
   return errors;
 }

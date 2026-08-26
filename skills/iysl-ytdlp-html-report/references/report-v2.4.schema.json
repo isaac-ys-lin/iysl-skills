@@ -41,7 +41,6 @@
     },
     "interpretations": {
       "type": "array",
-      "minItems": 1,
       "items": {"$ref": "#/$defs/interpretation"}
     },
     "completeness_review": {"$ref": "#/$defs/completenessReview"},
@@ -175,12 +174,17 @@
           "additionalProperties": false,
           "required": ["opening", "middle", "ending"],
           "properties": {
-            "opening": {"$ref": "report-v2.schema.json#/$defs/topicIds"},
-            "middle": {"$ref": "report-v2.schema.json#/$defs/topicIds"},
-            "ending": {"$ref": "report-v2.schema.json#/$defs/topicIds"}
+            "opening": {"$ref": "#/$defs/unitIds"},
+            "middle": {"$ref": "#/$defs/unitIds"},
+            "ending": {"$ref": "#/$defs/unitIds"}
           }
         }
       }
+    },
+    "unitIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
     },
     "sourceLimitation": {
       "type": "object",
@@ -188,7 +192,7 @@
       "required": ["scope", "notice"],
       "properties": {
         "scope": {"const": "transcript_only"},
-        "notice": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+        "notice": {"const": "本報告以逐字稿為唯一內容來源，可能未涵蓋純畫面、語氣與示範細節；需要核對時請回到原影片。"}
       }
     }
   }

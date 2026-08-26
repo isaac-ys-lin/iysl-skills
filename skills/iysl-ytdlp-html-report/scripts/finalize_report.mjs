@@ -141,6 +141,9 @@ function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presen
 function main(args = process.argv.slice(2)) {
   const options = parseArgs(args);
   const spec = readJson(options.spec);
+  if (spec.version !== "2.4") {
+    throw new Error("finalization 只建立 v2.4 新報告；v2.3 僅保留既有 artifact 驗證支援");
+  }
   const manifest = readJson(options.manifest);
   const metadata = manifest.metadata && existsSync(manifest.metadata) ? readJson(manifest.metadata) : {};
   const videoId = scalar(manifest.id || spec.source.video_id, "video");
