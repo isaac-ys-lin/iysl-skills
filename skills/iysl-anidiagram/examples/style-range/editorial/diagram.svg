@@ -112,7 +112,7 @@
   <text x="600" y="460" text-anchor="middle" font-size="13" fill="#6b7890">長期而言，大幅勝過內建的人類知識</text>
 
   <!-- Evidence level: same pattern recurred across four domains -->
-  <rect x="60" y="700" width="1080" height="92" rx="14" fill="#eef2f9"/>
+  <rect x="60" y="700" width="1080" height="92" rx="14" fill="#e4eaf5"/>
   <text x="600" y="726" text-anchor="middle" font-size="14" font-weight="600" fill="#3a4557">同一模式，四個領域一再重演</text>
   <g font-size="13" fill="#40506a">
     <rect x="84" y="742" width="248" height="34" rx="8" fill="#ffffff" stroke="#d5dfef" stroke-width="1"/>

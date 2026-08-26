@@ -47,14 +47,21 @@ Example root:
 
 - All text stays as `<text>` (with `<tspan>` where needed). Never convert text to
   paths: text must remain editable and machine-checkable.
-- Font-size hierarchy at viewBox width 1200 (scale proportionally for other widths):
-  - Page title: 30-36
-  - Section titles: 20-24
-  - Labels: 15-17
-  - Annotations / footnotes: 12-13
+- Font size at viewBox width 1200 (scale proportionally for other widths). These are
+  starting points for a reading depth, not a validated range: the renderer never
+  inspects `font-size`, and the shipped examples legitimately use in-between values
+  such as 14 and 26. Treat a size as belonging to the depth it reads as.
+  - Page title: around 30-36
+  - Lead claim or section title: around 20-26
+  - Labels: around 14-17
+  - Annotations / footnotes: around 12-13
 - The hierarchy must support three reading depths: the main claim lands in 3 seconds
   (title), the structure lands in 10 seconds (section titles and layout), and details
   reward a close read (labels and annotations).
+- Size alone does not build hierarchy. Separate each tier from its neighbour with at
+  least two signals drawn from size, weight, ink value, italic, and letter-spacing.
+  Every shipped example already does this: two weights (600 and 700) plus three to
+  eight distinct text inks, and `print` adds italic and letter-spacing on top.
 - Quality gates enforced by the renderer:
   - `readability_text_collision`: at t=0 and t=loop/2, no two visible text bounding
     boxes may overlap beyond `--collision-tolerance` px (default 2) on both axes.
@@ -65,6 +72,31 @@ Example root:
     Hidden reset motion is allowed.
   - `external_resource_runtime`: the browser request guard observes no subresource
     request. Any network or extra local-file fetch is aborted and fails the render.
+
+## Surface and Color Discipline
+
+The renderer checks text collisions and margins, never color. These rules describe what
+the shipped examples already do; they are what keeps a diagram from going to mush.
+
+- **Every nested surface must separate from the surface it sits on**, by a lightness
+  step of `dL* >= 4` or by a visible stroke or shadow. `scripts/validate_visual_contract.py`
+  checks this one mechanically; `render_svg.py` does not. Compare against the parent
+  surface, not the page ground: a pale pill on a white card is judged against the card.
+  Both routes are in use, and the ground usually decides which. `blueprint` builds four
+  dark surfaces out of lightness steps because a dark ground cannot host white cards;
+  `editorial` and the `07` pair use hairline strokes on near-white cards. A panel with
+  neither reads as absent, which is the one defect this rule has actually caught.
+
+- **The accent hue names exactly one idea.** Pick the thing the reader must not miss,
+  the failure state, the payoff, the recurrence, and spend the accent only there. Every
+  shipped example spends its accent sparingly on one idea, and `07/dot` deliberately
+  uses none. An accent scattered across unrelated elements stops meaning anything and
+  becomes decoration. A tonal pair of one hue still counts as one accent.
+
+Count roles, not hex values. A tint earns its place by filling a named role: ground,
+surface, ink, muted ink, structure, primary, accent. `blueprint` earns 19 distinct
+colors because a dark ground needs more surface steps to stay legible; `print` needs
+only 10. Neither number is a target.
 
 ## SMIL Patterns
 
