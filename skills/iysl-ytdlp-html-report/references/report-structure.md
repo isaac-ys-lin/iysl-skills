@@ -71,7 +71,7 @@
 
 ## v2 structured report contract
 
-以 `report-v2.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。
+新報告以 `report-v2.4.schema.json` 建立 structured JSON spec，先驗證再從同一 spec 渲染 Markdown 與 desktop HTML。`report-v2.schema.json` 只保留給既有 v2.3 產物。
 
 報告是兩層閱讀。上層是 `brief`：一句 claim 回答「這支影片在吵什麼、值不值得往下讀」，加三到四個可單獨引用的 takeaways。claim 的 claim type 只能是 `speaker_claim` 或 `report_synthesis`；claim 與每個 takeaway 各自帶 `evidence_refs`，不共用一組，因為 takeaway 是讀者最可能單獨引用的一句。
 
@@ -101,13 +101,34 @@ manifest 與 clean transcript，在最終回覆指出缺少支撐的 section；�
 v2 spec、reader-facing Markdown/HTML 或 verification sidecar。只有通過此 gate
 的素材才適用下方完整 v2 contract，不得為了通過 schema 硬編問題、洞見或行動。
 
-### Topical completeness gate
+### Semantic inventory 與 completeness gate
 
 Evidence sufficiency 只回答「能不能寫」，不回答「影片的語意是否都被帶走」。先從第一性
 問題出發：讀者看完報告後，是否能重建看完影片會得到的主張、背景、例子、數字、轉折、
-限制、問題與講者質地？建立 reader blocks 前，先用 `topic_coverage` 掃過逐字稿的
-opening、middle、ending。**每個有語意的 topic 都必須映射到 reader block**；只能省略逐字
-重複、填充語與不改變理解的寒暄。下面的 signal 是納入理由，不是刪除門檻：
+限制、問題與講者質地？建立 reader blocks 前，先逐項建立 `semantic_inventory`，再用
+`completeness_review` 反向掃過逐字稿的 opening、middle、ending。**每個有效 unit 都必須有
+證據與 reader block 去向**；只能把逐字重複標成 `compressed_duplicate`，或把填充語與
+不改變理解的寒暄標成 `excluded_nonsemantic`。不得用篇幅或重要性分數排除有效語意。
+
+Unit 只有在刪除或反轉一段內容會改變結論、行動或證據時才拆開。每個 included unit 指派
+一個 `cognitive_job`、一個 `primary_block_id`、可選的 secondary blocks，並留下
+`routing_rationale`。預設路由如下；例外可以存在，但理由必須可審：
+
+| cognitive job | 預設 block |
+| --- | --- |
+| `explain` | `narrative` |
+| `sequence` | `process` |
+| `compare` | `comparison` |
+| `control` | `control-gap` |
+| `emphasize` | `spotlight` 或 `key-points` |
+| `derive_insight`、`raise_question` | `food-for-thought` |
+| `prompt_action` | `actions` |
+
+`interpretations` 保存報告推導的洞見、問題與行動，每一項用 `basis_unit_ids` 回指 included
+units。原片陳述與報告推論不可混成同一種內容。
+
+`topic_coverage` 繼續負責把 inventory、evidence 與 reader blocks 閉合。下面的 signal 是
+納入與呈現理由，不是刪除門檻：
 
 - `concrete_metric`：具體數字、價格、速度、規模或時間；
 - `decision`：產品、組織、資源或風險決策；
@@ -125,13 +146,14 @@ opening、middle、ending。**每個有語意的 topic 都必須映射到 reader
 兩個以上高顯著性 signal 通常表示適合用 `spotlight` 放大，但 spotlight 只決定閱讀層級，
 不能決定內容是否存在。一般內容仍要進 narrative、comparison 或其他合適 block。
 
-`topic_coverage` 不是第五章，也不進 reader output。它是 spec 內的 coverage contract：
+`semantic_inventory`、`interpretations`、`completeness_review` 與 `topic_coverage` 都不是
+reader content。它們是 spec 內的 completeness contract：
 每個 topic 都要列出 evidence refs 與 block IDs，validator 會檢查 evidence 是否真的出現在
 那些 blocks。以 `--transcript` 執行時，validator 也會用 exact quote 的實際位置確認 sweep
 不是自我宣告。opening、middle、ending 任一為空、topic 只列在 map 裡卻沒寫進報告，或
-region 裡的 topic 沒有該區段證據，都必須失敗。這個機械 gate 仍不能自行發現「作者根本沒
-列出的語意單元」，所以 finalization 前必須再從逐字稿開頭掃到結尾，逐項對照 map；不得把
-validator pass 說成語意完整性的單獨證明。
+region 裡的 unit/topic 沒有該區段證據，都必須失敗。這個機械 gate 仍不能自行發現「作者
+根本沒列出的語意單元」，所以 `completeness_review.status: passed` 只能在人工從逐字稿開頭
+掃到結尾並逐項對照後填入；不得把 validator pass 說成語意完整性的單獨證明。
 
 ### Evidence registry
 
@@ -173,9 +195,11 @@ validator pass 說成語意完整性的單獨證明。
 
 - 讀者欄位禁止 `file://`、絕對本機路徑、command、traceback 或 cache/debug ledger。
 - `claim_type`、`evidence_refs`、evidence id、證據欄與逐字稿 evidence appendix 全部留在幕後，不進 reader-facing Markdown/HTML。
+- v2.4 的 `source_limitation.notice` 是唯一例外：它在 brief 內明示報告只保證逐字稿語意完整、
+  可能缺少純畫面／語氣／示範細節，並連回原影片。技術性字幕、ASR 與品質資訊仍只進 sidecar。
 - 所有字串進 HTML 前必須 escape；template 不使用 inline script、外部 JavaScript 或本機資源。
 - 預設 acceptance surface 是 desktop browser；不預設執行 mobile viewport 或 screenshot QA。
-- 不顯示字幕/ASR、未檢視畫面、轉錄品質或其他來源限制；全部寫進 verification sidecar。
+- 不顯示字幕/ASR backend、轉錄品質或執行細節；全部寫進 verification sidecar。
 
 ## 區塊設計邏輯
 
@@ -240,7 +264,7 @@ validator pass 說成語意完整性的單獨證明。
 - 長影片要掃過開頭、中段、結尾；若有章節或使用者提供的時間戳，也要納入。
 - 若逐字稿品質差但仍足以支撐內容，降低 reader-facing 主張強度，並把具體限制寫進 sidecar。
 - 若素材太短，不足以產出深度洞見，直接說明，不要硬湊。
-- 所有來源限制與完整驗證資訊都放在 sidecar；report 不建立 `驗證與限制` 或同義尾段。
+- 除固定 `source_limitation.notice` 外，所有技術來源限制與完整驗證資訊都放在 sidecar；report 不建立 `驗證與限制` 或同義尾段。
 
 ## 交付前品質自檢
 
@@ -259,7 +283,7 @@ validator pass 說成語意完整性的單獨證明。
 以下內容只能放在 `<video_id>.verification.md` sidecar：
 
 - source URL 和 resolved URL 的完整 ledger
-- 字幕／ASR 來源、轉錄品質、可能誤聽、未檢視畫面與上下文不足等限制
+- 字幕／ASR 來源、轉錄品質、可能誤聽與上下文不足等技術限制（固定 reader-safe `source_limitation.notice` 除外）
 - metadata、transcript、audio、cache 的完整本機路徑
 - 抽取工具完整命令
 - stderr / traceback / debug log

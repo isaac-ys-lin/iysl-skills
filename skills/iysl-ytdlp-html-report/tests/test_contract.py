@@ -33,6 +33,81 @@ class YtdlpReportContractTest(unittest.TestCase):
         path.write_text(transcript, encoding="utf-8")
         return path
 
+    @staticmethod
+    def _v24_fixture() -> dict:
+        fixture = json.loads(
+            (ROOT / "tests" / "fixtures" / "report-v2.valid.json").read_text(encoding="utf-8")
+        )
+        fixture["version"] = "2.4"
+        block_by_id = {block["id"]: block for block in fixture["blocks"]}
+        job_by_type = {
+            "narrative": "explain",
+            "process": "sequence",
+            "comparison": "compare",
+            "control-gap": "control",
+            "spotlight": "emphasize",
+            "key-points": "derive_insight",
+            "food-for-thought": "raise_question",
+            "actions": "prompt_action",
+        }
+        units = []
+        unit_by_topic = {}
+        for index, topic in enumerate(fixture["topic_coverage"]["topics"], start=1):
+            unit_id = f"U{index}"
+            unit_by_topic[topic["id"]] = unit_id
+            primary = topic["block_ids"][0]
+            signals = set(topic["salience_signals"])
+            kind = next(
+                (candidate for signal, candidate in (
+                    ("concrete_metric", "metric"), ("decision", "decision"),
+                    ("anecdote", "anecdote"), ("tradeoff", "tradeoff"),
+                    ("caveat", "caveat"), ("open_question", "question"),
+                ) if signal in signals),
+                "claim",
+            )
+            units.append({
+                "id": unit_id,
+                "kind": kind,
+                "statement": topic["title"],
+                "evidence_refs": topic["evidence_refs"],
+                "disposition": "included",
+                "duplicate_of": None,
+                "cognitive_job": job_by_type[block_by_id[primary]["type"]],
+                "primary_block_id": primary,
+                "secondary_block_ids": topic["block_ids"][1:],
+                "routing_rationale": "使用能直接承載讀者認知任務的最小既有區塊。",
+            })
+        fixture["semantic_inventory"] = units
+        fixture["interpretations"] = [
+            {
+                "id": f"I{index}",
+                "kind": "question" if block["claim_type"] == "open_question" else (
+                    "action" if block["type"] == "actions" else "insight"
+                ),
+                "text": block["title"],
+                "basis_unit_ids": [
+                    unit["id"] for unit in units
+                    if block["id"] in [unit["primary_block_id"], *unit["secondary_block_ids"]]
+                    or set(unit["evidence_refs"]) & set(block["evidence_refs"])
+                ],
+                "block_ids": [block["id"]],
+            }
+            for index, block in enumerate(fixture["blocks"], start=1)
+            if block["claim_type"] != "speaker_claim"
+        ]
+        fixture["completeness_review"] = {
+            "status": "passed",
+            "sweep": {
+                region: [unit_by_topic[topic_id] for topic_id in topic_ids]
+                for region, topic_ids in fixture["topic_coverage"]["sweep"].items()
+            },
+        }
+        fixture["source_limitation"] = {
+            "scope": "transcript_only",
+            "notice": "本報告以逐字稿為唯一內容來源，可能未涵蓋純畫面、語氣與示範細節；需要核對時請回到原影片。",
+        }
+        return fixture
+
     def test_frontmatter_name_matches_directory_and_is_iysl_prefixed(self):
         match = re.search(r"^name:\s*([a-z0-9-]+)$", self.skill, re.MULTILINE)
         self.assertIsNotNone(match)
@@ -509,6 +584,227 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertNotIn("file://", html)
             self.assertNotRegex(html, r"/Users/|/home/")
             self.assertNotIn("<script", html.lower())
+
+    def test_v24_validator_requires_semantic_inventory(self):
+        helper = ROOT / "scripts" / "validate_report_v2_4.mjs"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec = self._v24_fixture()
+            spec_path = temp / "report-v2.4.json"
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            minutes = subprocess.run(
+                ["node", str(helper), str(spec_path), "--print-reading-minutes"],
+                check=True, capture_output=True, text=True,
+            )
+            spec["reading_minutes"] = int(minutes.stdout.strip())
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            accepted = subprocess.run(
+                ["node", str(helper), str(spec_path)],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+            del spec["semantic_inventory"]
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            rejected = subprocess.run(
+                ["node", str(helper), str(spec_path)],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("semantic_inventory", rejected.stderr)
+
+    def test_v24_schema_documents_inventory_routing_and_source_boundary(self):
+        schema = json.loads(
+            (ROOT / "references" / "report-v2.4.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(schema["properties"]["version"]["const"], "2.4")
+        for field in (
+            "semantic_inventory", "interpretations", "completeness_review", "source_limitation"
+        ):
+            self.assertIn(field, schema["required"])
+        unit = schema["$defs"]["semanticUnit"]
+        self.assertEqual(
+            set(unit["required"]),
+            {
+                "id", "kind", "statement", "evidence_refs", "disposition", "duplicate_of",
+                "cognitive_job", "primary_block_id", "secondary_block_ids", "routing_rationale",
+            },
+        )
+        self.assertEqual(
+            set(schema["$defs"]["disposition"]["enum"]),
+            {"included", "compressed_duplicate", "excluded_nonsemantic"},
+        )
+
+    def test_v24_renderer_shows_source_limitation_without_operator_fields(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec = self._v24_fixture()
+            spec_path = temp / "report-v2.4.json"
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            minutes = subprocess.run(
+                ["node", str(ROOT / "scripts" / "validate_report_v2_4.mjs"), str(spec_path), "--print-reading-minutes"],
+                check=True, capture_output=True, text=True,
+            )
+            spec["reading_minutes"] = int(minutes.stdout.strip())
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            markdown_path = temp / "report.md"
+            html_path = temp / "report.html"
+            rendered = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "render_report_v2.mjs"),
+                    "--spec", str(spec_path), "--markdown-out", str(markdown_path),
+                    "--html-out", str(html_path),
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            notice = spec["source_limitation"]["notice"]
+            for output in (
+                markdown_path.read_text(encoding="utf-8"),
+                html_path.read_text(encoding="utf-8"),
+            ):
+                self.assertIn(notice, output)
+                self.assertIn(spec["source"]["url"], output)
+                self.assertNotIn("semantic_inventory", output)
+                self.assertNotIn("routing_rationale", output)
+                self.assertNotIn("basis_unit_ids", output)
+
+    def test_v24_finalization_proves_semantic_completeness_and_reader_boundary(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec = self._v24_fixture()
+            spec_path = temp / "report-v2.4.json"
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            minutes = subprocess.run(
+                ["node", str(ROOT / "scripts" / "validate_report_v2_4.mjs"), str(spec_path), "--print-reading-minutes"],
+                check=True, capture_output=True, text=True,
+            )
+            spec["reading_minutes"] = int(minutes.stdout.strip())
+            spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            transcript_path = self._write_fixture_transcript(temp, spec)
+            manifest_path = temp / "manifest.json"
+            manifest_path.write_text(json.dumps({
+                "id": spec["source"]["video_id"],
+                "url": spec["source"]["url"],
+                "transcript": str(transcript_path),
+                "subtitle_status": "available",
+            }), encoding="utf-8")
+            out_dir = temp / "out"
+            finalized = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                    "--spec", str(spec_path), "--manifest", str(manifest_path),
+                    "--out-dir", str(out_dir), "--fallback-reason", "kami-not-selected",
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(finalized.returncode, 0, finalized.stderr)
+            bundle = json.loads(finalized.stdout)
+            sidecar = Path(bundle["verification_sidecar"]).read_text(encoding="utf-8")
+            self.assertIn("semantic_completeness_gate: passed", sidecar)
+            self.assertIn("source_scope: transcript_only", sidecar)
+            self.assertIn("semantic_warnings:", sidecar)
+
+            html_path = Path(bundle["report_html"])
+            html = html_path.read_text(encoding="utf-8")
+            html_path.write_text(html.replace(spec["source_limitation"]["notice"], ""), encoding="utf-8")
+            rejected = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "validate_report_artifacts.mjs"),
+                    "--spec", str(spec_path), "--markdown", bundle["report_markdown"],
+                    "--html", str(html_path), "--sidecar", bundle["verification_sidecar"],
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("source limitation", rejected.stderr)
+
+    def test_v24_hard_fails_orphans_false_exclusions_duplicates_and_unbased_interpretations(self):
+        helper = ROOT / "scripts" / "validate_report_v2_4.mjs"
+
+        def validate(mutator):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp = Path(temp_dir)
+                spec = self._v24_fixture()
+                path = temp / "report-v2.4.json"
+                path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+                minutes = subprocess.run(
+                    ["node", str(helper), str(path), "--print-reading-minutes"],
+                    check=True, capture_output=True, text=True,
+                )
+                spec["reading_minutes"] = int(minutes.stdout.strip())
+                mutator(spec)
+                path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+                return subprocess.run(
+                    ["node", str(helper), str(path)],
+                    check=False, capture_output=True, text=True,
+                )
+
+        cases = []
+
+        def orphan(spec):
+            spec["semantic_inventory"][0]["primary_block_id"] = "missing-block"
+        cases.append((orphan, "primary_block_id"))
+
+        def false_exclusion(spec):
+            unit = spec["semantic_inventory"][0]
+            unit.update({
+                "disposition": "excluded_nonsemantic", "duplicate_of": None,
+                "cognitive_job": None, "primary_block_id": None, "secondary_block_ids": [],
+            })
+        cases.append((false_exclusion, "有效語意不可標成 excluded_nonsemantic"))
+
+        def duplicate_cycle(spec):
+            first = spec["semantic_inventory"][0]
+            second = spec["semantic_inventory"][1]
+            for unit, target in ((first, second["id"]), (second, first["id"])):
+                unit.update({
+                    "disposition": "compressed_duplicate", "duplicate_of": target,
+                    "cognitive_job": None, "primary_block_id": None, "secondary_block_ids": [],
+                })
+        cases.append((duplicate_cycle, "duplicate chain 形成循環"))
+
+        def missing_basis(spec):
+            spec["interpretations"][0]["basis_unit_ids"] = ["missing-unit"]
+        cases.append((missing_basis, "basis_unit_ids 必須指向 included unit"))
+
+        def incomplete_sweep(spec):
+            missing = spec["semantic_inventory"][0]["id"]
+            for ids in spec["completeness_review"]["sweep"].values():
+                while missing in ids:
+                    ids.remove(missing)
+        cases.append((incomplete_sweep, "沒有出現在 completeness review sweep"))
+
+        def brief_only(spec):
+            spec["brief"]["claim"]["evidence_refs"] = ["E404"]
+        cases.append((brief_only, "沒有來自 included semantic unit"))
+
+        for mutator, expected in cases:
+            with self.subTest(expected=expected):
+                result = validate(mutator)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stderr)
+
+    def test_v24_routing_exception_warns_without_deleting_content(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            spec = self._v24_fixture()
+            spec["semantic_inventory"][0]["cognitive_job"] = "compare"
+            path = temp / "report-v2.4.json"
+            path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            minutes = subprocess.run(
+                ["node", str(ROOT / "scripts" / "validate_report_v2_4.mjs"), str(path), "--print-reading-minutes"],
+                check=True, capture_output=True, text=True,
+            )
+            spec["reading_minutes"] = int(minutes.stdout.strip())
+            path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(
+                ["node", str(ROOT / "scripts" / "validate_report_v2_4.mjs"), str(path)],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            warnings = json.loads(result.stdout)["warnings"]
+            self.assertTrue(any("routing exception" in warning for warning in warnings), warnings)
 
     def test_v23_topic_coverage_maps_salient_topics_to_reader_blocks(self):
         schema = json.loads(

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { readAndValidateReportV2 } from "./validate_report_v2.mjs";
+import { readAndValidateReport } from "./validate_report.mjs";
 
 const SECTION_TITLES = ["內容重述", "洞見", "food for thoughts", "可行啟發"];
 // 章節識別的權威是結構化錨點，不是標題文字或標題層級：排版可以自由決定
@@ -61,6 +61,10 @@ const FORBIDDEN_READER_TEXT = [
   "topic_coverage",
   "salience_signals",
   "block_ids",
+  "semantic_inventory",
+  "routing_rationale",
+  "basis_unit_ids",
+  "completeness_review",
 ];
 const FORBIDDEN_READER_PATTERNS = [
   /本報告使用(?:原生|自動)?字幕/,
@@ -296,7 +300,7 @@ for (let index = 0; index < args.length; index += 2) {
 if (Object.keys(paths).length !== 4) usage();
 
 try {
-  const spec = readAndValidateReportV2(paths.spec);
+  const spec = readAndValidateReport(paths.spec);
   const markdown = readFileSync(paths.markdown, "utf8");
   const html = readFileSync(paths.html, "utf8");
   const sidecar = readFileSync(paths.sidecar, "utf8");
@@ -320,7 +324,11 @@ try {
   } else if (!audit.briefBeforeSections) {
     errors.push("HTML 的 brief 必須位於四章之前");
   }
-  const briefAnchors = [spec.brief.claim.text, ...spec.brief.takeaways.map((item) => item.text)].map(normalize);
+  const briefAnchors = [
+    spec.brief.claim.text,
+    ...spec.brief.takeaways.map((item) => item.text),
+    ...(spec.source_limitation ? [spec.source_limitation.notice] : []),
+  ].map(normalize);
   for (const anchor of briefAnchors) {
     if (!markdownText.includes(anchor)) errors.push(`Markdown 遺漏 brief 內容：${anchor}`);
     if (!htmlText.includes(anchor)) errors.push(`HTML 遺漏 brief 內容：${anchor}`);
@@ -391,6 +399,20 @@ try {
   for (const field of SIDECAR_FIELDS) {
     if (!new RegExp(`^-[ \\t]*${field}:[ \\t]*[^\\r\\n]*\\S[^\\r\\n]*$`, "m").test(sidecar)) {
       errors.push(`sidecar 缺少非空欄位：${field}`);
+    }
+  }
+  if (spec.version === "2.4") {
+    for (const field of ["semantic_completeness_gate", "source_scope", "semantic_warnings"]) {
+      if (!new RegExp(`^-[ \\t]*${field}:[ \\t]*[^\\r\\n]*\\S[^\\r\\n]*$`, "m").test(sidecar)) {
+        errors.push(`sidecar 缺少非空欄位：${field}`);
+      }
+    }
+    if (!markdown.includes(spec.source.url) || !html.includes(spec.source.url)) {
+      errors.push("v2.4 reader output 的 source limitation 必須連回原影片");
+    }
+    const notice = normalize(spec.source_limitation.notice);
+    if (!markdownText.includes(notice) || !htmlText.includes(notice)) {
+      errors.push("v2.4 reader output 遺漏 source limitation");
     }
   }
   for (const field of COMMAND_FIELDS) {

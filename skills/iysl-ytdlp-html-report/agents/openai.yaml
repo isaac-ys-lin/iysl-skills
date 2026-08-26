@@ -1,6 +1,6 @@
 interface:
   display_name: "iysl-ytdlp-html-report"
-  short_description: "Transcript-first Traditional Chinese video report with verification sidecar."
-  default_prompt: "Use $iysl-ytdlp-html-report for one public video: produce a transcript-grounded v2 Traditional Chinese Markdown/HTML report and a separate verification sidecar."
+  short_description: "Transcript-complete Traditional Chinese video report with verified routing."
+  default_prompt: "Use $iysl-ytdlp-html-report for one public video: produce a transcript-complete v2.4 Traditional Chinese Markdown/HTML report, reader-safe source limitation, and separate verification sidecar."
 policy:
   allow_implicit_invocation: true
