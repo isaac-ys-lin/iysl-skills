@@ -116,6 +116,8 @@ function auditDocument(html) {
 
   const stack = [];
   const sectionText = new Map();
+  let briefText = "";
+  const briefLinks = new Set();
   let briefCount = 0;
   let briefBeforeSections = true;
   let opaque = null;
@@ -130,6 +132,7 @@ function auditDocument(html) {
     const selfClosing = match[4] === "/" || VOID_ELEMENTS.has(tag);
 
     if (!opaque && between.trim()) {
+      if (stack.some((entry) => entry.brief)) briefText += between;
       for (const entry of stack) {
         if (entry.anchor) sectionText.set(entry.anchor, (sectionText.get(entry.anchor) || "") + between);
         if (entry.blockId) blockText.set(entry.blockId, (blockText.get(entry.blockId) || "") + between);
@@ -160,6 +163,10 @@ function auditDocument(html) {
     const section = attributes.get("data-report-section");
     const chrome = attributes.get("data-report-chrome");
     const brief = attributes.has("data-report-brief");
+    const insideBrief = brief || stack.some((entry) => entry.brief);
+    if (tag === "a" && insideBrief && attributes.has("href")) {
+      briefLinks.add(decodeEntities(attributes.get("href").trim()));
+    }
     const blockId = attributes.get("data-report-block");
     const blockType = attributes.get("data-report-block-type");
     const declarations = [section !== undefined, chrome !== undefined, brief].filter(Boolean).length;
@@ -213,6 +220,7 @@ function auditDocument(html) {
         declared,
         anchor: anchor || stack.find((entry) => entry.anchor)?.anchor || null,
         blockId: blockId !== undefined && blockType !== undefined ? blockId.trim() : null,
+        brief: insideBrief,
       });
     }
   }
@@ -221,7 +229,7 @@ function auditDocument(html) {
   if (tail.trim()) {
     problems.push(`未經宣告的讀者內容：「${tail.replace(/\s+/g, " ").trim().slice(0, 24)}」`);
   }
-  return { problems, anchors, briefCount, briefBeforeSections, sectionText, blockDeclarations, blockText };
+  return { problems, anchors, briefCount, briefBeforeSections, briefText, briefLinks, sectionText, blockDeclarations, blockText };
 }
 
 function usage() {
@@ -407,12 +415,17 @@ try {
         errors.push(`sidecar 缺少非空欄位：${field}`);
       }
     }
-    if (!markdown.includes(spec.source.url) || !html.includes(spec.source.url)) {
-      errors.push("v2.4 reader output 的 source limitation 必須連回原影片");
-    }
     const notice = normalize(spec.source_limitation.notice);
-    if (!markdownText.includes(notice) || !htmlText.includes(notice)) {
-      errors.push("v2.4 reader output 遺漏 source limitation");
+    const firstMarkdownSection = markdown.search(/^##\s+/m);
+    const markdownBrief = firstMarkdownSection >= 0 ? markdown.slice(0, firstMarkdownSection) : markdown;
+    const escapedNotice = spec.source_limitation.notice.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedUrl = spec.source.url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const markdownNoticeLine = new RegExp(`^>\\s+${escapedNotice}\\s+\\[回到原影片\\]\\(${escapedUrl}\\)\\s*$`, "m");
+    if (!markdownNoticeLine.test(markdownBrief)) {
+      errors.push("v2.4 Markdown 的 source limitation 與原影片連結必須在 brief 內");
+    }
+    if (!normalize(audit.briefText).includes(notice) || !audit.briefLinks.has(spec.source.url)) {
+      errors.push("v2.4 HTML 的 source limitation 與原影片連結必須在 brief 內");
     }
   }
   for (const field of COMMAND_FIELDS) {
