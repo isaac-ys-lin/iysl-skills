@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readAndValidateReportV2 } from "./validate_report_v2.mjs";
+import { readAndValidateReport } from "./validate_report.mjs";
 
 function usage() {
   console.error("用法：render_report_v2.mjs --spec <report-v2.json> [--markdown-out <report.md>] [--html-out <report.html> [--template <template.html>]]（至少指定一種輸出）");
@@ -98,7 +98,7 @@ function blockHtml(block) {
   return `<article id="${escapeHtml(block.id)}" class="report-block block-${escapeHtml(block.type)}" data-report-block="${escapeHtml(block.id)}" data-report-block-type="${escapeHtml(block.type)}"><header><h3>${escapeHtml(block.title)}</h3></header>${body}</article>`;
 }
 
-const spec = readAndValidateReportV2(specPath);
+const spec = readAndValidateReport(specPath);
 const result = { valid: true, blocks: spec.blocks.length };
 
 if (markdownOut) {
@@ -110,6 +110,10 @@ if (markdownOut) {
     escapeMarkdown(spec.brief.claim.text),
     "",
     ...spec.brief.takeaways.map((takeaway) => `- **${escapeMarkdown(takeaway.text)}**`),
+    ...(spec.source_limitation ? [
+      "",
+      `> ${escapeMarkdown(spec.source_limitation.notice)} [回到原影片](${spec.source.url})`,
+    ] : []),
   ].join("\n");
   const markdown = [
     `# ${escapeMarkdown(spec.title)}`,
@@ -144,6 +148,9 @@ if (htmlOut) {
       "<ul class=\"brief-takeaways\">",
       ...spec.brief.takeaways.map((takeaway) => `<li>${escapeHtml(takeaway.text)}</li>`),
       "</ul>",
+      ...(spec.source_limitation ? [
+        `<p class="source-limitation">${escapeHtml(spec.source_limitation.notice)} <a href="${escapeHtml(spec.source.url)}" target="_blank" rel="noreferrer">回到原影片</a></p>`,
+      ] : []),
       "</section>",
     ].join(""),
     sectionsHtml: REPORT_SECTIONS.map((section) => {

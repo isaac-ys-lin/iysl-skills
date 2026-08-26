@@ -206,13 +206,30 @@
         "max_questions": 0,
         "max_subagents": 1,
         "must_do": [
-          "sweep opening middle and ending into topic coverage",
-          "map every semantically distinct topic to transcript evidence and a reader block",
+          "extract every semantically distinct unit before choosing a presentation block",
+          "sweep opening middle and ending into completeness review",
+          "map every included unit through topic coverage to transcript evidence and a reader block",
           "validate sweep regions against exact quote positions in the clean transcript",
           "use spotlight blocks when compression would erase the value of a detail"
         ],
         "must_not_do": [
           "treat a passing minimum evidence gate as topical completeness"
+        ]
+      }
+    },
+    {
+      "id": "transcript-only-reader-boundary",
+      "kind": "simple",
+      "prompt": "逐字稿內容完整即可；提醒讀者純畫面或語氣可能沒涵蓋，需要時回原影片。",
+      "expected": {
+        "must_do": [
+          "show the v2.4 source limitation in the brief",
+          "link back to the original video",
+          "keep ASR and extraction details in the sidecar"
+        ],
+        "must_not_do": [
+          "download video frames",
+          "claim visual completeness"
         ]
       }
     }

@@ -79,7 +79,7 @@ function sidecarValue(manifest, metadata, key, fallback) {
   return scalar(manifest[key] ?? metadata[key], fallback);
 }
 
-function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presentationBackend, fallbackReason }) {
+function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presentationBackend, fallbackReason, semanticWarnings }) {
   const id = scalar(manifest.id || spec.source.video_id);
   const sourceUrl = scalar(manifest.url || metadata.original_url || spec.source.url);
   const resolvedUrl = scalar(manifest.resolved_url || metadata.webpage_url || sourceUrl);
@@ -107,6 +107,11 @@ function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presen
     `- presentation_backend: ${scalar(presentationBackend)}`,
     `- presentation_fallback_reason: ${scalar(fallbackReason)}`,
     `- topical_coverage_gate: ${transcriptRegions}; topics=${coverage.topics.length}; ${coverageSummary}`,
+    ...(spec.version === "2.4" ? [
+      `- semantic_completeness_gate: ${spec.completeness_review.status}; units=${spec.semantic_inventory.length}; interpretations=${spec.interpretations.length}`,
+      `- source_scope: ${spec.source_limitation.scope}`,
+      `- semantic_warnings: ${semanticWarnings.length ? semanticWarnings.join(" | ") : "none"}`,
+    ] : []),
     `- subtitle_source: ${subtitleSource}`,
     `- extraction_tool: ${sidecarValue(manifest, metadata, "extraction_tool", "yt-dlp via extract_transcript.mjs")}`,
     `- transcription_method: ${sidecarValue(manifest, metadata, "transcription_method", "native captions")}`,
@@ -128,7 +133,7 @@ function buildSidecar({ manifest, metadata, spec, markdownPath, htmlPath, presen
     "",
     "## Limits",
     "",
-    "- Source, transcript, ASR, and visual-verification limitations are retained here for operators; they are not reader-facing content.",
+    "- The reader sees only the bounded transcript-only source notice; transcript quality, ASR, extraction, and verification details remain here for operators.",
     "",
   ].join("\n");
 }
@@ -158,7 +163,7 @@ function main(args = process.argv.slice(2)) {
   if (!transcriptPath) {
     throw new Error("finalization 需要 source manifest 指向存在的 clean transcript；semantic completeness gate 不可略過");
   }
-  runNode("validate_report_v2.mjs", [options.spec, ...(transcriptPath ? ["--transcript", transcriptPath] : [])]);
+  const validation = JSON.parse(runNode("validate_report.mjs", [options.spec, ...(transcriptPath ? ["--transcript", transcriptPath] : [])]));
   // 外部出稿時完全不渲染內建 HTML：交給讀者的那一份，就是被驗的那一份。驗證
   // 未過之前不把它寫進 out-dir，失敗的執行不會留下一份看起來可用的交付物。
   const externalHtml = options.htmlIn ? path.resolve(options.htmlIn) : "";
@@ -180,6 +185,7 @@ function main(args = process.argv.slice(2)) {
     manifest, metadata, spec, markdownPath, htmlPath,
     presentationBackend: options.presentationBackend,
     fallbackReason: options.fallbackReason,
+    semanticWarnings: validation.warnings || [],
   });
   writeFileSync(sidecarPath, sidecar, "utf8");
   try {

@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iysl.local/schemas/ytdlp-html-report-v2.4.schema.json",
+  "title": "iysl-ytdlp-html-report v2.4",
+  "description": "Transcript-complete report contract. Semantic inventory and interpretation stay operator-facing; source_limitation is the reader-facing boundary of the transcript-only promise.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "title",
+    "source",
+    "reading_minutes",
+    "brief",
+    "evidence",
+    "blocks",
+    "topic_coverage",
+    "semantic_inventory",
+    "interpretations",
+    "completeness_review",
+    "source_limitation"
+  ],
+  "properties": {
+    "version": {"const": "2.4"},
+    "title": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+    "subtitle": {"type": "string"},
+    "language": {"const": "zh-Hant"},
+    "source": {"$ref": "report-v2.schema.json#/properties/source"},
+    "reading_minutes": {
+      "$comment": "由 reader-facing brief, blocks 與 source_limitation.notice 推導。",
+      "type": "integer",
+      "minimum": 1
+    },
+    "brief": {"$ref": "report-v2.schema.json#/$defs/brief"},
+    "evidence": {"$ref": "report-v2.schema.json#/properties/evidence"},
+    "blocks": {"$ref": "report-v2.schema.json#/properties/blocks"},
+    "topic_coverage": {"$ref": "report-v2.schema.json#/$defs/topicCoverage"},
+    "semantic_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/semanticUnit"}
+    },
+    "interpretations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/interpretation"}
+    },
+    "completeness_review": {"$ref": "#/$defs/completenessReview"},
+    "source_limitation": {"$ref": "#/$defs/sourceLimitation"}
+  },
+  "$defs": {
+    "unitKind": {
+      "enum": [
+        "claim", "context", "example", "metric", "decision", "tradeoff",
+        "caveat", "question", "anecdote", "nonsemantic"
+      ]
+    },
+    "disposition": {
+      "enum": ["included", "compressed_duplicate", "excluded_nonsemantic"]
+    },
+    "cognitiveJob": {
+      "enum": [
+        "explain", "sequence", "compare", "control", "emphasize",
+        "derive_insight", "raise_question", "prompt_action"
+      ]
+    },
+    "nullableString": {
+      "oneOf": [
+        {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+        {"type": "null"}
+      ]
+    },
+    "nullableCognitiveJob": {
+      "oneOf": [
+        {"$ref": "#/$defs/cognitiveJob"},
+        {"type": "null"}
+      ]
+    },
+    "semanticUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "statement",
+        "evidence_refs",
+        "disposition",
+        "duplicate_of",
+        "cognitive_job",
+        "primary_block_id",
+        "secondary_block_ids",
+        "routing_rationale"
+      ],
+      "properties": {
+        "id": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+        "kind": {"$ref": "#/$defs/unitKind"},
+        "statement": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+        "evidence_refs": {"$ref": "report-v2.schema.json#/$defs/evidenceRefs"},
+        "disposition": {"$ref": "#/$defs/disposition"},
+        "duplicate_of": {"$ref": "#/$defs/nullableString"},
+        "cognitive_job": {"$ref": "#/$defs/nullableCognitiveJob"},
+        "primary_block_id": {"$ref": "#/$defs/nullableString"},
+        "secondary_block_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+        },
+        "routing_rationale": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"disposition": {"const": "included"}}},
+          "then": {
+            "properties": {
+              "duplicate_of": {"type": "null"},
+              "cognitive_job": {"$ref": "#/$defs/cognitiveJob"},
+              "primary_block_id": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"disposition": {"const": "compressed_duplicate"}}},
+          "then": {
+            "properties": {
+              "duplicate_of": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+              "cognitive_job": {"type": "null"},
+              "primary_block_id": {"type": "null"},
+              "secondary_block_ids": {"maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"disposition": {"const": "excluded_nonsemantic"}}},
+          "then": {
+            "properties": {
+              "kind": {"const": "nonsemantic"},
+              "duplicate_of": {"type": "null"},
+              "cognitive_job": {"type": "null"},
+              "primary_block_id": {"type": "null"},
+              "secondary_block_ids": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    },
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "text", "basis_unit_ids", "block_ids"],
+      "properties": {
+        "id": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+        "kind": {"enum": ["insight", "question", "action"]},
+        "text": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"},
+        "basis_unit_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+        },
+        "block_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+        }
+      }
+    },
+    "completenessReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "sweep"],
+      "properties": {
+        "status": {"const": "passed"},
+        "sweep": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opening", "middle", "ending"],
+          "properties": {
+            "opening": {"$ref": "report-v2.schema.json#/$defs/topicIds"},
+            "middle": {"$ref": "report-v2.schema.json#/$defs/topicIds"},
+            "ending": {"$ref": "report-v2.schema.json#/$defs/topicIds"}
+          }
+        }
+      }
+    },
+    "sourceLimitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "notice"],
+      "properties": {
+        "scope": {"const": "transcript_only"},
+        "notice": {"$ref": "report-v2.schema.json#/$defs/nonEmptyString"}
+      }
+    }
+  }
+}

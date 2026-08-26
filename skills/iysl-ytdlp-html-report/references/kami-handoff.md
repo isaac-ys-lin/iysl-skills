@@ -1,6 +1,6 @@
 # Kami 交接契約
 
-Kami 是主線 presentation backend。交給它的只有**已通過 `validate_report_v2.mjs`
+Kami 是主線 presentation backend。交給它的只有**已通過 `validate_report.mjs`
 的 spec** 加這份契約——不給語意骨架 HTML，也不在事後對它的產物注入錨點。Kami 的
 價值在版面結構本身（封面、章節配置、閱讀節奏），把它降級成樣式層就沒有理由選它。
 
@@ -24,7 +24,8 @@ prompt。這不是禮貌性的規定，而是這份契約的地基：排版器�
 | `actions` | 可行啟發 |
 
 **Brief 錨點。** 掃讀層所在的區塊要帶 `data-report-brief`，恰好一個，且必須出現在
-第一個 `data-report-section` 之前。Brief 不是第五章，不要給它章節標題。
+第一個 `data-report-section` 之前。Brief 不是第五章，不要給它章節標題。v2.4 的
+`source_limitation.notice` 與「回到原影片」連結也放在這個錨點內，不能省略或改寫。
 
 **Chrome 宣告。** 沒有 spec 來源的排版元素要明確宣告 `data-report-chrome`，值只能是
 `cover`、`toc`、`running-head` 其中之一。列舉以外的值一樣會被擋下——宣告本身不是
@@ -87,9 +88,10 @@ prompt。這不是禮貌性的規定，而是這份契約的地基：排版器�
 `spotlight` 是內容重述中的編輯插頁。它要比 narrative 醒目，但不能升格成第五章，也不能
 拆離 `recap`；保留 block title、item heading 與 text，並用一致的 callout 語法呈現。
 
-`topic_coverage` 是 coordinator 的 completeness contract，不是讀者內容。不要呈現 topic
-title、sweep、salience signals、block IDs 或 coverage 摘要；它只用來證明所有有語意的
-內容都已映射到 blocks，也會標示哪些細節適合放大。真正可排版的語意仍是 brief 與 blocks。
+`semantic_inventory`、`interpretations`、`completeness_review` 與 `topic_coverage` 是
+coordinator 的 completeness contract，不是讀者內容。不要呈現 unit/topic title、sweep、
+routing rationale、basis IDs、salience signals、block IDs 或 coverage 摘要。真正可排版的
+語意仍是 brief、`source_limitation.notice` 與 blocks。
 
 **基調**
 
@@ -115,8 +117,9 @@ title、sweep、salience signals、block IDs 或 coverage 摘要；它只用來�
 - 一個區塊不能同時宣告錨點與 chrome：要嘛回指 spec，要嘛承認自己沒有證據。
 - spec 裡的每一段內容都必須出現在 HTML；brief 的 claim 與每個 takeaway 也一樣。
 - `reading_minutes` 由 spec 帶來，直接呈現即可，不要自己重算或省略。
-- reader-facing 禁止文字（字幕來源、轉錄品質、未檢視畫面、`驗證與限制` 等）一律不得
-  出現，它們屬於 verification sidecar。這一條是掃**原始碼**，不只是讀者看得到的文字：
+- 除 spec 內固定的 `source_limitation.notice` 外，reader-facing 禁止文字（字幕來源、ASR、
+  轉錄品質、`驗證與限制` 等）一律不得出現，它們屬於 verification sidecar。這一條是掃
+  **原始碼**，不只是讀者看得到的文字：
   class 名稱、`id`、註解裡出現 `evidence_refs`、`presentation_backend` 這些字一樣會被擋。
 - 讀者內容不得出現絕對本機路徑、`file://` 或 Windows 磁碟機路徑。
 
