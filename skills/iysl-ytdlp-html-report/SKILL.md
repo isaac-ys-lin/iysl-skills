@@ -1,7 +1,7 @@
 ---
 name: iysl-ytdlp-html-report
-description: Turn one public YouTube, youtu.be, or resolvable t.co/X video URL into a Traditional Chinese reading report grounded in transcript evidence, with a Kami-typeset HTML report, its Markdown twin, and an operator verification sidecar. Stop when no transcript or authorized local ASR backend is available.
-compatibility: Requires Node.js; source preparation may require network access, yt-dlp, and ffmpeg, while report finalization is offline once the transcript and manifest exist. Local Qwen ASR and OpenCC are required only when captions are unavailable.
+description: Turn one public YouTube, youtu.be, or resolvable t.co/X video URL into a Traditional Chinese reading report grounded in transcript evidence, with a Kami-typeset HTML report, its Markdown twin, and an operator verification sidecar; optionally export PDF when explicitly requested. Stop when no transcript or authorized local ASR backend is available.
+compatibility: Requires Node.js; source preparation may require network access, yt-dlp, and ffmpeg, while report finalization is offline once the transcript and manifest exist. Local Qwen ASR and OpenCC are required only when captions are unavailable. Optional PDF export requires local Chrome/Chromium and Poppler for QA.
 ---
 
 # Transcript-first Video Report
@@ -110,6 +110,12 @@ Traditional Chinese.
    **on the HTML that will be delivered**. Without `--html-in` it renders the
    built-in offline fallback instead; that path requires
    `--fallback-reason kami-unavailable` or `kami-not-selected`.
+4. **Optional PDF** — only after an explicit PDF request, read
+   `/path/to/skill/references/pdf-export.md`. Run
+   `/path/to/skill/scripts/export_report_pdf.mjs`, then
+   `/path/to/skill/scripts/validate_report_pdf.mjs` with a fresh `--qa-dir` and
+   inspect every rendered page. PDF and page images remain opt-in; they do not
+   replace or modify the validated three-file report bundle.
 
 The presentation subagent in step 3 is the **only** subagent the standard path
 uses, and it is required, not an escalation. Add read-only analysis, variants,
@@ -141,8 +147,10 @@ being unavailable, and it is recorded as such in the sidecar.
   layer fails. Use the schema as the authority; do not duplicate it in the main
   prompt.
 - The standard delivery is three files: the validated HTML, its Markdown twin,
-  and the verification sidecar. PDF and page images are not part of it and are
-  produced only on an explicit request, because the validator cannot check them.
+  and the verification sidecar. PDF and page images remain opt-in. Their
+  deterministic validator checks structure and text, but visual pagination
+  still requires inspection of every page image; never describe the mechanical
+  PDF gate as proof of good composition.
 - After a successful report, the final reply lists HTML, Markdown, clean
   transcript, and sidecar paths, states the actual `presentation_backend`, and
   says structure verification passed; visual review was not performed unless

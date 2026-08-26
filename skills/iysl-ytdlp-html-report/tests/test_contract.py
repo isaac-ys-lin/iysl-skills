@@ -151,6 +151,142 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("逐字稿是唯一內容來源", self.skill)
         self.assertIn("讀者與 operator 資訊分離", self.skill)
 
+    def test_pdf_export_is_explicit_and_routes_to_a_dedicated_contract(self):
+        normalized = " ".join(self.skill.split())
+        self.assertIn("PDF and page images remain opt-in", normalized)
+        self.assertIn("references/pdf-export.md", self.skill)
+        self.assertIn("scripts/export_report_pdf.mjs", self.skill)
+        self.assertIn("scripts/validate_report_pdf.mjs", self.skill)
+        self.assertTrue((ROOT / "references" / "pdf-export.md").is_file())
+
+    def test_pdf_print_css_uses_report_anchors_without_forcing_every_chapter_to_a_new_page(self):
+        css = (ROOT / "assets" / "report-print.css").read_text(encoding="utf-8")
+        self.assertIn('[data-report-chrome="cover"]', css)
+        self.assertIn("[data-report-brief]", css)
+        self.assertIn("[data-report-section]", css)
+        self.assertIn("[data-report-block]", css)
+        self.assertIn("break-inside: avoid", css)
+        self.assertNotRegex(css, r"\[data-report-section\][^{]*\{[^}]*break-before\s*:\s*page")
+
+    def test_pdf_export_injects_print_contract_and_preserves_existing_output_on_failure(self):
+        helper = ROOT / "scripts" / "export_report_pdf.mjs"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            html_path = temp / "report.html"
+            html_path.write_text(
+                '<!doctype html><html><head><title>測試</title></head><body><main>'
+                '<header data-report-chrome="cover">封面</header>'
+                '<section data-report-brief>摘要</section>'
+                '<section data-report-section="recap"><article data-report-block="b1">內容</article></section>'
+                '</main></body></html>',
+                encoding="utf-8",
+            )
+            capture = temp / "captured.html"
+            captured_args = temp / "captured.args"
+            fake_browser = temp / "fake-chrome"
+            fake_browser.write_text(
+                "#!/bin/sh\n"
+                "printf '%s\\n' \"$@\" > \"$PDF_EXPORT_CAPTURE_ARGS\"\n"
+                "out=''\ninput=''\n"
+                "for arg in \"$@\"; do\n"
+                "  case \"$arg\" in --print-to-pdf=*) out=${arg#--print-to-pdf=} ;; file://*) input=$arg ;; esac\n"
+                "done\n"
+                "cp \"${input#file://}\" \"$PDF_EXPORT_CAPTURE_HTML\"\n"
+                "printf '%%PDF-1.4\\nfake\\n%%%%EOF\\n' > \"$out\"\n"
+                "sleep 5\n",
+                encoding="utf-8",
+            )
+            fake_browser.chmod(0o755)
+            pdf_path = temp / "report.pdf"
+            env = os.environ.copy()
+            env["PDF_EXPORT_CAPTURE_HTML"] = str(capture)
+            env["PDF_EXPORT_CAPTURE_ARGS"] = str(captured_args)
+            exported = subprocess.run(
+                [
+                    "node", str(helper), "--html", str(html_path), "--pdf", str(pdf_path),
+                    "--browser-executable", str(fake_browser), "--browser-timeout-ms", "1000",
+                ],
+                check=False, capture_output=True, text=True, env=env,
+            )
+            self.assertEqual(exported.returncode, 0, exported.stderr)
+            self.assertEqual(json.loads(exported.stdout)["browser_completion"], "timed_out_after_pdf")
+            self.assertTrue(pdf_path.read_bytes().startswith(b"%PDF-"))
+            injected = capture.read_text(encoding="utf-8")
+            self.assertIn('data-iysl-report-print="v1"', injected)
+            self.assertIn('[data-report-chrome="cover"]', injected)
+            self.assertIn("--no-pdf-header-footer", captured_args.read_text(encoding="utf-8"))
+
+            pdf_path.write_bytes(b"existing-pdf")
+            failing_browser = temp / "failing-chrome"
+            failing_browser.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+            failing_browser.chmod(0o755)
+            rejected = subprocess.run(
+                [
+                    "node", str(helper), "--html", str(html_path), "--pdf", str(pdf_path),
+                    "--browser-executable", str(failing_browser),
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertEqual(pdf_path.read_bytes(), b"existing-pdf")
+
+    def test_pdf_validator_requires_a4_text_sections_and_complete_page_images(self):
+        helper = ROOT / "scripts" / "validate_report_pdf.mjs"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            pdf_path = temp / "report.pdf"
+            pdf_path.write_bytes(b"%PDF-1.4\n%%EOF\n")
+            fake_bin = temp / "bin"
+            fake_bin.mkdir()
+            pdfinfo = fake_bin / "pdfinfo"
+            pdfinfo.write_text(
+                "#!/bin/sh\n"
+                "printf 'Pages: 2\\nEncrypted: no\\nJavaScript: no\\nPage size: 595 x 842 pts (A4)\\n'\n",
+                encoding="utf-8",
+            )
+            pdftotext = fake_bin / "pdftotext"
+            pdftotext.write_text("#!/bin/sh\nprintf '%s\\n' \"$PDF_TEST_TEXT\"\n", encoding="utf-8")
+            pdftoppm = fake_bin / "pdftoppm"
+            pdftoppm.write_text(
+                "#!/bin/sh\n"
+                "for last do :; done\n"
+                "printf png > \"${last}-01.png\"\n"
+                "printf png > \"${last}-02.png\"\n",
+                encoding="utf-8",
+            )
+            for executable in (pdfinfo, pdftotext, pdftoppm):
+                executable.chmod(0o755)
+            env = os.environ.copy()
+            env["PATH"] = f"{fake_bin}{os.pathsep}{env.get('PATH', '')}"
+            env["PDF_TEST_TEXT"] = ("內容重述 洞見 Food for thoughts 可行啟發 " * 20).strip()
+            qa_dir = temp / "qa"
+            accepted = subprocess.run(
+                ["node", str(helper), "--pdf", str(pdf_path), "--qa-dir", str(qa_dir)],
+                check=False, capture_output=True, text=True, env=env,
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            result = json.loads(accepted.stdout)
+            self.assertEqual(result["pages"], 2)
+            self.assertTrue(result["visual_review_required"])
+            self.assertEqual(len(result["page_images"]), 2)
+
+            env["PDF_TEST_TEXT"] = ("內容重述 洞見 可行啟發 " * 30).strip()
+            rejected = subprocess.run(
+                ["node", str(helper), "--pdf", str(pdf_path)],
+                check=False, capture_output=True, text=True, env=env,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("foodforthoughts", rejected.stderr.lower())
+
+            env["PDF_TEST_TEXT"] = (("內容重述 洞見 Food for thoughts 可行啟發 " * 20)
+                                    + "file:///private/tmp/report.print.html")
+            leaked = subprocess.run(
+                ["node", str(helper), "--pdf", str(pdf_path)],
+                check=False, capture_output=True, text=True, env=env,
+            )
+            self.assertNotEqual(leaked.returncode, 0)
+            self.assertIn("file url", leaked.stderr.lower())
+
     def test_generic_video_summary_keeps_the_full_report_bundle(self):
         normalized_skill = " ".join(self.skill.split())
         self.assertIn("generic request", normalized_skill)

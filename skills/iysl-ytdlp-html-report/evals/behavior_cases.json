@@ -149,6 +149,9 @@
         "max_subagents": 1,
         "must_do": [
           "use the simplest path"
+        ],
+        "must_not_do": [
+          "export PDF or page images without an explicit request"
         ]
       }
     },
@@ -195,6 +198,23 @@
         "must_not_do": [
           "pass the clean transcript, metadata, or manifest to the presentation subagent",
           "let the typesetter choose which facts to add"
+        ]
+      }
+    },
+    {
+      "id": "explicit-pdf-export-and-visual-qa",
+      "kind": "simple",
+      "prompt": "HTML 報告已驗證，另外幫我輸出 A4 PDF，分頁要仔細檢查。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "export with the dedicated print contract without editing the final HTML",
+          "validate A4 geometry text layer required sections and absence of local file URL leaks",
+          "render and visually inspect every PDF page"
+        ],
+        "must_not_do": [
+          "claim deterministic validation proves good composition",
+          "force every reader section onto a new page"
         ]
       }
     },

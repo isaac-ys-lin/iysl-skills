@@ -1,0 +1,88 @@
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #f7f4ed !important;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.65;
+  }
+
+  main {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-report-chrome="cover"] {
+    box-sizing: border-box;
+    height: 267mm !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  [data-report-brief] {
+    margin: 0 !important;
+    padding: 9mm 8mm !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-report-section] {
+    padding: 0 !important;
+  }
+
+  [data-report-section] + [data-report-section] {
+    margin-top: 10mm !important;
+  }
+
+  [data-report-block] {
+    margin-top: 8mm !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  [data-report-section] > :first-child,
+  [data-report-block] > :first-child,
+  [data-report-block] > :first-child + p {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  li,
+  [data-report-block-type="spotlight"] section,
+  [data-report-block-type="comparison"] > div,
+  [data-report-block-type="control-gap"] > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  .table-wrap {
+    overflow: visible !important;
+  }
+}
