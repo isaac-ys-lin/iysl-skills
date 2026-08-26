@@ -13,6 +13,15 @@ const FALLBACK_LANGUAGE_GROUPS = [
   { name: "english", patterns: ["en-orig", "en.*"] },
 ];
 
+export class CaptionsUnavailableError extends Error {
+  constructor(message, sourceReceipt, cause = null) {
+    super(message);
+    this.name = "CaptionsUnavailableError";
+    this.sourceReceipt = sourceReceipt;
+    if (cause) this.cause = cause;
+  }
+}
+
 export function usage(exitCode = 2) {
   console.error("用法：extract_transcript.mjs <url> [--out-dir <輸出資料夾>] [--langs <yt-dlp 字幕語言>]");
   process.exit(exitCode);
@@ -281,6 +290,7 @@ function baseMetadata(metadataFull, id, url, selection, catalog, requestedLangua
     channel: metadataFull.channel || metadataFull.uploader || "",
     uploader: metadataFull.uploader || "",
     webpage_url: metadataFull.webpage_url || `https://www.youtube.com/watch?v=${id}`,
+    requested_url: url,
     original_url: metadataFull.original_url || url,
     duration: metadataFull.duration || null,
     duration_string: metadataFull.duration_string || "",
@@ -325,6 +335,22 @@ function writeUnavailableArtifacts({ metadataPath, manifestPath, base, id, slug,
     }),
   };
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return {
+    id,
+    slug,
+    title: metadata.title,
+    url,
+    source_language: metadata.source_language,
+    subtitle_language: metadata.subtitle_language,
+    subtitle_kind: metadata.subtitle_kind,
+    subtitle_is_fallback: metadata.subtitle_is_fallback,
+    metadata: metadataPath,
+    manifest: manifestPath,
+    transcript: null,
+    subtitle: null,
+    chunks: 0,
+    capture_status: "captions-unavailable",
+  };
 }
 
 function subtitleDownloadArgs({ transcriptDir, id, url, candidate }) {
@@ -370,14 +396,14 @@ export function main(args = process.argv.slice(2)) {
     const reason = options.langs
       ? `沒有符合使用者指定 --langs ${options.langs} 的字幕`
       : "metadata 沒有可用的人工或自動字幕";
-    writeUnavailableArtifacts({ metadataPath, manifestPath, base, id, slug, url: options.url, reason });
-    throw new Error(`找不到 ${id} 的字幕檔。${reason}。`);
+    const sourceReceipt = writeUnavailableArtifacts({ metadataPath, manifestPath, base, id, slug, url: options.url, reason });
+    throw new CaptionsUnavailableError(`找不到 ${id} 的字幕檔。${reason}。`, sourceReceipt);
   }
 
   try {
     run("yt-dlp", subtitleDownloadArgs({ transcriptDir, id, url: options.url, candidate: selection }));
   } catch (error) {
-    writeUnavailableArtifacts({
+    const sourceReceipt = writeUnavailableArtifacts({
       metadataPath,
       manifestPath,
       base,
@@ -386,12 +412,12 @@ export function main(args = process.argv.slice(2)) {
       url: options.url,
       reason: `選定字幕下載失敗：${error.message}`,
     });
-    throw error;
+    throw new CaptionsUnavailableError(error.message, sourceReceipt, error);
   }
 
   const subtitleFile = subtitleFileForCandidate(transcriptDir, id, selection);
   if (!subtitleFile || !existsSync(subtitleFile)) {
-    writeUnavailableArtifacts({
+    const sourceReceipt = writeUnavailableArtifacts({
       metadataPath,
       manifestPath,
       base,
@@ -400,7 +426,10 @@ export function main(args = process.argv.slice(2)) {
       url: options.url,
       reason: `metadata 選定 ${selection.language} (${selection.kind})，但 yt-dlp 沒有寫出對應字幕檔`,
     });
-    throw new Error(`找不到 metadata 選定的 ${selection.language} (${selection.kind}) 字幕檔。`);
+    throw new CaptionsUnavailableError(
+      `找不到 metadata 選定的 ${selection.language} (${selection.kind}) 字幕檔。`,
+      sourceReceipt,
+    );
   }
 
   const chunks = subtitleFile.endsWith(".json3") ? cleanJson3(subtitleFile) : cleanVtt(subtitleFile);
@@ -430,7 +459,7 @@ export function main(args = process.argv.slice(2)) {
 
   writeFileSync(transcriptPath, transcript);
   writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
-  writeFileSync(manifestPath, `${JSON.stringify({
+  const manifest = {
     id,
     slug,
     url: options.url,
@@ -441,12 +470,14 @@ export function main(args = process.argv.slice(2)) {
     capture_status: "captions-ready",
     subtitle_status: "available",
     ...subtitleMetadataFields({ sourceLanguage, catalog, selection, requestedLanguages: options.langs }),
-  }, null, 2)}\n`);
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-  console.log(JSON.stringify({
+  return {
     id,
     slug,
     title: metadata.title,
+    url: options.url,
     source_language: metadata.source_language,
     subtitle_language: metadata.subtitle_language,
     subtitle_kind: metadata.subtitle_kind,
@@ -456,12 +487,13 @@ export function main(args = process.argv.slice(2)) {
     transcript: transcriptPath,
     subtitle: subtitleFile,
     chunks: chunks.length,
-  }, null, 2));
+    capture_status: "captions-ready",
+  };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    main();
+    console.log(JSON.stringify(main(), null, 2));
   } catch (error) {
     console.error(error.message);
     process.exit(1);

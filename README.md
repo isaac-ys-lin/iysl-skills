@@ -41,6 +41,7 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-equity-council` — run named Aswath Damodaran, George Soros, and Michael Mauboussin public-method members with distinct work products, then have a Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from a usable Public Equity Investing pack.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
+- `ask-matt` — route one situation to the right skill or flow over a curated map and render the recommended route as a self-contained HTML page, preserved and extended from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/engineering/ask-matt).
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 
 ## Structure

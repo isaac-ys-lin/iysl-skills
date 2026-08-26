@@ -5,6 +5,11 @@
 `scripts/prepare_source.mjs` accepts one public video URL and delegates metadata
 and captions to `extract_transcript.mjs`. It preserves the resolved media ID in
 the manifest, so an X or redirect URL does not determine artifact names.
+`prepare_source.mjs` consumes only the source receipt returned by that extractor
+invocation and verifies that its ID, requested URL, manifest, and metadata agree.
+Metadata keeps the exact invocation URL in `requested_url` and the resolved page
+in `webpage_url`, so redirect provenance remains explicit. `prepare_source.mjs`
+never selects a manifest by scanning or sorting other artifacts already in `--out-dir`.
 
 When captions are unavailable, the only bundled fallback is local
 `mlx-qwen3-asr` with `Qwen/Qwen3-ASR-1.7B`. Audio download uses yt-dlp with

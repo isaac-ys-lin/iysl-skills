@@ -3,6 +3,7 @@
   "name_policy": {
     "required_prefix": "iysl-",
     "allowed_unprefixed": [
+      "ask-matt",
       "writing-great-skills"
     ]
   },
@@ -99,6 +100,19 @@
         "trigger",
         "behavior"
       ]
+    },
+    "ask-matt": {
+      "maintainer": "iysl",
+      "origin": "forked",
+      "visibility": "explicit",
+      "license": "bundled-upstream",
+      "upstream": {
+        "repository": "https://github.com/mattpocock/skills",
+        "snapshot_commit": "321658273cb1d20b76026717d027d505790106d4",
+        "license": "MIT",
+        "copyright": "Matt Pocock"
+      },
+      "required_gates": []
     },
     "writing-great-skills": {
       "maintainer": "iysl",

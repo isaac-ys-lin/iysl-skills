@@ -85,7 +85,10 @@ menu or a default look.
 
 Every palette here still needs real text/ground contrast. `render_svg.py` checks text
 collisions and margins, not color contrast, so the Review role must inspect contrast by
-eye. A direction that looks striking but fails contrast is not a valid choice.
+eye. A direction that looks striking but fails contrast is not a valid choice. The
+surface-separation and accent-discipline rules that make a palette hold together live in
+`svg-authoring.md` under "Surface and Color Discipline"; a four-hex palette says nothing
+about the tints derived from it.
 
 ## Composition Also Varies
 

@@ -21,7 +21,7 @@
     <text x="192" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">01</text>
     <text x="192" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Intake</text>
     <text x="192" y="278" text-anchor="middle" font-size="13" fill="#68758d">Capture request and context</text>
-    <rect x="112" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <rect x="112" y="373" width="160" height="34" rx="17" fill="#e2eafc"/>
     <text x="192" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Service desk</text>
   </g>
   <g>
@@ -30,7 +30,7 @@
     <text x="440" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">02</text>
     <text x="440" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Triage</text>
     <text x="440" y="278" text-anchor="middle" font-size="13" fill="#68758d">Assess urgency and route</text>
-    <rect x="360" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <rect x="360" y="373" width="160" height="34" rx="17" fill="#e2eafc"/>
     <text x="440" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Support lead</text>
   </g>
   <g>
@@ -39,7 +39,7 @@
     <text x="688" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">03</text>
     <text x="688" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Specialist work</text>
     <text x="688" y="278" text-anchor="middle" font-size="13" fill="#68758d">Investigate and resolve</text>
-    <rect x="608" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <rect x="608" y="373" width="160" height="34" rx="17" fill="#e2eafc"/>
     <text x="688" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Domain specialist</text>
   </g>
   <g>
@@ -48,7 +48,7 @@
     <text x="936" y="327" text-anchor="middle" font-size="22" font-weight="700" fill="#315fce">04</text>
     <text x="936" y="252" text-anchor="middle" font-size="21" font-weight="700" fill="#172033">Customer closeout</text>
     <text x="936" y="278" text-anchor="middle" font-size="13" fill="#68758d">Confirm outcome and close</text>
-    <rect x="856" y="373" width="160" height="34" rx="17" fill="#edf2ff"/>
+    <rect x="856" y="373" width="160" height="34" rx="17" fill="#e2eafc"/>
     <text x="936" y="395" text-anchor="middle" font-size="13" font-weight="600" fill="#315fce">Service desk</text>
   </g>
 
