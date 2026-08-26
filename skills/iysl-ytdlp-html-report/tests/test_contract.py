@@ -168,6 +168,20 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("break-inside: avoid", css)
         self.assertNotRegex(css, r"\[data-report-section\][^{]*\{[^}]*break-before\s*:\s*page")
 
+    def test_pdf_print_css_enforces_editorial_rhythm_and_spotlight_pagination(self):
+        css = (ROOT / "assets" / "report-print.css").read_text(encoding="utf-8")
+        self.assertIn("--accent: #1b365d", css)
+        self.assertIn('"Source Han Serif TC VF"', css)
+        self.assertRegex(css, r"body\s*\{[^}]*font-size:\s*10pt[^}]*line-height:\s*1\.55")
+        self.assertRegex(css, r'\[data-report-block-type="spotlight"\] \.spotlight-items\s*\{[^}]*display:\s*contents')
+        self.assertNotRegex(css, r"thead\s*\{[^}]*background:\s*var\(--ink\)")
+
+    def test_pdf_layout_repair_reuses_validated_html_without_retranscription(self):
+        contract = (ROOT / "references" / "pdf-export.md").read_text(encoding="utf-8")
+        self.assertIn("reuse that HTML", contract)
+        self.assertIn("do not prepare the source", contract)
+        self.assertIn("Never leave a", contract)
+
     def test_pdf_export_injects_print_contract_and_preserves_existing_output_on_failure(self):
         helper = ROOT / "scripts" / "export_report_pdf.mjs"
         with tempfile.TemporaryDirectory() as temp_dir:
