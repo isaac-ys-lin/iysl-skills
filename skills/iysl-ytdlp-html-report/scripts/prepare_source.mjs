@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CaptionsUnavailableError, main as extractTranscript } from "./extract_transcript.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_MODEL = "Qwen/Qwen3-ASR-1.7B";
@@ -111,16 +112,66 @@ function run(command, commandArgs, options = {}) {
   return result;
 }
 
-function findManifest(outDir) {
-  const candidates = readdirSync(outDir)
-    .filter((file) => file.endsWith(".manifest.json"))
-    .map((file) => path.join(outDir, file));
-  if (!candidates.length) return null;
-  return candidates.sort()[candidates.length - 1];
-}
-
 function readJson(file) {
   return JSON.parse(readFileSync(file, "utf8"));
+}
+
+function requiredReceiptText(value, field) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`source receipt 缺少有效的 ${field}。`);
+  }
+  return value.trim();
+}
+
+function matchingOptionalPath(receiptValue, manifestValue) {
+  if (receiptValue == null && manifestValue == null) return true;
+  if (typeof receiptValue !== "string" || typeof manifestValue !== "string") return false;
+  return path.resolve(receiptValue) === path.resolve(manifestValue);
+}
+
+export function validateSourceReceipt(receipt, { outDir, url }) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+    throw new Error("extractor 沒有回傳本次 invocation 的 source receipt；拒絕掃描舊 manifest。");
+  }
+  const resolvedOutDir = path.resolve(outDir);
+  const id = requiredReceiptText(receipt.id, "resolved media ID");
+  const receiptUrl = requiredReceiptText(receipt.url, "source URL");
+  const manifestPath = path.resolve(requiredReceiptText(receipt.manifest, "manifest path"));
+  const metadataPath = path.resolve(requiredReceiptText(receipt.metadata, "metadata path"));
+  const expectedManifestPath = path.join(resolvedOutDir, `${id}.manifest.json`);
+  const expectedMetadataPath = path.join(resolvedOutDir, `${id}.metadata.json`);
+  if (manifestPath !== expectedManifestPath || metadataPath !== expectedMetadataPath) {
+    throw new Error("source receipt 的 artifact path 與本次 resolved media ID／out-dir 不一致。");
+  }
+  if (receiptUrl !== url) {
+    throw new Error("source receipt 的 URL 與本次 invocation 不一致。");
+  }
+  if (!existsSync(manifestPath) || !existsSync(metadataPath)) {
+    throw new Error("source receipt 指向的 manifest 或 metadata 不存在。");
+  }
+
+  const manifest = readJson(manifestPath);
+  const metadata = readJson(metadataPath);
+  if (manifest.id !== id || metadata.id !== id) {
+    throw new Error("source receipt、manifest 與 metadata 的 resolved media ID 不一致。");
+  }
+  if (manifest.url !== url) {
+    throw new Error("source manifest 的 URL 與本次 invocation 不一致。");
+  }
+  if (requiredReceiptText(metadata.requested_url, "metadata requested URL") !== url) {
+    throw new Error("source metadata 的 requested URL 與本次 invocation 不一致。");
+  }
+  if (path.resolve(requiredReceiptText(manifest.metadata, "manifest metadata path")) !== metadataPath) {
+    throw new Error("source manifest 沒有指向本次 receipt 的 metadata。");
+  }
+  if (receipt.capture_status !== manifest.capture_status) {
+    throw new Error("source receipt 與 manifest 的 capture status 不一致。");
+  }
+  if (!matchingOptionalPath(receipt.transcript, manifest.transcript)
+      || !matchingOptionalPath(receipt.subtitle, manifest.subtitle)) {
+    throw new Error("source receipt 與 manifest 的 transcript／subtitle path 不一致。");
+  }
+  return { id, manifestPath, metadataPath, manifest, metadata };
 }
 
 function failProcess(result, fallback) {
@@ -128,7 +179,7 @@ function failProcess(result, fallback) {
   throw new Error(detail || fallback);
 }
 
-function prepareWithCaptions(options, manifestPath) {
+function prepareWithCaptions(manifestPath) {
   const manifest = readJson(manifestPath);
   return {
     ...manifest,
@@ -214,21 +265,27 @@ export function main(args = process.argv.slice(2)) {
   }
   const outDir = path.resolve(options.outDir);
   mkdirSync(outDir, { recursive: true });
-  const extractor = path.join(SCRIPT_DIR, "extract_transcript.mjs");
-  const extractorArgs = [extractor, options.url, "--out-dir", outDir];
+  const extractorArgs = [options.url, "--out-dir", outDir];
   if (options.langs) extractorArgs.push("--langs", options.langs);
-  const extracted = run(process.execPath, extractorArgs);
-  const manifestPath = findManifest(outDir);
-  if (extracted.status === 0) {
-    if (!manifestPath) throw new Error("字幕抽取成功但找不到 source manifest。");
-    const prepared = prepareWithCaptions(options, manifestPath);
+  let sourceReceipt;
+  let captionsUnavailable = false;
+  try {
+    sourceReceipt = extractTranscript(extractorArgs);
+  } catch (error) {
+    if (!(error instanceof CaptionsUnavailableError)) throw error;
+    sourceReceipt = error.sourceReceipt;
+    captionsUnavailable = true;
+  }
+  const { manifestPath, manifest } = validateSourceReceipt(sourceReceipt, { outDir, url: options.url });
+  if (!captionsUnavailable) {
+    const prepared = prepareWithCaptions(manifestPath);
     writeFileSync(manifestPath, `${JSON.stringify(prepared, null, 2)}\n`);
     console.log(JSON.stringify({ ...prepared, source_manifest: manifestPath }, null, 2));
     return prepared;
   }
-  if (!manifestPath) failProcess(extracted, "來源準備失敗且沒有留下 manifest。");
-  const manifest = readJson(manifestPath);
-  if (manifest.capture_status !== "captions-unavailable") failProcess(extracted, "字幕抽取失敗，且不是可進入 ASR fallback 的 captions-unavailable 狀態。");
+  if (manifest.capture_status !== "captions-unavailable") {
+    throw new Error("字幕抽取失敗，且本次 source receipt 不是可進入 ASR fallback 的 captions-unavailable 狀態。");
+  }
   if (options.asr === "none") throw new Error("無字幕且未配置 ASR backend；停止，不用 metadata 硬寫報告。");
   const prepared = prepareWithLocalQwen(options, manifestPath);
   console.log(JSON.stringify({ ...prepared, source_manifest: manifestPath }, null, 2));
