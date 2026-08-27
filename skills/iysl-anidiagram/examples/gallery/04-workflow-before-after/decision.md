@@ -1,5 +1,9 @@
 # Decision
 
+## Primary Claim
+
+The same recurring task becomes more reliable when ad hoc manual work is replaced by a verified agent-assisted operating mode with evidence at every checkpoint.
+
 ## Composition
 
 Two side-by-side panels — "BEFORE / Ad hoc manual" (warm palette, dashed card borders) and "AFTER / Verified agent-assisted" (blue palette, solid borders, check markers) — joined by a center spine of four shared checkpoint labels: Intake, Execution, Verification, Handoff. Each row pairs the same checkpoint under the two modes, so the reader compares row by row instead of re-reading two unrelated lists. Per-panel summary lines ("Outcome depends on who remembers" / "Outcome is verifiable by anyone") compress each mode into one sentence.

@@ -51,4 +51,6 @@ candidate. The number of agents and revisions is not fixed.
 
 Use `scripts/render_svg.py --check` as the hard gate. Read `style-directions.md`
 when the content's visual language is uncertain or a multi-candidate comparison
-is needed; read `quality-escalation.md` only when escalation is justified.
+is needed; read `quality-escalation.md` only when escalation is justified. When
+adding or changing a decision-gallery case, follow `examples/gallery/README.md`
+and run `scripts/validate_gallery.py` before rendering.
