@@ -12,6 +12,7 @@ guard honest: if the collision ever stops existing, this file should be
 reconsidered rather than left passing for the wrong reason.
 """
 
+import os
 import subprocess
 import sys
 import unittest
@@ -48,6 +49,11 @@ class RootTestCollectionTest(unittest.TestCase):
             cwd=ROOT,
             capture_output=True,
             text=True,
+            # Collection imports every skill test module. Without this the
+            # subprocess writes __pycache__ into skills/, which is exactly the
+            # residue that test_package_contract.py forbids: this guard would
+            # then fail the next run of the suite it belongs to.
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
         )
         self.assertEqual(
             result.returncode,
