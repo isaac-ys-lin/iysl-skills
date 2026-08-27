@@ -182,6 +182,7 @@ class YtdlpReportContractTest(unittest.TestCase):
         self.assertIn("do not prepare the source", contract)
         self.assertIn("Never leave a", contract)
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake CLI fixture requires chmod and shebang execution")
     def test_pdf_export_injects_print_contract_and_preserves_existing_output_on_failure(self):
         helper = ROOT / "scripts" / "export_report_pdf.mjs"
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -244,6 +245,7 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0)
             self.assertEqual(pdf_path.read_bytes(), b"existing-pdf")
 
+    @unittest.skipIf(os.name == "nt", "POSIX fake CLI fixture requires chmod and shebang execution")
     def test_pdf_validator_requires_a4_text_sections_and_complete_page_images(self):
         helper = ROOT / "scripts" / "validate_report_pdf.mjs"
         with tempfile.TemporaryDirectory() as temp_dir:
