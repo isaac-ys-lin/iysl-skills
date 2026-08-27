@@ -45,6 +45,7 @@
   .eyebrow,
   .chapter-label,
   .facts,
+  .meta,
   tbody th,
   ol li::before {
     font-family: inherit !important;
@@ -87,6 +88,7 @@
     line-height: 1.5 !important;
   }
 
+  [data-report-chrome="cover"] .meta,
   [data-report-chrome="cover"] .facts {
     gap: 4pt 18pt !important;
     margin-top: 24pt !important;
@@ -95,6 +97,7 @@
     font-weight: 400 !important;
   }
 
+  [data-report-chrome="cover"] .meta span,
   [data-report-chrome="cover"] .facts strong {
     color: var(--ink) !important;
     font-weight: 500 !important;
@@ -129,6 +132,7 @@
     margin: 0 !important;
   }
 
+  [data-report-brief] .source-limitation,
   [data-report-brief] .source-note {
     margin: 12pt 0 0 !important;
     padding-top: 10pt !important;
@@ -149,6 +153,14 @@
 
   [data-report-section] + [data-report-section] {
     margin-top: 18mm !important;
+  }
+
+  /* 章號與章名是同一個東西。讓分頁把它們切開，讀者會在頁尾看到一個孤零零的編號。 */
+  [data-report-section] > header {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   [data-report-section] .chapter-label {
@@ -189,7 +201,9 @@
     line-height: 1.28 !important;
   }
 
-  h4 {
+  h4,
+  .process strong,
+  .actions strong {
     margin: 0 0 4pt !important;
     color: var(--ink) !important;
     font-size: 12pt !important;
@@ -240,8 +254,15 @@
   }
 
   tbody th {
-    width: 20%;
     font-weight: 500 !important;
+  }
+
+  /* 標籤欄是表格的入口。給不到寬度，中文標籤會被壓成一行一到兩個字。 */
+  thead th:first-child,
+  tbody th:first-child,
+  tbody td:first-child {
+    width: 18%;
+    min-width: 24mm;
   }
 
   .table-wrap {
@@ -259,6 +280,11 @@
     display: contents !important;
   }
 
+  [data-report-block-type="spotlight"] .spotlight {
+    display: contents !important;
+  }
+
+  [data-report-block-type="spotlight"] .spotlight > article,
   [data-report-block-type="spotlight"] .spotlight-items > section {
     margin: 10pt 0 0 !important;
     padding: 9pt 12pt 9pt 14pt !important;
@@ -283,6 +309,7 @@
 
   ol li:last-child {
     margin-bottom: 0 !important;
+    border-bottom: 0 !important;
   }
 
   ol li::before {

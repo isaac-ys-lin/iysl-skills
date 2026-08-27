@@ -155,8 +155,12 @@ function main(args = process.argv.slice(2)) {
 
   // 上一次執行的殘骸會讓這次的失敗看起來像成功：同名的舊 HTML 還在，sidecar 卻
   // 已經換成這次的 backend。開工前先清掉這三份同名交付物。
+  // 但外部出稿常常就寫在 htmlPath 上（SKILL.md 的 step 3 正是這樣叫的），
+  // 那份檔案是這次執行的輸入，不是上一次的殘骸；清掉它等於在讀取前先毀掉它。
+  const externalHtml = options.htmlIn ? path.resolve(options.htmlIn) : "";
   const deliverables = [markdownPath, htmlPath, sidecarPath];
   for (const file of deliverables) {
+    if (path.resolve(file) === externalHtml) continue;
     if (existsSync(file)) rmSync(file);
   }
 
@@ -169,7 +173,6 @@ function main(args = process.argv.slice(2)) {
   const validation = JSON.parse(runNode("validate_report.mjs", [options.spec, ...(transcriptPath ? ["--transcript", transcriptPath] : [])]));
   // 外部出稿時完全不渲染內建 HTML：交給讀者的那一份，就是被驗的那一份。驗證
   // 未過之前不把它寫進 out-dir，失敗的執行不會留下一份看起來可用的交付物。
-  const externalHtml = options.htmlIn ? path.resolve(options.htmlIn) : "";
   if (externalHtml) {
     runNode("render_report_v2.mjs", ["--spec", options.spec, "--markdown-out", markdownPath]);
   } else {
@@ -202,6 +205,7 @@ function main(args = process.argv.slice(2)) {
     // sidecar 的 Command Evidence 宣稱每一關都過了。驗證沒過就不能把它留下來
     // 當作那次執行的紀錄。
     for (const file of deliverables) {
+      if (path.resolve(file) === externalHtml) continue;
       if (existsSync(file)) rmSync(file);
     }
     throw error;

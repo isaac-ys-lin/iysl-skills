@@ -89,11 +89,11 @@ function blockHtml(block) {
   } else if (block.type === "spotlight") {
     body += `<div class="spotlight" data-spotlight-angle="${escapeHtml(block.angle)}">${block.items.map((item) => `<article><h4>${escapeHtml(item.heading)}</h4><p>${escapeHtml(item.text)}</p></article>`).join("")}</div>`;
   } else if (block.type === "actions") {
-    body += `<ul class="actions">${block.items.map((item) => `<li><strong>${escapeHtml(item.action)}</strong>${item.when ? `<p>${escapeHtml(item.when)}</p>` : ""}</li>`).join("")}</ul>`;
+    body += `<ul class="actions">${block.items.map((item) => `<li><strong>${escapeHtml(item.action)}</strong>${item.when ? `<p class="when">${escapeHtml(item.when)}</p>` : ""}</li>`).join("")}</ul>`;
   } else if (block.type === "key-points") {
     body += `<div class="key-points">${block.items.map((item) => `<article><h4>${escapeHtml(item.heading)}</h4><p>${escapeHtml(item.text)}</p></article>`).join("")}</div>`;
   } else if (block.type === "food-for-thought") {
-    body += `<div class="thoughts">${block.items.map((item) => `<article><span aria-hidden="true">?</span><div><h4>${escapeHtml(item.prompt)}</h4>${item.context ? `<p>${escapeHtml(item.context)}</p>` : ""}</div></article>`).join("")}</div>`;
+    body += `<div class="thoughts">${block.items.map((item) => `<article><h4>${escapeHtml(item.prompt)}</h4>${item.context ? `<p>${escapeHtml(item.context)}</p>` : ""}</article>`).join("")}</div>`;
   }
   return `<article id="${escapeHtml(block.id)}" class="report-block block-${escapeHtml(block.type)}" data-report-block="${escapeHtml(block.id)}" data-report-block-type="${escapeHtml(block.type)}"><header><h3>${escapeHtml(block.title)}</h3></header>${body}</article>`;
 }
@@ -145,9 +145,9 @@ if (htmlOut) {
     briefHtml: [
       '<section class="report-brief" data-report-brief>',
       `<p class="brief-claim">${escapeHtml(spec.brief.claim.text)}</p>`,
-      "<ul class=\"brief-takeaways\">",
+      "<ol class=\"brief-takeaways\">",
       ...spec.brief.takeaways.map((takeaway) => `<li>${escapeHtml(takeaway.text)}</li>`),
-      "</ul>",
+      "</ol>",
       ...(spec.source_limitation ? [
         `<p class="source-limitation">${escapeHtml(spec.source_limitation.notice)} <a href="${escapeHtml(spec.source.url)}" target="_blank" rel="noreferrer">回到原影片</a></p>`,
       ] : []),

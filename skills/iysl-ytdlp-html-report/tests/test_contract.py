@@ -757,8 +757,15 @@ class YtdlpReportContractTest(unittest.TestCase):
             ):
                 self.assertIn(heading, markdown)
                 self.assertIn(heading, html)
-            self.assertIn('content:"→"', html)
-            self.assertIn('content:"↓"', html)
+            # 保底模板的視覺語言必須和列印契約是同一套，Kami 不可用時讀者
+            # 拿到的仍是同一個產品，而不是換了一個版型的另一份文件。
+            print_css = (ROOT / "assets" / "report-print.css").read_text(encoding="utf-8")
+            for token in ("--paper: #f5f4ed", "--ink: #141413", "--accent: #1b365d"):
+                self.assertIn(token, html)
+                self.assertIn(token, print_css)
+            self.assertIn("counter(step, decimal-leading-zero)", html)
+            self.assertIn("@media (max-width: 700px)", html)
+            self.assertNotIn("border-radius", html)
             self.assertIn('class="key-points"', html)
             self.assertIn('class="thoughts"', html)
             for reader_output in (markdown, html):
@@ -2000,6 +2007,30 @@ class YtdlpReportContractTest(unittest.TestCase):
             sidecar = (out_dir / "demo123.verification.md").read_text(encoding="utf-8")
             self.assertIn("presentation_backend: kami-long-doc", sidecar)
             self.assertIn("presentation_fallback_reason: not-applicable", sidecar)
+
+            # SKILL.md 的 step 3 就是叫排版器寫到 <id>.report.html，再拿同一個路徑當
+            # --html-in。開工前清掉同名殘骸時不能把這次執行的輸入一起刪掉。
+            in_place_dir = temp / "in-place"
+            in_place_dir.mkdir()
+            in_place_html = in_place_dir / "demo123.report.html"
+            in_place_html.write_text(good_html.read_text(encoding="utf-8"), encoding="utf-8")
+            in_place = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                    "--spec", str(spec_path),
+                    "--manifest", str(manifest_path),
+                    "--out-dir", str(in_place_dir),
+                    "--html-in", str(in_place_html),
+                    "--presentation-backend", "kami-long-doc",
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(in_place.returncode, 0, in_place.stderr)
+            self.assertTrue(in_place_html.is_file(), "--html-in 指向 out-dir 的同名檔時不得被當成殘骸刪掉")
+            self.assertEqual(
+                in_place_html.read_text(encoding="utf-8"),
+                good_html.read_text(encoding="utf-8"),
+            )
 
             bad_html = temp / "external-bad.html"
             bad_html.write_text(

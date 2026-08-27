@@ -12,6 +12,10 @@ _Avoid_: ELI5, HTML explainer, general explanation
 The single central idea that a visual explainer organizes around, even when the source includes several related ideas.
 _Avoid_: Topic list, exhaustive summary
 
+**Gallery admission**:
+The acceptance decision that a repo-owned visual-explainer case teaches a distinct judgment and includes enough evidence to audit that judgment. A supported-claim case includes its source, direction, decision, and diagram; a claim-free refusal case records why no diagram is justified.
+_Avoid_: Example presence check, template validation
+
 **Brief**:
 影片閱讀報告最前面的掃讀層：一句判斷加三到四個帶走重點，每一項都回指逐字稿證據。它不參與四章的認知流。
 _Avoid_: 執行摘要, summary, TL;DR, 導言

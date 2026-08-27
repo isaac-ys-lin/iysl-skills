@@ -1,11 +1,12 @@
-"""Gallery contract tests: every diagram.svg must pass render_svg.py --check.
+"""Gallery admission and render-contract tests.
 
-Discovery and documentation tests never need a browser and always run.
+Admission tests never need a browser and always run.
 The render test skips when playwright + a launchable Chrome/Chromium are
 unavailable (same probe as tests/test_render_svg.py).
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPT = SKILL_DIR / "scripts" / "render_svg.py"
+GALLERY_VALIDATOR = SKILL_DIR / "scripts" / "validate_gallery.py"
 GALLERY = SKILL_DIR / "examples" / "gallery"
 
 MIN_DIAGRAM_COUNT = 5  # five cases; 07 contributes two variants
@@ -25,6 +27,15 @@ def gallery_svgs():
 
 def case_id(svg_path):
     return str(svg_path.relative_to(GALLERY).parent)
+
+
+def run_gallery_validator(gallery=GALLERY):
+    result = subprocess.run(
+        [sys.executable, str(GALLERY_VALIDATOR), str(gallery)],
+        capture_output=True,
+        text=True,
+    )
+    return result, json.loads(result.stdout)
 
 
 @pytest.fixture(scope="session")
@@ -55,28 +66,115 @@ def test_gallery_has_enough_diagrams():
     )
 
 
-def test_each_diagram_has_direction_and_decision():
-    """Every diagram.svg case documents its direction and decision.
+def test_gallery_cases_pass_admission_contract():
+    result, report = run_gallery_validator()
 
-    Variant subdirectories (e.g. 07 arrow/dot) may share the docs of their
-    parent case directory.
-    """
-    for svg_path in gallery_svgs():
-        for doc in ("direction.md", "decision.md"):
-            nearby = [svg_path.parent / doc, svg_path.parent.parent / doc]
-            assert any(p.exists() for p in nearby), (
-                f"{case_id(svg_path)} has no nearby {doc} "
-                f"(checked {', '.join(str(p) for p in nearby)})"
-            )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert report["valid"] is True
+    assert report["errors"] == []
 
 
-def test_refusal_case_has_no_diagram():
-    """09 documents refusing a claim-free source; refusing is the lesson."""
-    case = GALLERY / "09-no-claim-refusal"
-    assert (case / "brief.md").exists(), "refusal case needs a brief.md"
-    assert (case / "decision.md").exists(), "refusal case needs a decision.md"
-    assert not list(case.glob("**/diagram.svg")), (
-        "the refusal case must not contain a diagram.svg; refusing is the lesson"
+@pytest.mark.parametrize(
+    ("relative_path", "old", "new", "expected"),
+    [
+        (
+            "05-review-branching-flow/decision.md",
+            "## Primary Claim",
+            "## Claim Summary",
+            "decision.md missing required section: Primary Claim",
+        ),
+        (
+            "05-review-branching-flow/direction.md",
+            "## Audience",
+            "## Intended Readers",
+            "direction.md missing required section: Audience",
+        ),
+        (
+            "05-review-branching-flow/decision.md",
+            "## Validation",
+            "## Final Check",
+            "decision.md missing required section: Validation",
+        ),
+        (
+            "05-review-branching-flow/decision.md",
+            "The process matters because it branches on review outcomes, allows "
+            "retries, and rejoins at merge.",
+            "",
+            "decision.md has empty required section: Primary Claim",
+        ),
+        (
+            "05-review-branching-flow/brief.md",
+            "# Review Workflow Brief",
+            "## Review Workflow Brief",
+            "brief.md must start with an H1",
+        ),
+        (
+            "05-review-branching-flow/direction.md",
+            "| F4 |",
+            "| F9 |",
+            "direction.md Fact List IDs must be contiguous from F1",
+        ),
+        (
+            "09-no-claim-refusal/decision.md",
+            "None. The page asserts nothing; it exists for lookup.",
+            "The page proves that tooling overlaps across squads.",
+            "claim-bearing case requires at least one diagram.svg",
+        ),
+        (
+            "05-review-branching-flow/direction.md",
+            "Review is not a straight line: one decision point routes every change "
+            "to pass, revise, or escalate — and all paths rejoin at merge.",
+            "",
+            "direction.md has empty required section: Claim",
+        ),
+        (
+            "05-review-branching-flow/direction.md",
+            "## Animation Story",
+            "## Motion",
+            "direction.md missing required section: Animation Story",
+        ),
+    ],
+)
+def test_gallery_admission_rejects_invalid_case_docs(
+    tmp_path, relative_path, old, new, expected
+):
+    gallery = tmp_path / "gallery"
+    shutil.copytree(GALLERY, gallery)
+    target = gallery / relative_path
+    original = target.read_text(encoding="utf-8")
+    assert old in original
+    target.write_text(original.replace(old, new, 1), encoding="utf-8")
+
+    result, report = run_gallery_validator(gallery)
+
+    assert result.returncode == 1
+    assert any(expected in error for error in report["errors"])
+
+
+def test_gallery_admission_rejects_missing_direction(tmp_path):
+    gallery = tmp_path / "gallery"
+    shutil.copytree(GALLERY, gallery)
+    (gallery / "05-review-branching-flow" / "direction.md").unlink()
+
+    result, report = run_gallery_validator(gallery)
+
+    assert result.returncode == 1
+    assert any("missing direction.md" in error for error in report["errors"])
+
+
+def test_gallery_admission_rejects_diagram_for_no_claim(tmp_path):
+    gallery = tmp_path / "gallery"
+    shutil.copytree(GALLERY, gallery)
+    (gallery / "09-no-claim-refusal" / "diagram.svg").write_text(
+        "<svg/>", encoding="utf-8"
+    )
+
+    result, report = run_gallery_validator(gallery)
+
+    assert result.returncode == 1
+    assert any(
+        "claim-free refusal must not contain diagram.svg" in error
+        for error in report["errors"]
     )
 
 
