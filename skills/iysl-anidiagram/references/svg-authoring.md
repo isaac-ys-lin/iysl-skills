@@ -82,10 +82,12 @@ the shipped examples already do; they are what keeps a diagram from going to mus
   step of `dL* >= 4` or by a visible stroke or shadow. `scripts/validate_visual_contract.py`
   checks this one mechanically; `render_svg.py` does not. Compare against the parent
   surface, not the page ground: a pale pill on a white card is judged against the card.
-  Both routes are in use, and the ground usually decides which. `blueprint` builds four
-  dark surfaces out of lightness steps because a dark ground cannot host white cards;
-  `editorial` and the `07` pair use hairline strokes on near-white cards. A panel with
-  neither reads as absent, which is the one defect this rule has actually caught.
+  Both routes are in use, often inside one diagram. `blueprint` builds four dark
+  surfaces out of lightness steps because a dark ground cannot host white cards; the
+  `07` pair strokes its stage cards, then separates the pills inside them by a lightness
+  step. A surface with neither route reads as absent, and that is what this rule caught
+  on its first pass: `editorial`'s footer panel sat 2.13 L* from the ground and the `07`
+  owner pills sat 2.79 L* from their card, all of them unstroked.
 
 - **The accent hue names exactly one idea.** Pick the thing the reader must not miss,
   the failure state, the payoff, the recurrence, and spend the accent only there. Every
