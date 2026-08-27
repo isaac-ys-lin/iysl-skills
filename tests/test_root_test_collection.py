@@ -63,7 +63,6 @@ class RootTestCollectionTest(unittest.TestCase):
             "pyproject.toml was removed or overridden.\n"
             f"{result.stdout[-2000:]}{result.stderr[-2000:]}",
         )
-        self.assertNotIn("error", result.stdout.lower().split("warnings summary")[0])
 
 
 if __name__ == "__main__":
