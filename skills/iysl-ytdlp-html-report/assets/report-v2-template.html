@@ -5,65 +5,241 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}}｜影片閱讀摘要</title>
   <style>
-    :root { color-scheme: light; --ink:#192126; --muted:#657078; --paper:#fbfaf6; --card:#fff; --line:#d8d9d5; --accent:#086f68; --warm:#a3452e; }
-    * { box-sizing:border-box; }
-    html { scroll-behavior:smooth; }
-    body { margin:0; color:var(--ink); background:var(--paper); font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif; line-height:1.65; overflow-wrap:anywhere; }
-    a { color:var(--accent); text-underline-offset:3px; }
-    .page { width:min(1080px,calc(100% - 32px)); margin-inline:auto; }
-    .hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,.8fr); gap:32px; align-items:center; padding:48px 0 34px; }
-    .eyebrow { color:var(--warm); font-size:.78rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-    h1 { margin:.25rem 0 0; font-family:ui-serif,Georgia,"Noto Serif TC",serif; font-size:clamp(2rem,5vw,3.8rem); line-height:1.08; }
-    .subtitle { color:#37454d; font-size:1.08rem; }
-    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; color:var(--muted); font-size:.88rem; }
-    .meta span:not(:empty) { border:1px solid var(--line); border-radius:999px; padding:5px 10px; }
-    .media-anchor { display:block; overflow:hidden; border-radius:12px; background:#20272b; box-shadow:0 16px 40px #19212622; }
-    .media-anchor img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
-    main { padding:28px 0 68px; }
-    .report-brief { margin:0 0 44px; border-left:4px solid var(--accent); padding:4px 0 4px 20px; }
-    .brief-claim { margin:0; font-size:1.16rem; line-height:1.55; }
-    .brief-takeaways { margin:14px 0 0; padding-left:1.15rem; display:grid; gap:6px; }
-    .brief-takeaways li { font-weight:700; }
-    .source-limitation { margin:16px 0 0; color:var(--muted); font-size:.9rem; }
-    .source-limitation a { color:inherit; text-underline-offset:3px; }
-    .report-section { margin:0 0 54px; }
-    .report-section > header { margin-bottom:18px; border-bottom:2px solid var(--accent); padding-bottom:10px; }
-    .report-block { margin:0 0 30px; border:1px solid var(--line); border-radius:12px; background:var(--card); padding:24px; }
-    .report-block > header { border-bottom:1px solid var(--line); padding-bottom:14px; }
-    h2 { margin:0; font-size:clamp(1.4rem,3vw,2rem); line-height:1.2; }
-    h3 { margin:0; font-size:1.18rem; line-height:1.3; }
-    .summary { color:#37454d; }
-    .process { list-style:none; margin:20px 0 0; padding:0; counter-reset:step; display:flex; gap:34px; }
-    .process li { counter-increment:step; position:relative; flex:1 1 0; min-width:0; border:1px solid #bad4d1; border-radius:10px; padding:44px 14px 14px; background:linear-gradient(145deg,#fff,#f0f8f7); }
-    .process li::before { content:counter(step); position:absolute; top:12px; left:14px; display:grid; place-items:center; width:26px; height:26px; border-radius:50%; color:#fff; background:var(--accent); font-size:.84rem; font-weight:800; }
-    .process li:not(:last-child)::after { content:"→"; position:absolute; right:-27px; top:50%; transform:translateY(-50%); color:var(--accent); font-size:1.35rem; font-weight:900; }
-    .process p,.actions p { margin:.2rem 0; color:#45535b; }
-    .table-wrap { overflow-x:auto; margin-top:18px; }
-    table { width:100%; min-width:620px; border-collapse:collapse; }
-    th,td { border-bottom:1px solid var(--line); padding:10px; text-align:left; vertical-align:top; }
-    th { color:#435159; background:#f2f2ee; font-size:.86rem; }
-    .actions { display:grid; gap:12px; padding-left:1.2rem; }
-    .key-points { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:18px; }
-    .key-points article { border-left:4px solid var(--accent); border-radius:0 9px 9px 0; background:#f1f7f6; padding:14px 16px; }
-    .key-points h4,.thoughts h4 { margin:0; font-size:1.05rem; line-height:1.35; }
-    .key-points p,.thoughts p { margin:.45rem 0 0; color:#45535b; }
-    .block-food-for-thought { border-color:#e6c993; background:#fffaf0; }
-    .thoughts { display:grid; gap:12px; margin-top:18px; }
-    .thoughts article { display:grid; grid-template-columns:34px 1fr; gap:12px; align-items:start; }
-    .thoughts article > span { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; color:#fff; background:var(--warm); font-family:ui-serif,Georgia,serif; font-size:1.1rem; font-weight:900; }
-    @media (max-width:700px) { .hero { grid-template-columns:1fr; padding-top:28px; } .report-block { padding:18px; } .process { display:grid; gap:28px; } .process li:not(:last-child)::after { content:"↓"; right:auto; top:auto; left:18px; bottom:-27px; transform:none; } }
-    @media (max-width:375px) { .page { width:calc(100% - 20px); } .hero { gap:18px; } h1 { font-size:1.85rem; } .key-points { grid-template-columns:1fr; } }
+    /* 離線保底排版。色票、字體與節奏刻意與 assets/report-print.css 同一套，
+       Kami 不可用時讀者拿到的仍是同一個產品，PDF 匯出也接得上。 */
+    :root {
+      color-scheme: light;
+      --paper: #f5f4ed;
+      --wash: #faf9f5;
+      --ink: #141413;
+      --muted: #504e49;
+      --line: #e5e3d8;
+      --accent: #1b365d;
+      --serif: "Source Han Serif TC VF", "Source Han Serif TC", "Noto Serif CJK TC",
+               "Songti TC", Charter, "Iowan Old Style", Georgia, "PMingLiU", serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 1.0625rem;
+      font-weight: 400;
+      line-height: 1.85;
+      letter-spacing: 0.01em;
+      overflow-wrap: anywhere;
+    }
+    a { color: var(--accent); text-underline-offset: 3px; }
+
+    /* 單欄閱讀寬度：中文長句在這個 measure 下不會走一整行才換氣。 */
+    .page { width: min(42rem, calc(100% - 3rem)); margin-inline: auto; }
+
+    /* 封面：資訊靠版面下緣收攏，和列印契約的 flex-end 同一個構圖。 */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 78vh;
+      padding: 4rem 0 2.5rem;
+      border-bottom: 1px solid var(--ink);
+    }
+    .eyebrow {
+      margin: 0 0 0.9rem;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.4;
+      letter-spacing: 0.22em;
+    }
+    h1 {
+      margin: 0 0 0.9rem;
+      font-size: clamp(2rem, 4.6vw, 3.1rem);
+      font-weight: 600;
+      line-height: 1.22;
+      letter-spacing: 0.01em;
+    }
+    .subtitle {
+      margin: 0;
+      max-width: 34rem;
+      color: var(--muted);
+      font-size: 1.06rem;
+      line-height: 1.7;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem 1.4rem;
+      margin: 1.9rem 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.6;
+    }
+    .meta span:empty { display: none; }
+    .source-link { margin: 0.5rem 0 0; font-size: 0.86rem; }
+    .media-anchor {
+      display: block;
+      margin-top: 2rem;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .media-anchor img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+
+    main { padding: 0 0 6rem; }
+
+    /* 掃讀層：整份文件唯一一條 accent 橫線，讀者一眼知道從哪裡開始。 */
+    .report-brief {
+      margin: 0;
+      padding: 3.2rem 0 3.6rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .brief-claim {
+      margin: 0 0 1.6rem;
+      font-size: 1.28rem;
+      line-height: 1.72;
+    }
+    .brief-takeaways { list-style: none; counter-reset: takeaway; margin: 0; padding: 0; }
+    .brief-takeaways li {
+      position: relative;
+      counter-increment: takeaway;
+      margin: 0;
+      padding: 0.85rem 0 0.85rem 2.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .brief-takeaways li:first-child { padding-top: 0; }
+    .brief-takeaways li:last-child { border-bottom: 0; padding-bottom: 0; }
+    .brief-takeaways li::before {
+      content: counter(takeaway, decimal-leading-zero);
+      position: absolute;
+      top: 1.21rem;
+      left: 0;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+    .brief-takeaways li:first-child::before { top: 0.36rem; }
+    .source-limitation {
+      margin: 1.6rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.65;
+    }
+    /* body 的 overflow-wrap:anywhere 會把這個連結從中間拆開，讓尾字獨立成行。 */
+    .source-limitation a { color: inherit; white-space: nowrap; }
+
+    /* 四章：權重相同，靠 ink 細線與章號分隔，沒有一章長得像附錄。 */
+    .report-section { counter-increment: chapter; margin: 0; padding: 3.4rem 0 0; border-top: 1px solid var(--ink); }
+    .report-section:first-of-type { border-top: 0; padding-top: 0; }
+    .report-section > header { margin: 0 0 2.2rem; }
+    .report-section > header::before {
+      content: counter(chapter, decimal-leading-zero);
+      display: block;
+      margin-bottom: 0.7rem;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+    }
+    main { counter-reset: chapter; }
+    h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 1.95rem); font-weight: 600; line-height: 1.3; }
+
+    /* block：第二層閱讀。標題靠字級與留白站出來，不靠卡片。 */
+    .report-block { margin: 0 0 3.2rem; }
+    .report-section > .report-block:last-child { margin-bottom: 3.4rem; }
+    /* block title 與 item heading 要一眼分得開，否則第二層閱讀就塌掉了。 */
+    .report-block > header { margin: 0 0 1.2rem; }
+    h3 { margin: 0; font-size: 1.34rem; font-weight: 600; line-height: 1.4; }
+    /* key-points/thoughts 用 h4，process/actions 用 strong，但它們是同一階的
+       item heading。字級不一致的話，同一份報告裡同一層會忽大忽小。 */
+    h4,
+    .process strong,
+    .actions strong { font-size: 1rem; font-weight: 600; line-height: 1.55; }
+    h4 { margin: 0; }
+    p { margin: 0 0 0.9rem; }
+    .summary { margin: 0 0 1.4rem; color: var(--muted); }
+    .narrative p:last-child { margin-bottom: 0; }
+
+    /* 流程、洞見、提問、行動共用同一種細線節奏。 */
+    .process, .actions { list-style: none; margin: 0; padding: 0; }
+    .process { counter-reset: step; }
+    .process li, .actions li, .key-points article, .thoughts article {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 1.1rem;
+      margin-bottom: 1.1rem;
+    }
+    .process li:last-child, .actions li:last-child,
+    .key-points article:last-child, .thoughts article:last-child {
+      border-bottom: 0; padding-bottom: 0; margin-bottom: 0;
+    }
+    .process li { position: relative; counter-increment: step; padding-left: 2.4rem; }
+    .process li::before {
+      content: counter(step, decimal-leading-zero);
+      position: absolute;
+      top: 0.36rem;
+      left: 0;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+    .process p, .actions p, .key-points p, .thoughts p { margin: 0.3rem 0 0; color: var(--muted); }
+    .actions .when { font-size: 0.94rem; }
+
+    /* spotlight：全文唯一的 callout 樣式，和列印契約同一種語法。 */
+    .spotlight { margin: 0; }
+    .spotlight article {
+      margin: 0 0 0.9rem;
+      padding: 1rem 1.2rem 1rem 1.3rem;
+      background: var(--wash);
+      border-left: 2px solid var(--accent);
+    }
+    .spotlight article:last-child { margin-bottom: 0; }
+
+    /* 表格保持表格：欄列關係就是內容，標籤欄不得窄到逐字換行。 */
+    .table-wrap { margin: 1.2rem 0 0; overflow-x: auto; }
+    table { width: 100%; min-width: 34rem; border-collapse: collapse; font-size: 0.95rem; line-height: 1.65; }
+    th, td { padding: 0.6rem 0.75rem 0.6rem 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    thead th {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--accent);
+    }
+    thead th:first-child, tbody td:first-child { width: 18%; min-width: 6.5rem; }
+    tbody td:first-child { color: var(--ink); font-weight: 600; }
+
+    @media (max-width: 700px) {
+      body { font-size: 1rem; line-height: 1.8; }
+      .page { width: calc(100% - 2.5rem); }
+      /* 窄螢幕的標題字級要讓一般長度的中文標題排得完，避免尾字獨立成行。 */
+      h1 { font-size: clamp(1.75rem, 6.4vw, 2.4rem); }
+      .cover { min-height: 0; padding-top: 2.6rem; }
+      .report-brief { padding: 2.4rem 0 2.6rem; }
+      .report-section { padding-top: 2.6rem; }
+      .report-section > header { margin-bottom: 1.6rem; }
+      .report-block { margin-bottom: 2.4rem; }
+      table { min-width: 26rem; }
+    }
+    @media (max-width: 375px) {
+      .page { width: calc(100% - 1.75rem); }
+      .brief-claim { font-size: 1.14rem; }
+    }
+
+    @media print {
+      /* 縮圖是螢幕上的來源錨點；列印時它只會變成一塊灰底佔位圖。 */
+      .media-anchor, .source-link { display: none; }
+    }
   </style>
 </head>
 <body>
-  <header class="page hero" data-report-chrome="cover">
-    <div>
-      <p class="eyebrow">影片閱讀摘要</p>
-      <h1>{{title}}</h1>
-      {{subtitleHtml}}
-      <div class="meta"><span>{{channel}}</span><span>{{duration}}</span><span>{{readingMinutes}}</span></div>
-      <p><a href="{{sourceUrl}}" target="_blank" rel="noreferrer">開啟原始影片</a></p>
-    </div>
+  <header class="page cover" data-report-chrome="cover">
+    <p class="eyebrow">影片逐字稿閱讀報告</p>
+    <h1>{{title}}</h1>
+    {{subtitleHtml}}
+    <p class="meta"><span>{{channel}}</span><span>{{duration}}</span><span>{{readingMinutes}}</span></p>
+    <p class="source-link"><a href="{{sourceUrl}}" target="_blank" rel="noreferrer">開啟原始影片</a></p>
     {{thumbnailHtml}}
   </header>
   <main class="page">

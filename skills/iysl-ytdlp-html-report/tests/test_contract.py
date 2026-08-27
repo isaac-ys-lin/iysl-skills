@@ -757,8 +757,15 @@ class YtdlpReportContractTest(unittest.TestCase):
             ):
                 self.assertIn(heading, markdown)
                 self.assertIn(heading, html)
-            self.assertIn('content:"→"', html)
-            self.assertIn('content:"↓"', html)
+            # 保底模板的視覺語言必須和列印契約是同一套，Kami 不可用時讀者
+            # 拿到的仍是同一個產品，而不是換了一個版型的另一份文件。
+            print_css = (ROOT / "assets" / "report-print.css").read_text(encoding="utf-8")
+            for token in ("--paper: #f5f4ed", "--ink: #141413", "--accent: #1b365d"):
+                self.assertIn(token, html)
+                self.assertIn(token, print_css)
+            self.assertIn("counter(step, decimal-leading-zero)", html)
+            self.assertIn("@media (max-width: 700px)", html)
+            self.assertNotIn("border-radius", html)
             self.assertIn('class="key-points"', html)
             self.assertIn('class="thoughts"', html)
             for reader_output in (markdown, html):
@@ -2000,6 +2007,7 @@ class YtdlpReportContractTest(unittest.TestCase):
             sidecar = (out_dir / "demo123.verification.md").read_text(encoding="utf-8")
             self.assertIn("presentation_backend: kami-long-doc", sidecar)
             self.assertIn("presentation_fallback_reason: not-applicable", sidecar)
+
 
             bad_html = temp / "external-bad.html"
             bad_html.write_text(
