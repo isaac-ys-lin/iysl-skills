@@ -9,6 +9,7 @@ outputs/
 dist/
 build/
 .release-smoke/
+.ui-scratch/
 .firecrawl/
 .superpowers/
 .codex/browser/

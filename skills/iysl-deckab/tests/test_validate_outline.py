@@ -1,6 +1,10 @@
+import sys
 from pathlib import Path
 
-from scripts.validate_outline import validate_outline
+ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT / "scripts"))
+from validate_outline import validate_outline  # noqa: E402
 
 
 STYLE = """```xml
