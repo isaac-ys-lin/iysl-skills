@@ -2008,6 +2008,29 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertIn("presentation_backend: kami-long-doc", sidecar)
             self.assertIn("presentation_fallback_reason: not-applicable", sidecar)
 
+            # SKILL.md 的 step 3 就是叫排版器寫到 <id>.report.html，再拿同一個路徑當
+            # --html-in。開工前清掉同名殘骸時不能把這次執行的輸入一起刪掉。
+            in_place_dir = temp / "in-place"
+            in_place_dir.mkdir()
+            in_place_html = in_place_dir / "demo123.report.html"
+            in_place_html.write_text(good_html.read_text(encoding="utf-8"), encoding="utf-8")
+            in_place = subprocess.run(
+                [
+                    "node", str(ROOT / "scripts" / "finalize_report.mjs"),
+                    "--spec", str(spec_path),
+                    "--manifest", str(manifest_path),
+                    "--out-dir", str(in_place_dir),
+                    "--html-in", str(in_place_html),
+                    "--presentation-backend", "kami-long-doc",
+                ],
+                check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(in_place.returncode, 0, in_place.stderr)
+            self.assertTrue(in_place_html.is_file(), "--html-in 指向 out-dir 的同名檔時不得被當成殘骸刪掉")
+            self.assertEqual(
+                in_place_html.read_text(encoding="utf-8"),
+                good_html.read_text(encoding="utf-8"),
+            )
 
             bad_html = temp / "external-bad.html"
             bad_html.write_text(
