@@ -155,13 +155,19 @@ defined in `council-protocol.md`; prose quality cannot replace required drivers,
 feedback links, reference-class treatment, probability states, evidence IDs, or
 recomputed arithmetic. Each artifact exposes a unique `proposition_id`; Chair
 seat decisions and state target components must resolve back to those IDs and
-their evidence-backed numeric inputs. Soros paths, Mauboussin payoff states, and
+their evidence-backed numeric inputs. Every Chair seat decision records its
+`Accept`/`Conditional`/`Reject` disposition, retained limitation, and the impact
+on stance, participation effect, and PEI refresh route. Soros paths, Mauboussin payoff states, and
 Chair states must use canonical `downside` / `base` / `upside` roles ordered by
 payoff; a Chair component may resolve only to a source carrying the same role.
 The full Chair matrix may use each named method source state only once; it may
 not duplicate one probability event across mutually exclusive states.
-A numeric `Partial` artifact remains usable only after full-schema validation;
-a gap-only artifact cannot contribute a target or probability.
+A `Partial` or `Unavailable` artifact is a qualitative four-field gap receipt;
+it cannot contribute a target or probability. Every numeric Chair probability
+component must state a non-empty `scenario_probability_basis` for its
+`weight_pct`. When all available seats are `Partial`, retain their qualitative
+Chair decisions, set `decision_matrix` and `gross_expected_return_pct` to
+`null`, and use `Fragile` robustness.
 
 Before Chair synthesis, require a canonical `primary_mechanism_tag`, then
 compare it with each sealed memo's `causal_mechanism`,
@@ -181,10 +187,12 @@ must return the `Dominant-variable decision matrix` defined in
 `council-protocol.md`: requested-horizon transition, one dominant variable,
 MECE state matrix, `Accept`/`Conditional`/`Reject` decisions for every decisive
 member proposition, strongest disconfirming path, observable reversal trigger,
-and Long/Short/Avoid with confidence and robustness. The Chair receives the full
-accepted PEI baseline only after first-round sealing and the unique-contribution
-gate. It may use only accepted PEI inputs and sealed member memos. It may not browse, add evidence,
-simulate a personal position, infer sizing, or repair a partial member method.
+and Long/Short/Avoid with confidence and robustness. The three seats finish
+before owner-model commit. The same PEI owner adjudicates their sealed memos,
+computes one owner model, and completes one independent arithmetic recompute.
+Only after fair-value freeze does the Chair receive that final model and the
+sealed member memos. It may not browse, add evidence, change the model, simulate
+a personal position, infer sizing, or repair a partial member method.
 
 Public options, price, volume, short-interest, positioning, liquidity, and
 market-reaction evidence accepted by PEI may enter the George Soros sealed

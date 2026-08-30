@@ -102,6 +102,24 @@ def _build_chain(tmp_path):
     return plugin_root, artifact_dir, pei_path, pei_receipt
 
 
+def test_pei_admission_accepts_current_schema_v3(tmp_path):
+    _, _, _, pei_receipt = _build_chain(tmp_path)
+    pei_receipt["schema_version"] = 3
+    errors, posture = VALIDATOR._validate_pei_admission_receipt(pei_receipt)
+    assert errors == []
+    assert posture == "PASS"
+
+
+def test_pei_admission_accepts_split_cutoff_schema_v4(tmp_path):
+    _, _, _, pei_receipt = _build_chain(tmp_path)
+    pei_receipt["schema_version"] = 4
+    pei_receipt["owner_model_evidence_cutoff"] = "2026-08-22T11:00:00+00:00"
+    pei_receipt["final_research_evidence_cutoff"] = pei_receipt["evidence_cutoff"]
+    errors, posture = VALIDATOR._validate_pei_admission_receipt(pei_receipt)
+    assert errors == []
+    assert posture == "PASS"
+
+
 def _damodaran_artifact(evidence_id):
     return {
         "artifact_type": "damodaran_reverse_valuation_v1",
@@ -294,7 +312,7 @@ def _chair_matrix(sa_market_source_id):
                 "decisive_mechanism": "Negative revisions remove marginal demand.",
                 "seat_inputs": ["mauboussin"],
                 "target_components": [{"seat": "mauboussin", "proposition_id": "mauboussin:positive_expectations_distribution", "source_kind": "probability_payoff_target", "source_id": "downside", "weight_pct": 100.0}],
-                "probability_components": [{"seat": "mauboussin", "proposition_id": "mauboussin:positive_expectations_distribution", "source_kind": "probability_payoff_probability", "source_id": "downside", "weight_pct": 100.0}],
+                "probability_components": [{"seat": "mauboussin", "proposition_id": "mauboussin:positive_expectations_distribution", "source_kind": "probability_payoff_probability", "source_id": "downside", "weight_pct": 100.0, "scenario_probability_basis": "Mauboussin payoff-state probability anchored to the accepted reference class and inside-view update."}],
                 "evidence_ids": [sa_market_source_id],
             },
             {
@@ -308,7 +326,7 @@ def _chair_matrix(sa_market_source_id):
                 "decisive_mechanism": "Fundamental value anchors price as expectations stop changing.",
                 "seat_inputs": ["soros"],
                 "target_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_return", "source_id": "stall", "weight_pct": 100.0}],
-                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "stall", "weight_pct": 100.0}],
+                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "stall", "weight_pct": 100.0, "scenario_probability_basis": "Soros path probability is conditional on the sealed revision-feedback regime."}],
                 "evidence_ids": [sa_market_source_id],
             },
             {
@@ -322,7 +340,7 @@ def _chair_matrix(sa_market_source_id):
                 "decisive_mechanism": "Upward revisions and marginal demand reinforce the growth path.",
                 "seat_inputs": ["damodaran", "soros"],
                 "target_components": [{"seat": "damodaran", "proposition_id": "damodaran:price_implied_growth_gap", "source_kind": "fundamental_value_high", "source_id": None, "weight_pct": 100.0}],
-                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "reinforcing", "weight_pct": 100.0}],
+                "probability_components": [{"seat": "soros", "proposition_id": "soros:revision_feedback_loop", "source_kind": "horizon_path_probability", "source_id": "reinforcing", "weight_pct": 100.0, "scenario_probability_basis": "Soros path probability is conditional on the sealed revision-feedback regime."}],
                 "evidence_ids": ["IR:earnings-release:2026Q2", sa_market_source_id],
             },
         ],
@@ -487,9 +505,9 @@ def _council_payload(pei_path, pei_receipt):
                 "IR:earnings-release:2026Q2",
             ],
             "seat_decisions": [
-                {"seat": "damodaran", "decision": "Accept", "proposition_id": "damodaran:price_implied_growth_gap", "proposition": "The owner case is below the price-implied growth path.", "reason": "The numerical bridge is supported by accepted model inputs."},
-                {"seat": "soros", "decision": "Conditional", "proposition_id": "soros:revision_feedback_loop", "proposition": "Positive revisions sustain a financing feedback loop.", "reason": "The loop reverses if revision breadth turns negative."},
-                {"seat": "mauboussin", "decision": "Accept", "proposition_id": "mauboussin:positive_expectations_distribution", "proposition": "The probability-payoff distribution remains positive.", "reason": "The reference class and inside-view update support positive expected return."},
+                {"seat": "damodaran", "decision": "Accept", "proposition_id": "damodaran:price_implied_growth_gap", "proposition": "The owner case is below the price-implied growth path.", "reason": "The numerical bridge is supported by accepted model inputs.", "retained_limitation": "Fundamental convergence can be mistimed within the requested horizon.", "impact": {"stance": "Supports the Long stance only if revisions keep the convergence path open.", "participation_effect": "Does not establish execution suitability.", "refresh_route": "Refresh PEI if the price-implied driver gap closes."}},
+                {"seat": "soros", "decision": "Conditional", "proposition_id": "soros:revision_feedback_loop", "proposition": "Positive revisions sustain a financing feedback loop.", "reason": "The loop reverses if revision breadth turns negative.", "retained_limitation": "Marginal-actor evidence can reverse before fundamentals change.", "impact": {"stance": "Limits the Long stance when the feedback loop breaks.", "participation_effect": "Requires current implementation checks outside Council.", "refresh_route": "Request a PEI refresh when the reversal trigger is observed."}},
+                {"seat": "mauboussin", "decision": "Accept", "proposition_id": "mauboussin:positive_expectations_distribution", "proposition": "The probability-payoff distribution remains positive.", "reason": "The reference class and inside-view update support positive expected return.", "retained_limitation": "The reference class may not capture the next regime change.", "impact": {"stance": "Supports the Long stance while expectation revisions remain positive.", "participation_effect": "Does not override liquidity or execution constraints.", "refresh_route": "Refresh PEI if the reference-class fit or revision inputs change."}},
             ],
             "dominant_variable": "Revenue estimate revision breadth",
             "strongest_disconfirming_path": "Returns fade while revisions reverse.",
@@ -515,6 +533,115 @@ def _fixture(tmp_path):
     return plugin_root, artifact_dir, council_path, council, pei_path, pei_receipt
 
 
+def _descriptor(path, artifact_dir):
+    return {
+        "path": path.relative_to(artifact_dir).as_posix(),
+        "sha256": _sha256(path),
+    }
+
+
+def _bind_current_authority(council, artifact_dir):
+    support = artifact_dir / "support" / "current-council"
+    identity = {
+        "ticker": council["ticker"],
+        "security_id": council["security_identity"]["security_id"],
+        "evidence_cutoff": council["evidence_cutoff"],
+    }
+    underwrite = {
+        "schema_version": "pei-preliminary-underwrite-v1",
+        **identity,
+        "candidate_assumptions": [
+            {"id": "revenue_growth", "base": 20.0, "reasonable_range": [10.0, 30.0]}
+        ],
+    }
+    underwrite_path = support / "preliminary_underwrite.json"
+    _write_json(underwrite_path, underwrite)
+
+    packet_refs = {}
+    memo_refs = {}
+    for seat in sorted(VALIDATOR.SEATS):
+        packet = {
+            "schema_version": "council-premodel-seat-packet-v1",
+            **identity,
+            "seat": seat,
+            "candidate_assumptions": underwrite["candidate_assumptions"],
+            "private_partition": council["private_partitions"][seat],
+        }
+        packet_path = support / "packets" / f"{seat}.json"
+        _write_json(packet_path, packet)
+        packet_refs[seat] = _descriptor(packet_path, artifact_dir)
+
+        memo = {
+            "schema_version": "council-sealed-memo-v1",
+            "seat": seat,
+            "packet_sha256": packet_refs[seat]["sha256"],
+            "memo": next(
+                item for item in council["first_round"]["memos"] if item["seat"] == seat
+            ),
+        }
+        memo_path = support / "memos" / f"{seat}.json"
+        _write_json(memo_path, memo)
+        memo_refs[seat] = _descriptor(memo_path, artifact_dir)
+
+    final_spec = {
+        "schema_version": "owner-model-spec-v1",
+        "identity": identity,
+        "evidence_cutoff": council["evidence_cutoff"],
+        "owner": "PEI owner",
+        "formula_version": "test-formula-v1",
+    }
+    final_spec_path = support / "final_model_spec.json"
+    _write_json(final_spec_path, final_spec)
+    final_spec_ref = _descriptor(final_spec_path, artifact_dir)
+
+    adjudication = {
+        "schema_version": "pei-council-adjudication-v1",
+        **identity,
+        "adjudicated_at": "2026-08-22T10:23:00+08:00",
+        "packet_hashes": {seat: packet_refs[seat]["sha256"] for seat in sorted(VALIDATOR.SEATS)},
+        "memo_hashes": {seat: memo_refs[seat]["sha256"] for seat in sorted(VALIDATOR.SEATS)},
+        "final_model_spec_sha256": final_spec_ref["sha256"],
+    }
+    adjudication_path = support / "owner_adjudication.json"
+    _write_json(adjudication_path, adjudication)
+
+    freeze = {
+        "schema_version": "owner-fv-freeze-v1",
+        **identity,
+        "frozen_at": "2026-08-22T10:28:00+08:00",
+        "model_spec_sha256": final_spec_ref["sha256"],
+        "model_output_sha256": "1" * 64,
+        "independent_audit_sha256": "2" * 64,
+    }
+    freeze_path = support / "fv_freeze_receipt.json"
+    _write_json(freeze_path, freeze)
+    freeze_ref = _descriptor(freeze_path, artifact_dir)
+
+    chair = {
+        "schema_version": "council-pm-chair-receipt-v1",
+        **identity,
+        "model_spec_sha256": final_spec_ref["sha256"],
+        "fv_freeze_receipt_sha256": freeze_ref["sha256"],
+        "chair": council["chair"],
+    }
+    chair_path = support / "pm_chair.json"
+    _write_json(chair_path, chair)
+
+    council["artifact_bindings"] = {
+        "authority_version": 1,
+        "validator_sha256": _sha256(VALIDATOR_PATH),
+        "preliminary_underwrite": _descriptor(underwrite_path, artifact_dir),
+        "seat_packets": packet_refs,
+        "sealed_memos": memo_refs,
+        "owner_adjudication": _descriptor(adjudication_path, artifact_dir),
+        "final_model_spec": final_spec_ref,
+        "model_committed_at": "2026-08-22T10:25:00+08:00",
+        "fv_freeze_receipt": freeze_ref,
+        "pm_chair": _descriptor(chair_path, artifact_dir),
+    }
+    return council["artifact_bindings"]
+
+
 def _validate(council, plugin_root, artifact_dir):
     return VALIDATOR.validate(
         council, plugin_root=plugin_root, artifact_dir=artifact_dir
@@ -525,6 +652,108 @@ def test_full_receipt_chain_admits_council_and_validates_final_judgment(tmp_path
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
     errors = _validate(council, plugin_root, artifact_dir)
     assert errors == []
+
+
+def test_current_authority_reopens_one_hash_bound_council_root(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    _bind_current_authority(council, artifact_dir)
+
+    assert _validate(council, plugin_root, artifact_dir) == []
+
+
+def test_current_authority_allows_an_earlier_owner_model_cutoff(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    bindings = _bind_current_authority(council, artifact_dir)
+    spec_path = artifact_dir / bindings["final_model_spec"]["path"]
+    spec = json.loads(spec_path.read_text())
+    spec["identity"]["evidence_cutoff"] = "2026-08-22T09:00:00+08:00"
+    spec["evidence_cutoff"] = spec["identity"]["evidence_cutoff"]
+    _write_json(spec_path, spec)
+    bindings["final_model_spec"]["sha256"] = _sha256(spec_path)
+    adjudication_path = artifact_dir / bindings["owner_adjudication"]["path"]
+    adjudication = json.loads(adjudication_path.read_text())
+    adjudication["final_model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
+    _write_json(adjudication_path, adjudication)
+    bindings["owner_adjudication"]["sha256"] = _sha256(adjudication_path)
+    freeze_path = artifact_dir / bindings["fv_freeze_receipt"]["path"]
+    freeze = json.loads(freeze_path.read_text())
+    freeze["model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
+    _write_json(freeze_path, freeze)
+    bindings["fv_freeze_receipt"]["sha256"] = _sha256(freeze_path)
+    chair_path = artifact_dir / bindings["pm_chair"]["path"]
+    chair = json.loads(chair_path.read_text())
+    chair["model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
+    chair["fv_freeze_receipt_sha256"] = bindings["fv_freeze_receipt"]["sha256"]
+    _write_json(chair_path, chair)
+    bindings["pm_chair"]["sha256"] = _sha256(chair_path)
+
+    assert _validate(council, plugin_root, artifact_dir) == []
+
+
+def test_current_authority_rejects_packet_hash_drift(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    bindings = _bind_current_authority(council, artifact_dir)
+    packet_path = artifact_dir / bindings["seat_packets"]["damodaran"]["path"]
+    packet = json.loads(packet_path.read_text())
+    packet["candidate_assumptions"][0]["base"] = 99.0
+    _write_json(packet_path, packet)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert "artifact_bindings.seat_packets.damodaran.sha256 does not match artifact" in errors
+
+
+def test_current_authority_rejects_final_value_leaked_into_premodel_packet(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    bindings = _bind_current_authority(council, artifact_dir)
+    packet_path = artifact_dir / bindings["seat_packets"]["damodaran"]["path"]
+    packet = json.loads(packet_path.read_text())
+    packet["owner_fair_value"] = 160.0
+    _write_json(packet_path, packet)
+    bindings["seat_packets"]["damodaran"]["sha256"] = _sha256(packet_path)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert "damodaran packet has unexpected fields: owner_fair_value" in errors
+
+
+def test_current_authority_rejects_memo_content_drift_even_when_rehashed(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    bindings = _bind_current_authority(council, artifact_dir)
+    memo_path = artifact_dir / bindings["sealed_memos"]["soros"]["path"]
+    memo = json.loads(memo_path.read_text())
+    memo["memo"]["work_product"] = "Changed after sealing"
+    _write_json(memo_path, memo)
+    bindings["sealed_memos"]["soros"]["sha256"] = _sha256(memo_path)
+    adjudication_path = artifact_dir / bindings["owner_adjudication"]["path"]
+    adjudication = json.loads(adjudication_path.read_text())
+    adjudication["memo_hashes"]["soros"] = bindings["sealed_memos"]["soros"]["sha256"]
+    _write_json(adjudication_path, adjudication)
+    bindings["owner_adjudication"]["sha256"] = _sha256(adjudication_path)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert "soros sealed memo content must equal Council root memo" in errors
+
+
+def test_current_authority_rejects_out_of_order_chair(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    _bind_current_authority(council, artifact_dir)
+    council["chair"]["started_at"] = "2026-08-22T10:24:00+08:00"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("current Council timeline must be" in error for error in errors)
+
+
+def test_current_authority_binds_exact_public_validator(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    bindings = _bind_current_authority(council, artifact_dir)
+    bindings["validator_sha256"] = "0" * 64
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert "artifact_bindings.validator_sha256 does not match this validator" in errors
 
 
 def test_plausible_prose_without_named_method_artifacts_is_rejected(tmp_path):
@@ -554,7 +783,7 @@ def test_partial_or_unavailable_method_requires_structured_gap_artifact(tmp_path
         )
 
 
-def test_partial_numeric_artifact_is_fully_validated_before_chair_use(tmp_path):
+def test_partial_numeric_artifact_is_rejected_before_chair_use(tmp_path):
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
     memo = council["first_round"]["memos"][0]
     memo["method_completion"] = "Partial"
@@ -572,9 +801,117 @@ def test_partial_numeric_artifact_is_fully_validated_before_chair_use(tmp_path):
     errors = _validate(council, plugin_root, artifact_dir)
 
     assert any(
-        "Damodaran value range must contain positive numbers" in error
+        "Damodaran Partial must use only a qualitative gap artifact" in error
         for error in errors
     )
+
+
+def test_partial_seat_cannot_inject_numeric_probability_artifact(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    memo = next(memo for memo in council["first_round"]["memos"] if memo["seat"] == "soros")
+    memo["method_completion"] = "Partial"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "Soros Partial must use only a qualitative gap artifact" in error
+        for error in errors
+    )
+
+
+def test_partial_seat_with_qualitative_gap_artifact_can_pass(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    memo = next(memo for memo in council["first_round"]["memos"] if memo["seat"] == "soros")
+    memo["method_completion"] = "Partial"
+    memo["method_artifact"] = {
+        "artifact_type": "soros_reflexivity_chain_v1",
+        "requested_horizon": "12 months",
+        "proposition_id": "soros:revision_feedback_loop",
+        "method_gap": "No accepted actor-flow observation supports a numeric path distribution.",
+    }
+
+    states = council["chair"]["decision_matrix"]["states"]
+    for state, source_id, probability, target, gross_return in (
+        (states[1], "base", 50.0, 115.0, 15.0),
+        (states[2], "upside", 25.0, 155.0, 55.0),
+    ):
+        state["probability_pct"] = probability
+        state["target_price"] = target
+        state["gross_return_pct"] = gross_return
+        state["seat_inputs"] = ["mauboussin"]
+        state["target_components"] = [{
+            "seat": "mauboussin",
+            "proposition_id": "mauboussin:positive_expectations_distribution",
+            "source_kind": "probability_payoff_target",
+            "source_id": source_id,
+            "weight_pct": 100.0,
+        }]
+        state["probability_components"] = [{
+            "seat": "mauboussin",
+            "proposition_id": "mauboussin:positive_expectations_distribution",
+            "source_kind": "probability_payoff_probability",
+            "source_id": source_id,
+            "weight_pct": 100.0,
+            "scenario_probability_basis": "Mauboussin payoff-state probability anchored to the accepted reference class and inside-view update.",
+        }]
+    states[2]["seat_inputs"] = ["damodaran", "mauboussin"]
+    states[2]["target_components"] = [{
+        "seat": "damodaran",
+        "proposition_id": "damodaran:price_implied_growth_gap",
+        "source_kind": "fundamental_value_high",
+        "source_id": None,
+        "weight_pct": 100.0,
+    }]
+    council["chair"]["decision_matrix"]["gross_expected_return_pct"] = 13.75
+    council["chair"]["gross_expected_return_pct"] = 13.75
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert errors == []
+
+
+def test_all_partial_seats_preserve_qualitative_challenge_without_numeric_matrix(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    for memo in council["first_round"]["memos"]:
+        artifact = memo["method_artifact"]
+        memo["method_completion"] = "Partial"
+        memo["method_artifact"] = {
+            "artifact_type": artifact["artifact_type"],
+            "requested_horizon": artifact["requested_horizon"],
+            "proposition_id": artifact["proposition_id"],
+            "method_gap": "The accepted packet supports a qualitative countercase but not an eligible numeric distribution.",
+        }
+    council["chair"]["decision_matrix"] = None
+    council["chair"]["gross_expected_return_pct"] = None
+    council["chair"]["robustness"] = "Fragile"
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert errors == []
+
+
+def test_probability_component_requires_scenario_probability_basis(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    component = council["chair"]["decision_matrix"]["states"][0]["probability_components"][0]
+    component["scenario_probability_basis"] = ""
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "scenario_probability_basis must be a non-empty string" in error
+        for error in errors
+    )
+
+
+def test_chair_seat_decision_requires_retained_limitation_and_impacts(tmp_path):
+    plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    decision = council["chair"]["seat_decisions"][0]
+    decision.pop("retained_limitation", None)
+    decision.pop("impact", None)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("chair.seat_decisions[0] is missing fields" in error for error in errors)
 
 
 def test_all_named_method_artifacts_bind_to_requested_horizon(tmp_path):
@@ -1005,6 +1342,8 @@ def test_first_round_research_lead_must_be_pei_accepted_and_seat_partitioned(tmp
 
 def test_unavailable_runtime_does_not_impersonate_seats(tmp_path):
     plugin_root, artifact_dir, _, council, _, _ = _fixture(tmp_path)
+    numeric_matrix = copy.deepcopy(council["chair"]["decision_matrix"])
+    numeric_return = council["chair"]["gross_expected_return_pct"]
     council["council_runtime"] = "unavailable"
     council["first_round"] = {
         "unavailable_seats": ["damodaran", "soros", "mauboussin"],
@@ -1025,12 +1364,23 @@ def test_unavailable_runtime_does_not_impersonate_seats(tmp_path):
     }
     council["chair"]["seat_decisions"] = []
     council["chair"]["robustness"] = "Fragile"
-    for state in council["chair"]["decision_matrix"]["states"]:
-        state["seat_inputs"] = []
-        state["target_components"] = []
-        state["probability_components"] = []
+    council["chair"]["decision_matrix"] = None
+    council["chair"]["gross_expected_return_pct"] = None
     errors = _validate(council, plugin_root, artifact_dir)
     assert errors == []
+
+    council["chair"]["decision_matrix"] = numeric_matrix
+    council["chair"]["gross_expected_return_pct"] = numeric_return
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert any(
+        "unavailable Council runtime must not produce a numeric decision matrix"
+        in error
+        for error in errors
+    )
+    assert any(
+        "unavailable Council runtime must not produce numeric expected return" in error
+        for error in errors
+    )
 
 
 def test_unavailable_runtime_rejects_fabricated_member_memos(tmp_path):

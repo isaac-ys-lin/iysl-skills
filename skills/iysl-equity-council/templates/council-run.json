@@ -22,6 +22,26 @@
     "sha256": "",
     "declared_posture": ""
   },
+  "artifact_bindings": {
+    "authority_version": 1,
+    "validator_sha256": "",
+    "preliminary_underwrite": {"path": "", "sha256": ""},
+    "seat_packets": {
+      "damodaran": {"path": "", "sha256": ""},
+      "soros": {"path": "", "sha256": ""},
+      "mauboussin": {"path": "", "sha256": ""}
+    },
+    "sealed_memos": {
+      "damodaran": {"path": "", "sha256": ""},
+      "soros": {"path": "", "sha256": ""},
+      "mauboussin": {"path": "", "sha256": ""}
+    },
+    "owner_adjudication": {"path": "", "sha256": ""},
+    "final_model_spec": {"path": "", "sha256": ""},
+    "model_committed_at": "",
+    "fv_freeze_receipt": {"path": "", "sha256": ""},
+    "pm_chair": {"path": "", "sha256": ""}
+  },
   "research_admission": "BLOCKED",
   "sealed_inputs": {
     "upstream_verdict": true,
@@ -228,21 +248,39 @@
         "decision": "",
         "proposition_id": "",
         "proposition": "",
-        "reason": ""
+        "reason": "",
+        "retained_limitation": "",
+        "impact": {
+          "stance": "",
+          "participation_effect": "",
+          "refresh_route": ""
+        }
       },
       {
         "seat": "soros",
         "decision": "",
         "proposition_id": "",
         "proposition": "",
-        "reason": ""
+        "reason": "",
+        "retained_limitation": "",
+        "impact": {
+          "stance": "",
+          "participation_effect": "",
+          "refresh_route": ""
+        }
       },
       {
         "seat": "mauboussin",
         "decision": "",
         "proposition_id": "",
         "proposition": "",
-        "reason": ""
+        "reason": "",
+        "retained_limitation": "",
+        "impact": {
+          "stance": "",
+          "participation_effect": "",
+          "refresh_route": ""
+        }
       }
     ],
     "dominant_variable": "",
@@ -291,7 +329,8 @@
               "proposition_id": "",
               "source_kind": "",
               "source_id": null,
-              "weight_pct": null
+              "weight_pct": null,
+              "scenario_probability_basis": ""
             }
           ],
           "evidence_ids": []
@@ -326,7 +365,8 @@
               "proposition_id": "",
               "source_kind": "",
               "source_id": null,
-              "weight_pct": null
+              "weight_pct": null,
+              "scenario_probability_basis": ""
             }
           ],
           "evidence_ids": []
@@ -361,7 +401,8 @@
               "proposition_id": "",
               "source_kind": "",
               "source_id": null,
-              "weight_pct": null
+              "weight_pct": null,
+              "scenario_probability_basis": ""
             }
           ],
           "evidence_ids": []

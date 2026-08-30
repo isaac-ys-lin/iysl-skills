@@ -1,6 +1,6 @@
 ---
 name: iysl-equity-council
-description: Run three named equity method personas and a Stanley Druckenmiller PM Chair for Long, Short, or Avoid after a usable PEI pack.
+description: Challenge a PEI preliminary underwrite with three isolated equity method seats before model commit, then run a Stanley Druckenmiller PM Chair after model freeze.
 compatibility: Requires Python 3 for the Council admission, information-partition, and judgment receipt validator.
 ---
 
@@ -8,13 +8,14 @@ compatibility: Requires Python 3 for the Council admission, information-partitio
 
 ## Outcome
 
-Own the final requested-horizon research judgment without rebuilding Public
-Equity Investing research, models, or valuation. After the minimum gate passes,
-run one three-seat Council whenever agent collaboration is available, then issue
-exactly one `Long`, `Short`, or `Avoid` stance from the sign of gross expected
-price return. Never fake an independent Council when that runtime is
-unavailable. Treat fundamental value as one anchor while also testing
-expectations, sentiment, positioning, and reflexive price paths.
+Run one evidence-closed Council in two phases without taking over Public Equity
+Investing research, model ownership, or valuation. Before model commit, three
+isolated seats challenge the preliminary underwrite's assumption calibration,
+countercase, and flip conditions. The same PEI owner then adjudicates those
+memos and computes the owner model once. After model and fair value freeze, the
+PM Chair reconciles the sealed memos with the final model and issues exactly one
+`Long`, `Short`, or `Avoid` stance from the sign of gross expected price return.
+Never fake an independent Council when that runtime is unavailable.
 
 The three seats are explicitly named `Aswath Damodaran — Fundamental Committee
 Member`, `George Soros — Reflexivity Committee Member`, and `Michael Mauboussin
@@ -33,18 +34,19 @@ place an order, or execute a trade.
 
 ## Activation boundary
 
-Use this skill when explicitly invoked, or only when both conditions hold:
+Use this skill when explicitly invoked, for formal initial coverage or research
+refresh at its pre-model challenge stage, or when both conditions hold:
 
 - a Public Equity Investing workflow has a minimally usable research pack; and
 - the user requests a final directional investment judgment.
 
 When both conditions hold, this is the mandatory decision gate for a requested
-final `Long`, `Short`, or `Avoid` research judgment. It is not mandatory for
-pure data collection, model construction, monitoring, or implementation-only
-work.
+final `Long`, `Short`, or `Avoid` research judgment. Formal research uses the
+three seats before model commit and the Chair after freeze. It is not mandatory
+for pure data collection, monitoring, or implementation-only work.
 
-Do not activate for raw company facts, first-pass evidence gathering, model or
-valuation construction, earnings summary, scenario-only analysis, standalone
+Do not activate for raw company facts, first-pass evidence gathering, standalone
+model or valuation construction, earnings summary, scenario-only analysis,
 sizing or hedging, private-company work, or generic company research. Leave
 those tasks with their existing owners.
 
@@ -68,15 +70,15 @@ XLSX, memo, model, scenario, evidence-inventory, or risk work.
 
 ## Minimum gate
 
-Require all four inputs before issuing an investment stance:
+Require all four inputs before the three-seat challenge:
 
 1. valid security identity;
 2. current price with as-of timestamp;
 3. explicit decision horizon; and
-4. at least one minimally usable Public Equity Investing research, valuation,
-   or scenario handoff.
+4. an accepted evidence/context handoff plus a PEI preliminary underwrite with
+   structured candidate assumptions, ranges, and flip conditions.
 
-For a decision-ready run, also require a fingerprinted
+Before the PM Chair, also require the frozen owner model and a fingerprinted
 `support/pei_input_receipt.json` validated against the installed PEI routing map
 and routed lead skill. Any hard research gap blocks Council admission. A
 `LIMITED` receipt may proceed with reduced confidence or robustness. A PEI
@@ -94,17 +96,19 @@ the gate passes.
 ## Workflow
 
 1. Record the Public Equity Investing lead, accepted artifacts, as-of dates,
-   decision relevance, source posture, and unresolved gaps in the internal
-   upstream receipt. Validate Council research admission. Seal upstream
-   verdicts, the full PEI narrative, participation, readiness, and execution
-   inputs from Council members.
+   decision relevance, source posture, unresolved gaps, and preliminary
+   underwrite／model spec in the internal upstream receipt. Validate Council
+   research admission. Seat packets exclude upstream verdicts, the full PEI
+   narrative, participation, readiness, and execution inputs.
 2. Prepare one common factual spine containing only security identity, price,
    horizon, evidence cutoff, and accepted factual fields needed by every seat.
    Encode each field as an allowlisted structured fact with a scalar value,
    unit, as-of time, and accepted evidence IDs; identity facts must bind to the
    accepted security or price identity (including currency). Arbitrary prose,
    nested values, model conclusions, and extra partition payload fields are
-   forbidden.
+   forbidden. Add only the load-bearing candidate assumptions needed for
+   challenge: evidence anchor, period／unit／currency, proposed Base, reasonable
+   range, rationale, and flip threshold.
    Build three non-overlapping private evidence partitions from the accepted
    PEI inputs: Damodaran receives fundamentals/reverse-valuation/capital-
    structure inputs; Soros receives price-path/marginal-actor/positioning-
@@ -120,12 +124,11 @@ the gate passes.
    a method card's permitted public market evidence. When collaboration is
    unavailable, use the protocol's explicit unavailable fallback; do not run
    the three research methods inside the Chair.
-4. After first-round memos arrive, deduplicate common source origins. If a seat
-   identifies a model- or sign-changing gap, stop the current Council admission
-   and return at most two exact inputs in one targeted Public Equity Investing
-   refill request. Do not browse or patch the live Council record. A refill, if
-   completed, creates a new accepted PEI baseline and a new Council run; do not
-   start a second refill loop.
+4. After first-round memos arrive, deduplicate common source origins and return
+   the sealed challenges to the same PEI owner. If a seat identifies an evidence
+   gap that can change model direction or sign, return at most two exact inputs
+   in one targeted Public Equity Investing refill request. Otherwise record the limitation and continue;
+   Council does not browse, patch source truth, or create a second baseline.
 5. Apply the method-completion and unique-contribution gates. Each seat must
    write its named structured `method_artifact` in Council run schema v2; a
    fluent narrative in `work_product` cannot satisfy `Complete`. Require
@@ -138,8 +141,13 @@ the gate passes.
    Chair component to use only a source with the same role as the Chair state.
    A named method source state may appear in only one mutually exclusive Chair
    state, so one probability event cannot be counted twice.
-   A full `Partial` artifact is validated field by field before any numeric use;
-   a gap-only artifact cannot supply a Chair target or probability. Each seat must
+   A `Partial` or `Unavailable` artifact is a qualitative four-field gap receipt
+   only and cannot supply a Chair target or probability. Every Chair numeric
+   probability-component `weight_pct` must carry a non-empty
+   `scenario_probability_basis`. If every available seat is `Partial`, the Chair
+   preserves the qualitative decisions but sets the numeric matrix and expected
+   return to `null` and marks robustness `Fragile`. An unavailable Council
+   runtime follows the same qualitative-only rule. Each seat must
    state a distinct causal mechanism, disconfirming condition, key metric, and
    source posture, plus one canonical `primary_mechanism_tag`. Perform an
    explicit semantic convergence review. Record every validator-derived
@@ -161,15 +169,20 @@ the gate passes.
    disagreements that can change stance, horizon weight, or a material
    probability/payoff. Do not manufacture debate when no such disagreement
    exists.
-7. Run the `Stanley Druckenmiller — PM Chair` decision contract. Give the Chair
-   the full accepted PEI baseline only after first-round sealing, method
-   completion, and unique-contribution checks. From that baseline and the
-   sealed memos only, the Chair accepts, conditions, or rejects
+7. The same PEI／primary-model owner records `Accept`／`Conditional`／`Reject` for
+   every material seat challenge, calibrates Base to the accepted evidence, and
+   computes the authoritative model once. One independent arithmetic recompute
+   must pass before fair-value freeze. Then run the `Stanley Druckenmiller — PM
+   Chair` decision contract. Give the Chair the final model and sealed memos only
+   after first-round sealing, method completion, unique-contribution checks, and
+   freeze. From those inputs, the Chair accepts, conditions, or rejects
    decisive propositions, identifies the one dominant variable and its
    price-formation mechanism for the requested horizon, constructs the required
    decision matrix, tests the strongest opposing path, states the reversal
-   trigger, and freezes one research stance at the `0%` gross expected
-   price-return threshold.
+   trigger, records each seat's retained limitation plus its stance,
+   participation-effect, and PEI-refresh-route impact, and freezes one research
+   stance at the `0%` gross expected price-return threshold. The Chair may not
+   browse, add evidence, or change the model.
 8. After the research stance freezes, use Public Equity Investing risk
    capabilities when participation or implementation evidence is needed.
    Borrow, options, liquidity, cost, carry, and execution may change
@@ -179,6 +192,12 @@ the gate passes.
    Save the internal run as `support/council_run.json` from
    `templates/council-run.json` and validate it with
    `scripts/validate_council_run.py` before calling the Council complete.
+   For a current formal run, fill `artifact_bindings`: the same Council root
+   must hash-bind the preliminary underwrite, exactly three seat packets and
+   sealed memos, owner adjudication, final model spec, FV-freeze receipt, PM
+   Chair receipt, and exact public-validator hash. Historical v2 runs without
+   this optional block remain read-only compatible; they are not current
+   formal-closure authority.
 
 ## Council discussion gate
 

@@ -55,14 +55,14 @@ class EquityCouncilContractTest(unittest.TestCase):
             "valid security identity",
             "current price with as-of timestamp",
             "explicit decision horizon",
-            "minimally usable Public Equity Investing",
+            "accepted evidence/context handoff plus a PEI preliminary underwrite",
             "Never fan out across every constituent skill",
             "Do not invoke iysl-equity-data directly",
             "formal provider coverage",
             "may not browse, create a competing coverage artifact, or repair the gap",
             "Return a targeted refill request to Public Equity Investing",
             "start a new Council run only after the updated PEI receipt",
-            "do not start a second refill loop",
+            "same PEI owner",
             "intake failure, not Avoid",
         ):
             self.assertIn(phrase, normalized)
@@ -71,12 +71,14 @@ class EquityCouncilContractTest(unittest.TestCase):
         skill = re.sub(r"\s+", " ", self.skill)
         judgment = re.sub(r"\s+", " ", self.judgment)
         for phrase in (
-            "identifies a model- or sign-changing gap",
+            "evidence gap that can change model direction or sign",
             "at most two exact inputs",
             "one targeted Public Equity Investing refill request",
-            "Do not browse or patch the live Council record",
-            "creates a new accepted PEI baseline and a new Council run",
-            "do not start a second refill loop",
+            "Otherwise record the limitation and continue",
+            "does not browse, patch source truth, or create a second baseline",
+            "computes the authoritative model once",
+            "One independent arithmetic recompute",
+            "final model and sealed memos only after",
         ):
             self.assertIn(phrase, skill)
         for phrase in (
@@ -167,8 +169,8 @@ class EquityCouncilContractTest(unittest.TestCase):
         for phrase in (
             "separate Stanley Druckenmiller — PM Chair completion gate",
             "public-method decision persona",
-            "may use only accepted PEI inputs and sealed member memos",
-            "may not browse, add evidence, simulate a personal position, infer sizing",
+            "Only after fair-value freeze does the Chair receive that final model and the sealed member memos",
+            "may not browse, add evidence, change the model, simulate a personal position, infer sizing",
         ):
             self.assertIn(phrase, judgment)
 
@@ -202,15 +204,16 @@ class EquityCouncilContractTest(unittest.TestCase):
             "price_path, marginal_actors, and positioning_reflexivity",
             "private_partitions.mauboussin",
             "expectations_revisions, reference_class, and probability_payoff",
-            "owner fair value remains sealed from George Soros",
+            "final owner model, fair value, and action do not exist",
             "full PEI thesis narrative remains sealed from Michael Mauboussin",
+            "PEI preliminary underwrite's structured load-bearing candidate assumptions",
         ):
             self.assertIn(phrase, council)
         for phrase in (
             "support/pei_input_receipt.json",
             "hard research gap",
             "implementation-only blocker does not block research admission",
-            "full accepted PEI baseline only after",
+            "final model and sealed memos only after",
         ):
             self.assertIn(phrase, skill)
 
@@ -239,6 +242,15 @@ class EquityCouncilContractTest(unittest.TestCase):
         self.assertEqual(template["schema_version"], 2)
         self.assertIn("council_runtime", template)
         self.assertIn("pei_input_receipt", template)
+        self.assertEqual(template["artifact_bindings"]["authority_version"], 1)
+        self.assertEqual(
+            set(template["artifact_bindings"]["seat_packets"]),
+            {"damodaran", "soros", "mauboussin"},
+        )
+        self.assertEqual(
+            set(template["artifact_bindings"]["sealed_memos"]),
+            {"damodaran", "soros", "mauboussin"},
+        )
         self.assertEqual(set(template["private_partitions"]), {"damodaran", "soros", "mauboussin"})
         for memo in template["first_round"]["memos"]:
             self.assertIs(memo["browsed"], False)
@@ -469,7 +481,7 @@ class EquityCouncilContractTest(unittest.TestCase):
             "Mark Aswath Damodaran, George Soros, and Michael Mauboussin Unavailable",
             "Council runtime: unavailable",
             "no independent Council occurred",
-            "only the accepted PEI inputs",
+            "decision matrix and expected return null",
             "Robustness: Fragile",
             "may not browse, fabricate sealed memos, or claim a member contribution",
         ):

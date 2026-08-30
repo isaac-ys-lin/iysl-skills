@@ -49,6 +49,9 @@ Spawn exactly three parallel leaf agents. Every task packet contains:
 - the same common factual spine: security identity, current price/as-of,
   decision horizon, evidence cutoff, accepted facts needed by every seat, and
   accepted ambient-context status;
+- the PEI preliminary underwrite's structured load-bearing candidate assumptions,
+  ranges, rationale, and flip thresholds, without a final model, fair value, or
+  action;
 - one exact committee-member name and its distinct method card below;
 - one method-specific private evidence partition defined below;
 - its named method-specific work product and freshness receipt;
@@ -64,9 +67,18 @@ First-round memos remain sealed until all three return. The agents are
 independent work paths, not independent proof that shared sources or shared
 model priors are uncorrelated.
 
+For current formal closure, `support/council_run.json` is the sole Council
+authority root. Its typed `artifact_bindings` reopen and hash-bind the
+preliminary underwrite, each packet and memo, owner adjudication, final model
+spec, FV-freeze receipt, and post-freeze Chair receipt. The public validator
+checks the exact validator hash and the sequence `memos <= adjudication <= model
+commit <= FV freeze <= Chair`. A shadow wrapper or a directory scan is not an
+equivalent Council result. Older v2 roots without these bindings remain legacy
+read-only artifacts.
+
 The dispatcher may not shorten these packets into generic analyst roles. Market
 options, price, volume, positioning, short-interest, liquidity, news reaction,
-and chart evidence remain available only when the accepted PEI baseline placed
+and chart evidence remain available only when the accepted evidence handoff placed
 them in the seat's sealed packet. Implementation suitability, transaction
 economics, sizing, orders, and execution conclusions remain sealed.
 
@@ -85,14 +97,14 @@ partition while allowing a seat to cite a common fact when its mechanism needs
 it:
 
 - `private_partitions.damodaran`: `fundamentals`, `reverse_valuation`, and
-  `capital_structure`. Include accepted model primitives, capital bridge,
-  operating drivers, and primary financial evidence, but not the upstream
-  verdict.
+  `capital_structure`. Include preliminary owner-case assumptions, capital
+  bridge, operating drivers, and primary financial evidence, but not the
+  upstream verdict.
 - `private_partitions.soros`: `price_path`, `marginal_actors`, and
   `positioning_reflexivity`. Include current price/volume, reaction, options,
   positioning, liquidity-as-market-context, and resolved research leads. The
-  owner fair value remains sealed from George Soros until his first-round memo
-  is sealed.
+  final owner model, fair value, and action do not exist during his first-round
+  memo.
 - `private_partitions.mauboussin`: `expectations_revisions`, `reference_class`,
   and `probability_payoff`. Include consensus, revisions, surprises, dispersion,
   comparable base rates, and price-implied expectation inputs. The full PEI
@@ -146,11 +158,13 @@ following method-specific checks:
   The state also carries the accepted
   evidence IDs behind those inputs.
 
-A `Partial` artifact may expose numeric method outputs only when it carries the
-full named schema and every consumed field passes the same structural,
-arithmetic, evidence, and scenario-role validation as a complete artifact. A
-four-field gap-only artifact records the gap but cannot supply Chair numeric
-components. Root and nested schemas reject sealed upstream conclusions outside
+A `Partial` or `Unavailable` artifact is a four-field qualitative gap-only
+artifact and cannot supply Chair numeric components. Every numeric Chair probability
+component must state a non-empty `scenario_probability_basis` for its
+`weight_pct`. If all available artifacts are `Partial`, the Chair keeps only
+qualitative decisions, uses `null` for the numeric matrix and expected return,
+and marks robustness `Fragile`. An unavailable Council runtime follows the same
+qualitative-only rule. Root and nested schemas reject sealed upstream conclusions outside
 the explicit `sealed_inputs` declaration and the Chair's two legitimate final
 output fields.
 
@@ -488,8 +502,10 @@ corrective pass.
    public-method persona labels, not claims that the people participated.
 3. Apply the unique-contribution gate and the bounded persona-convergence
    correction above. A memo that merely repeats another mechanism does not
-   become stronger because a second persona found it. Only after this gate may
-   the Chair inspect the full accepted PEI baseline alongside the sealed memos.
+   become stronger because a second persona found it. The same PEI owner then
+   adjudicates the memos and computes one owner model; only after independent
+   arithmetic recomputation and fair-value freeze may the Chair inspect that
+   final model alongside the sealed memos.
 4. Mark each decisive proposition `Accept`, `Conditional`, or `Reject`,
    with its evidentiary and distribution consequence.
 5. If a discussion-gate condition in `SKILL.md` is present, send at most two
@@ -523,10 +539,10 @@ class, or probability.
 If collaboration tools are unavailable, do not run or impersonate the three
 method cards inside the Chair. Mark Aswath Damodaran, George Soros, and Michael
 Mauboussin `Unavailable`; record `Council runtime: unavailable`; and state that
-no independent Council occurred. `Stanley Druckenmiller — PM Chair` then uses
-only the accepted PEI inputs to complete the decision matrix, sets
-`Robustness: Fragile`, and still issues Long, Short, or Avoid after the minimum
-gate. It may not browse, fabricate sealed memos, or claim a member contribution.
+no independent Council occurred. `Stanley Druckenmiller — PM Chair` then keeps
+the decision matrix and expected return `null`, sets `Robustness: Fragile`, and
+still issues a qualitative Long, Short, or Avoid after the minimum gate. It may
+not browse, fabricate sealed memos, or claim a member contribution.
 
 ## Fail-fast conditions
 

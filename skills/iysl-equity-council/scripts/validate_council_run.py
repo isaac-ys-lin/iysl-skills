@@ -180,7 +180,8 @@ IMPLEMENTATION_ONLY_CLASSES = {"implementation", "portfolio"}
 COUNCIL_RUNTIMES = {"collaboration_available", "unavailable"}
 HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 COUNCIL_SCHEMA_VERSION = 2
-PEI_RECEIPT_SCHEMA_VERSION = 2
+CURRENT_AUTHORITY_VERSION = 1
+PEI_RECEIPT_SCHEMA_VERSIONS = {2, 3, 4}
 PEI_POSTURES = {"PASS", "LIMITED", "BLOCKED"}
 PEI_REQUIREMENT_CLASSES = {
     "provider",
@@ -405,6 +406,13 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _normalized_sha(value: Any) -> str | None:
+    if not _nonempty_string(value):
+        return None
+    normalized = value.removeprefix("sha256:")
+    return normalized if HEX_SHA256.fullmatch(normalized) else None
+
+
 def _safe_artifact_path(
     artifact_root: Path, value: Any, label: str, errors: list[str]
 ) -> Path | None:
@@ -435,6 +443,260 @@ def _load_json(path: Path | None, label: str, errors: list[str]) -> Any | None:
     return None
 
 
+def _descriptor_payload(
+    artifact_root: Path,
+    value: Any,
+    label: str,
+    errors: list[str],
+) -> tuple[dict[str, Any] | None, str | None]:
+    if not isinstance(value, dict):
+        errors.append(f"{label} must be an artifact descriptor")
+        return None, None
+    _expect_keys(value, {"path", "sha256"}, label, errors)
+    path = _safe_artifact_path(artifact_root, value.get("path"), f"{label}.path", errors)
+    expected = value.get("sha256")
+    normalized = _normalized_sha(expected)
+    if normalized is None:
+        errors.append(f"{label}.sha256 must be a lowercase SHA-256 digest")
+    elif path is not None and path.is_file() and _sha256(path) != normalized:
+        errors.append(f"{label}.sha256 does not match artifact")
+    payload = _load_json(path, label, errors)
+    if payload is not None and not isinstance(payload, dict):
+        errors.append(f"{label} must contain a JSON object")
+        payload = None
+    return payload, normalized
+
+
+def _identity_values(value: dict[str, Any]) -> tuple[Any, Any, Any]:
+    identity = value.get("identity")
+    if not isinstance(identity, dict):
+        identity = value.get("security_identity")
+    if not isinstance(identity, dict):
+        identity = {}
+    return (
+        value.get("ticker", identity.get("ticker", identity.get("symbol"))),
+        value.get("security_id", identity.get("security_id")),
+        value.get("evidence_cutoff", identity.get("evidence_cutoff")),
+    )
+
+
+def _validate_current_artifact_bindings(
+    payload: dict[str, Any], artifact_root: Path, errors: list[str]
+) -> None:
+    bindings = payload.get("artifact_bindings")
+    if bindings is None:
+        return
+    if not isinstance(bindings, dict):
+        errors.append("artifact_bindings must be an object when present")
+        return
+    _expect_keys(
+        bindings,
+        {
+            "authority_version",
+            "validator_sha256",
+            "preliminary_underwrite",
+            "seat_packets",
+            "sealed_memos",
+            "owner_adjudication",
+            "final_model_spec",
+            "model_committed_at",
+            "fv_freeze_receipt",
+            "pm_chair",
+        },
+        "artifact_bindings",
+        errors,
+    )
+    if bindings.get("authority_version") != CURRENT_AUTHORITY_VERSION:
+        errors.append(
+            f"artifact_bindings.authority_version must be {CURRENT_AUTHORITY_VERSION}"
+        )
+    validator_sha = bindings.get("validator_sha256")
+    if not _nonempty_string(validator_sha) or not HEX_SHA256.fullmatch(validator_sha):
+        errors.append("artifact_bindings.validator_sha256 must be a lowercase SHA-256 digest")
+    elif validator_sha != _sha256(Path(__file__).resolve()):
+        errors.append("artifact_bindings.validator_sha256 does not match this validator")
+
+    root_identity = (
+        payload.get("ticker"),
+        payload.get("security_identity", {}).get("security_id"),
+        payload.get("evidence_cutoff"),
+    )
+    underwrite, _ = _descriptor_payload(
+        artifact_root,
+        bindings.get("preliminary_underwrite"),
+        "artifact_bindings.preliminary_underwrite",
+        errors,
+    )
+    if underwrite is not None and _identity_values(underwrite) != root_identity:
+        errors.append("preliminary underwrite identity/cutoff must equal Council root")
+
+    packet_refs = bindings.get("seat_packets")
+    memo_refs = bindings.get("sealed_memos")
+    if not isinstance(packet_refs, dict) or set(packet_refs) != SEATS:
+        errors.append("artifact_bindings.seat_packets must contain exactly the three seats")
+        packet_refs = {}
+    if not isinstance(memo_refs, dict) or set(memo_refs) != SEATS:
+        errors.append("artifact_bindings.sealed_memos must contain exactly the three seats")
+        memo_refs = {}
+    packet_hashes: dict[str, str] = {}
+    memo_hashes: dict[str, str] = {}
+    root_memos = {
+        memo.get("seat"): memo
+        for memo in payload.get("first_round", {}).get("memos", [])
+        if isinstance(memo, dict) and memo.get("seat") in SEATS
+    }
+    for seat in sorted(SEATS):
+        packet, packet_sha = _descriptor_payload(
+            artifact_root,
+            packet_refs.get(seat),
+            f"artifact_bindings.seat_packets.{seat}",
+            errors,
+        )
+        if packet_sha is not None:
+            packet_hashes[seat] = packet_sha
+        if packet is not None:
+            _expect_keys(
+                packet,
+                {
+                    "schema_version",
+                    "ticker",
+                    "security_id",
+                    "evidence_cutoff",
+                    "seat",
+                    "candidate_assumptions",
+                    "private_partition",
+                },
+                f"{seat} packet",
+                errors,
+            )
+            if _identity_values(packet) != root_identity or packet.get("seat") != seat:
+                errors.append(f"{seat} packet identity/cutoff must equal Council root")
+            if underwrite is not None and packet.get("candidate_assumptions") != underwrite.get("candidate_assumptions"):
+                errors.append(f"{seat} packet candidate assumptions must equal preliminary underwrite")
+            partition = packet.get("private_partition")
+            root_partition = payload.get("private_partitions", {}).get(seat)
+            if not isinstance(partition, dict) or not isinstance(root_partition, dict) or {
+                "allowed_domains": partition.get("allowed_domains"),
+                "evidence_ids": partition.get("evidence_ids"),
+            } != root_partition:
+                errors.append(f"{seat} packet partition must equal Council root partition")
+
+        sealed, memo_sha = _descriptor_payload(
+            artifact_root,
+            memo_refs.get(seat),
+            f"artifact_bindings.sealed_memos.{seat}",
+            errors,
+        )
+        if memo_sha is not None:
+            memo_hashes[seat] = memo_sha
+        if sealed is not None:
+            if sealed.get("seat") != seat:
+                errors.append(f"{seat} sealed memo seat is invalid")
+            declared_packet_sha = _normalized_sha(sealed.get("packet_sha256"))
+            if declared_packet_sha != packet_sha:
+                errors.append(f"{seat} sealed memo must bind its exact packet hash")
+            if sealed.get("memo") != root_memos.get(seat):
+                errors.append(f"{seat} sealed memo content must equal Council root memo")
+
+    final_spec, final_spec_sha = _descriptor_payload(
+        artifact_root,
+        bindings.get("final_model_spec"),
+        "artifact_bindings.final_model_spec",
+        errors,
+    )
+    if final_spec is not None:
+        final_identity = _identity_values(final_spec)
+        if final_identity[:2] != root_identity[:2]:
+            errors.append("final model spec identity must equal Council root")
+        final_cutoff = _parse_time(
+            final_identity[2], "final_model_spec.evidence_cutoff", errors
+        )
+        council_cutoff = _parse_time(
+            root_identity[2], "Council evidence_cutoff", errors
+        )
+        if (
+            final_cutoff is not None
+            and council_cutoff is not None
+            and final_cutoff > council_cutoff
+        ):
+            errors.append("final model spec cutoff cannot follow Council cutoff")
+    adjudication, _ = _descriptor_payload(
+        artifact_root,
+        bindings.get("owner_adjudication"),
+        "artifact_bindings.owner_adjudication",
+        errors,
+    )
+    adjudicated_at = None
+    if adjudication is not None:
+        if _identity_values(adjudication) != root_identity:
+            errors.append("owner adjudication identity/cutoff must equal Council root")
+        if adjudication.get("packet_hashes") != packet_hashes:
+            errors.append("owner adjudication packet_hashes must equal bound packets")
+        if adjudication.get("memo_hashes") != memo_hashes:
+            errors.append("owner adjudication memo_hashes must equal bound memos")
+        if _normalized_sha(adjudication.get("final_model_spec_sha256")) != final_spec_sha:
+            errors.append("owner adjudication must bind the final model spec hash")
+        adjudicated_at = _parse_time(
+            adjudication.get("adjudicated_at"),
+            "owner_adjudication.adjudicated_at",
+            errors,
+        )
+
+    committed_at = _parse_time(
+        bindings.get("model_committed_at"),
+        "artifact_bindings.model_committed_at",
+        errors,
+    )
+    freeze, freeze_sha = _descriptor_payload(
+        artifact_root,
+        bindings.get("fv_freeze_receipt"),
+        "artifact_bindings.fv_freeze_receipt",
+        errors,
+    )
+    frozen_at = None
+    if freeze is not None:
+        if _identity_values(freeze) != root_identity:
+            errors.append("FV freeze identity/cutoff must equal Council root")
+        if _normalized_sha(freeze.get("model_spec_sha256")) != final_spec_sha:
+            errors.append("FV freeze must bind the final model spec hash")
+        for field in ("model_output_sha256", "independent_audit_sha256"):
+            if _normalized_sha(freeze.get(field)) is None:
+                errors.append(f"FV freeze {field} must be a lowercase SHA-256 digest")
+        frozen_at = _parse_time(freeze.get("frozen_at"), "fv_freeze_receipt.frozen_at", errors)
+
+    chair_receipt, _ = _descriptor_payload(
+        artifact_root,
+        bindings.get("pm_chair"),
+        "artifact_bindings.pm_chair",
+        errors,
+    )
+    if chair_receipt is not None:
+        if _identity_values(chair_receipt) != root_identity:
+            errors.append("PM Chair receipt identity/cutoff must equal Council root")
+        if chair_receipt.get("chair") != payload.get("chair"):
+            errors.append("PM Chair receipt content must equal Council root chair")
+        if _normalized_sha(chair_receipt.get("model_spec_sha256")) != final_spec_sha:
+            errors.append("PM Chair receipt must bind the final model spec hash")
+        if _normalized_sha(chair_receipt.get("fv_freeze_receipt_sha256")) != freeze_sha:
+            errors.append("PM Chair receipt must bind the FV freeze receipt hash")
+
+    memo_times = [
+        value
+        for seat, memo in root_memos.items()
+        if (value := _parse_time(memo.get("sealed_at"), f"{seat} memo sealed_at", errors))
+        is not None
+    ]
+    latest_memo = max(memo_times, default=None)
+    chair_started = _parse_time(
+        payload.get("chair", {}).get("started_at"), "chair.started_at", errors
+    )
+    timeline = [latest_memo, adjudicated_at, committed_at, frozen_at, chair_started]
+    if all(value is not None for value in timeline) and timeline != sorted(timeline):
+        errors.append(
+            "current Council timeline must be memos <= adjudication <= model commit <= FV freeze <= Chair"
+        )
+
+
 def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None]:
     """Validate only the public Council-admission seam of a PEI receipt.
 
@@ -447,9 +709,10 @@ def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None
     errors: list[str] = []
     if not isinstance(payload, dict):
         return ["root must be an object"], None
-    if payload.get("schema_version") != PEI_RECEIPT_SCHEMA_VERSION:
+    if payload.get("schema_version") not in PEI_RECEIPT_SCHEMA_VERSIONS:
         errors.append(
-            f"schema_version must be {PEI_RECEIPT_SCHEMA_VERSION}"
+            "schema_version must be a supported PEI receipt version: "
+            + ", ".join(str(version) for version in sorted(PEI_RECEIPT_SCHEMA_VERSIONS))
         )
     if not _nonempty_string(payload.get("ticker")):
         errors.append("ticker must be a non-empty string")
@@ -735,9 +998,9 @@ def _validate_damodaran_artifact(
                 f"damodaran {completion} requires a structured gap artifact"
             )
         return
-    gap_only = completion == "Unavailable" or (
-        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
-    )
+    if completion == "Partial" and not set(artifact) <= METHOD_GAP_FIELDS:
+        errors.append("Damodaran Partial must use only a qualitative gap artifact")
+    gap_only = completion != "Complete"
     allowed_fields = METHOD_GAP_FIELDS if gap_only else DAMODARAN_ARTIFACT_FIELDS
     _reject_unexpected_keys(
         artifact, allowed_fields, "Damodaran method artifact", errors
@@ -912,9 +1175,9 @@ def _validate_soros_artifact(
         else:
             errors.append(f"soros {completion} requires a structured gap artifact")
         return
-    gap_only = completion == "Unavailable" or (
-        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
-    )
+    if completion == "Partial" and not set(artifact) <= METHOD_GAP_FIELDS:
+        errors.append("Soros Partial must use only a qualitative gap artifact")
+    gap_only = completion != "Complete"
     allowed_fields = METHOD_GAP_FIELDS if gap_only else SOROS_ARTIFACT_FIELDS
     _reject_unexpected_keys(
         artifact, allowed_fields, "Soros method artifact", errors
@@ -1138,9 +1401,9 @@ def _validate_mauboussin_artifact(
                 f"mauboussin {completion} requires a structured gap artifact"
             )
         return
-    gap_only = completion == "Unavailable" or (
-        completion == "Partial" and set(artifact) <= METHOD_GAP_FIELDS
-    )
+    if completion == "Partial" and not set(artifact) <= METHOD_GAP_FIELDS:
+        errors.append("Mauboussin Partial must use only a qualitative gap artifact")
+    gap_only = completion != "Complete"
     allowed_fields = METHOD_GAP_FIELDS if gap_only else MAUBOUSSIN_ARTIFACT_FIELDS
     _reject_unexpected_keys(
         artifact, allowed_fields, "Mauboussin method artifact", errors
@@ -1591,7 +1854,14 @@ def _resolve_probability_component(
         return None, None, set(), None, None
     _expect_keys(
         component,
-        {"seat", "proposition_id", "source_kind", "source_id", "weight_pct"},
+        {
+            "seat",
+            "proposition_id",
+            "source_kind",
+            "source_id",
+            "weight_pct",
+            "scenario_probability_basis",
+        },
         prefix,
         errors,
     )
@@ -1611,6 +1881,10 @@ def _resolve_probability_component(
     if not _number(weight) or not 0 < weight <= 100:
         errors.append(f"{prefix}.weight_pct must be greater than 0 and at most 100")
         weight = None
+    if not _nonempty_string(component.get("scenario_probability_basis")):
+        errors.append(
+            f"{prefix}.scenario_probability_basis must be a non-empty string"
+        )
 
     source_kind = component.get("source_kind")
     source_id = component.get("source_id")
@@ -2099,7 +2373,10 @@ def validate(
     errors: list[str] = []
     if not isinstance(payload, dict):
         return ["root must be a JSON object"]
-    _expect_keys(payload, ROOT_FIELDS, "root", errors)
+    expected_root_fields = ROOT_FIELDS | (
+        {"artifact_bindings"} if "artifact_bindings" in payload else set()
+    )
+    _expect_keys(payload, expected_root_fields, "root", errors)
     leaked_sealed_input = _find_leaked_sealed_input(payload)
     if leaked_sealed_input:
         errors.append(leaked_sealed_input)
@@ -2821,7 +3098,15 @@ def validate(
             continue
         _expect_keys(
             decision,
-            {"seat", "decision", "proposition_id", "proposition", "reason"},
+            {
+                "seat",
+                "decision",
+                "proposition_id",
+                "proposition",
+                "reason",
+                "retained_limitation",
+                "impact",
+            },
             prefix,
             errors,
         )
@@ -2841,7 +3126,25 @@ def validate(
             errors.append(
                 "chair seat decision proposition_id must match its method artifact"
             )
-        _require_text_fields(decision, ("proposition", "reason"), prefix, errors)
+        _require_text_fields(
+            decision, ("proposition", "reason", "retained_limitation"), prefix, errors
+        )
+        impact = decision.get("impact")
+        if not isinstance(impact, dict):
+            errors.append(f"{prefix}.impact must be an object")
+        else:
+            _expect_keys(
+                impact,
+                {"stance", "participation_effect", "refresh_route"},
+                f"{prefix}.impact",
+                errors,
+            )
+            _require_text_fields(
+                impact,
+                ("stance", "participation_effect", "refresh_route"),
+                f"{prefix}.impact",
+                errors,
+            )
     if collaboration_available and decision_seats != SEATS:
         errors.append("chair.seat_decisions must cover all three seats")
     if not collaboration_available and seat_decisions:
@@ -2873,28 +3176,48 @@ def validate(
     if not _string_list(chair.get("implementation_blockers")):
         errors.append("chair.implementation_blockers must be a string list")
 
-    _validate_chair_matrix(
-        chair.get("decision_matrix"),
-        chair=chair,
-        price=price,
-        horizon=payload.get("decision_horizon"),
-        accepted_evidence=accepted_evidence,
-        method_artifacts=method_artifacts,
-        method_completions=method_completions,
-        collaboration_available=collaboration_available,
-        errors=errors,
+    numeric_eligible = collaboration_available and any(
+        completion == "Complete" for completion in method_completions.values()
     )
+    if numeric_eligible:
+        _validate_chair_matrix(
+            chair.get("decision_matrix"),
+            chair=chair,
+            price=price,
+            horizon=payload.get("decision_horizon"),
+            accepted_evidence=accepted_evidence,
+            method_artifacts=method_artifacts,
+            method_completions=method_completions,
+            collaboration_available=collaboration_available,
+            errors=errors,
+        )
 
-    gross_return = chair.get("gross_expected_return_pct")
-    if not isinstance(gross_return, (int, float)) or isinstance(gross_return, bool):
-        errors.append("chair.gross_expected_return_pct must be numeric")
-    elif math.isclose(gross_return, 0.0, abs_tol=1e-9):
-        if chair.get("research_stance") != "Avoid":
-            errors.append("research_stance must be Avoid for zero gross expected return")
-    elif gross_return > 0 and chair.get("research_stance") != "Long":
-        errors.append("research_stance must be Long for positive gross expected return")
-    elif gross_return < 0 and chair.get("research_stance") != "Short":
-        errors.append("research_stance must be Short for negative gross expected return")
+        gross_return = chair.get("gross_expected_return_pct")
+        if not isinstance(gross_return, (int, float)) or isinstance(gross_return, bool):
+            errors.append("chair.gross_expected_return_pct must be numeric")
+        elif math.isclose(gross_return, 0.0, abs_tol=1e-9):
+            if chair.get("research_stance") != "Avoid":
+                errors.append("research_stance must be Avoid for zero gross expected return")
+        elif gross_return > 0 and chair.get("research_stance") != "Long":
+            errors.append("research_stance must be Long for positive gross expected return")
+        elif gross_return < 0 and chair.get("research_stance") != "Short":
+            errors.append("research_stance must be Short for negative gross expected return")
+    else:
+        qualitative_reason = (
+            "all-Partial Council"
+            if collaboration_available
+            else "unavailable Council runtime"
+        )
+        if chair.get("decision_matrix") is not None:
+            errors.append(
+                f"{qualitative_reason} must not produce a numeric decision matrix"
+            )
+        if chair.get("gross_expected_return_pct") is not None:
+            errors.append(
+                f"{qualitative_reason} must not produce numeric expected return"
+            )
+        if chair.get("robustness") != "Fragile":
+            errors.append(f"{qualitative_reason} requires Fragile robustness")
 
     if final_converged and chair.get("robustness") != "Fragile":
         errors.append("unresolved persona convergence requires Fragile robustness")
@@ -2909,6 +3232,8 @@ def validate(
             errors.append(
                 "hard implementation or portfolio gaps require implementation readiness Blocked"
             )
+
+    _validate_current_artifact_bindings(payload, Path(artifact_dir), errors)
 
     return errors
 
