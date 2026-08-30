@@ -2,137 +2,30 @@
   "recommended_threshold": 0.75,
   "should_trigger": [
     {
-      "text": "Public Equity Investing 已完成匿名上市公司的研究與情境包，請在十二個月期限內給出 Long、Short 或 Avoid，並把研究方向和實作準備度分開。",
-      "family": "final_directional_judgment",
+      "text": "Equity Data 與 PEI preliminary underwrite 已完成，請在模型計算前讓三席 Council 挑戰假設。",
+      "family": "formal_premodel_challenge",
       "expected_route": "iysl-equity-council"
     },
     {
-      "text": "既有研究分布明顯偏空，但因借券和 options 尚未驗證，原始 pitch 變成 watchlist；請仲裁最終投資方向。",
-      "family": "stance_readiness_conflict",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "既有 PEI pack 顯示主要價值來自尚未證實的採用率和營運槓桿，請用有界假設形成最終投資方向，不要以證據不足作結。",
-      "family": "bounded_uncertainty",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "既有 PEI pack 的六個月 revisions 與催化劑偏空，但長期 DCF 偏多；請依指定期限完成投資判斷。",
-      "family": "horizon_conflict",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "兩個已完成的 PEI workflows 對匿名上市公司的方向和期限權重相反，請做終局仲裁。",
-      "family": "owner_conflict",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "一批已完成 PEI packs 的匿名候選因共同缺少 borrow 和 liquidity 證據而全部變成 pass，請仲裁最終投資方向並檢查是否壓掉了原有方向差異。",
-      "family": "serial_suppression",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "Use $iysl-equity-council to review this completed public-equity research pack and issue the final stance.",
+      "text": "Use $iysl-equity-council on these accepted candidate assumptions before the owner commits the model.",
       "family": "explicit_invocation",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "The source pack and valuation model are complete. Issue the final stance from the existing Public Equity Investing work without rebuilding either artifact.",
-      "family": "completed_pack_mixed_vocabulary",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "既有研究包已完成，請仲裁最終投資方向；不要做 position sizing、下單或執行。",
-      "family": "judgment_with_execution_exclusion",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "既有研究包已完成；不需要最終 pitch，只要最終投資判斷。",
-      "family": "judgment_without_pitch_artifact",
-      "expected_route": "iysl-equity-council"
-    },
-    {
-      "text": "Use $iysl-equity-council on the material already provided.",
-      "family": "explicit_invocation_without_terminal_words",
       "expected_route": "iysl-equity-council"
     }
   ],
   "should_not_trigger": [
     {
-      "text": "替匿名上市公司蒐集最新 filing、transcript 和 consensus estimates。",
+      "text": "蒐集最新 filing、transcript 與 estimates。",
       "family": "evidence_collection",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "從零建立匿名上市公司的 DCF、WACC 與 terminal value sensitivity。",
-      "family": "valuation_build",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "摘要匿名上市公司剛發布的財報與 management commentary，不需要投資建議。",
-      "family": "earnings_summary",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "把既有模型轉成 bull/base/bear sensitivity table，不需要最終 pitch。",
-      "family": "scenario_only",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "已有明確 Short thesis，請只計算 position sizing、borrow cost 與 hedge alternatives。",
-      "family": "implementation_only",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "評估一家未上市公司的產品策略與競爭格局。",
-      "family": "private_company",
-      "expected_route": "other"
-    },
-    {
-      "text": "寫一份不涉及投資判斷的公司背景介紹。",
-      "family": "generic_company_summary",
-      "expected_route": "direct"
-    },
-    {
-      "text": "尚未進行任何研究，請直接給最終投資判斷。",
-      "family": "first_pass_judgment_without_pack",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "既有 PEI pack 已完成，但不要最終投資判斷；只檢查 borrow、liquidity 與 implementation readiness。",
-      "family": "completed_pack_implementation_only",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "既有 PEI pack 已完成，不要 Long、Short 或 Avoid，只整理各 workflow 的方向與期限分歧。",
-      "family": "completed_pack_conflict_summary_only",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "Public Equity Investing 已完成研究包，但不要做終局仲裁，只更新情境表。",
-      "family": "completed_pack_scenario_update_only",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "既有 Public Equity Investing workflow 只缺 evidence pack；請用 iysl-equity-data 蒐集最新 filing、transcript、consensus estimates 與 source ledger，不要給最終投資判斷。",
-      "family": "cross_skill_pair_council_vs_equity_data",
       "expected_route": "iysl-equity-data"
-    }
-  ],
-  "near_neighbor": [
+    },
     {
-      "text": "為匿名上市公司建立完整 long/short pitch，尚未做任何研究。",
-      "family": "judgment_vs_pitch_owner",
+      "text": "模型已凍結，請直接重算公式。",
+      "family": "arithmetic_recomputation",
       "expected_route": "public-equity-investing"
     },
     {
-      "text": "根據已核准的研究方向設計對沖與 exit rules。",
-      "family": "judgment_vs_risk_owner",
-      "expected_route": "public-equity-investing"
-    },
-    {
-      "text": "把既有投資結論更新到 thesis tracker 並設定下一個 review date。",
-      "family": "judgment_vs_tracker_owner",
+      "text": "根據研究決定 position sizing 與下單。",
+      "family": "execution",
       "expected_route": "public-equity-investing"
     }
   ]

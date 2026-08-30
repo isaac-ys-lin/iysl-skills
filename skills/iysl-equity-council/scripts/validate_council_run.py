@@ -15,6 +15,14 @@ from typing import Any
 
 
 SEATS = {"damodaran", "soros", "mauboussin"}
+ASSUMPTION_FAMILIES = {
+    "revenue_orders_capex_recognition",
+    "product_mix_and_margins",
+    "reinvestment_and_fcff",
+    "capital_structure_and_wacc",
+    "duration_fade_and_terminal",
+    "twelve_month_market_expectations",
+}
 PARTITION_DOMAINS = {
     "damodaran": {"fundamentals", "reverse_valuation", "capital_structure"},
     "soros": {"price_path", "marginal_actors", "positioning_reflexivity"},
@@ -181,6 +189,8 @@ COUNCIL_RUNTIMES = {"collaboration_available", "unavailable"}
 HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 COUNCIL_SCHEMA_VERSION = 2
 CURRENT_AUTHORITY_VERSION = 1
+AGENT_COUNCIL_SCHEMA_VERSION = 3
+AGENT_COUNCIL_AUTHORITY_VERSION = 2
 PEI_RECEIPT_SCHEMA_VERSIONS = {2, 3, 4}
 PEI_POSTURES = {"PASS", "LIMITED", "BLOCKED"}
 PEI_REQUIREMENT_CLASSES = {
@@ -695,6 +705,623 @@ def _validate_current_artifact_bindings(
         errors.append(
             "current Council timeline must be memos <= adjudication <= model commit <= FV freeze <= Chair"
         )
+
+
+def _contains_forbidden_agent_output(value: Any) -> str | None:
+    forbidden = {
+        "action",
+        "final_model",
+        "gross_expected_return_pct",
+        "implementation_readiness",
+        "owner_fair_value",
+        "participation",
+        "position_size",
+        "research_stance",
+        "target_price",
+        "trade_instruction",
+    }
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key.lower() in forbidden:
+                return key
+            found = _contains_forbidden_agent_output(child)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _contains_forbidden_agent_output(child)
+            if found:
+                return found
+    return None
+
+
+def _validate_agent_council_v3(
+    payload: dict[str, Any], *, artifact_dir: Path
+) -> list[str]:
+    """Validate only durable mechanics; investment judgment stays with PEI."""
+
+    errors: list[str] = []
+    _expect_keys(
+        payload,
+        {
+            "schema_version",
+            "council_runtime",
+            "ticker",
+            "security_identity",
+            "current_price",
+            "decision_horizon",
+            "evidence_cutoff",
+            "pei_input_receipt",
+            "research_admission",
+            "artifact_bindings",
+        },
+        "root",
+        errors,
+    )
+    if payload.get("council_runtime") != "collaboration_available":
+        errors.append("current formal Council requires collaboration_available")
+    if not _nonempty_string(payload.get("ticker")):
+        errors.append("ticker must be a non-empty string")
+    if not _nonempty_string(payload.get("decision_horizon")):
+        errors.append("decision_horizon must be a non-empty string")
+    cutoff = _parse_time(payload.get("evidence_cutoff"), "evidence_cutoff", errors)
+
+    identity = payload.get("security_identity")
+    if not isinstance(identity, dict):
+        errors.append("security_identity must be an object")
+        identity = {}
+    else:
+        _expect_keys(
+            identity,
+            {"symbol", "issuer", "listing", "security_id", "source_id"},
+            "security_identity",
+            errors,
+        )
+        for field in ("symbol", "issuer", "listing", "security_id", "source_id"):
+            if not _nonempty_string(identity.get(field)):
+                errors.append(f"security_identity.{field} must be a non-empty string")
+        if identity.get("symbol") != payload.get("ticker"):
+            errors.append("security_identity.symbol must equal ticker")
+
+    price = payload.get("current_price")
+    if not isinstance(price, dict):
+        errors.append("current_price must be an object")
+        price = {}
+    else:
+        _expect_keys(
+            price, {"value", "currency", "as_of", "source_id"}, "current_price", errors
+        )
+    if not _number(price.get("value")) or price.get("value", 0) <= 0:
+        errors.append("current_price.value must be positive finite numeric")
+    for field in ("currency", "source_id"):
+        if not _nonempty_string(price.get(field)):
+            errors.append(f"current_price.{field} must be a non-empty string")
+    price_as_of = _parse_time(price.get("as_of"), "current_price.as_of", errors)
+    if cutoff is not None and price_as_of is not None and price_as_of > cutoff:
+        errors.append("current_price.as_of cannot be after evidence_cutoff")
+    if payload.get("research_admission") not in {"PASS", "LIMITED"}:
+        errors.append("research_admission must be PASS or LIMITED")
+
+    root_identity = (
+        payload.get("ticker"),
+        identity.get("security_id"),
+        payload.get("evidence_cutoff"),
+    )
+    receipt, _ = _descriptor_payload(
+        artifact_dir, payload.get("pei_input_receipt"), "pei_input_receipt", errors
+    )
+    accepted_evidence: set[str] = set()
+    if receipt is not None:
+        if _identity_values(receipt) != root_identity:
+            errors.append("PEI input receipt identity/cutoff must equal Council root")
+        registry = receipt.get("evidence_registry")
+        if not isinstance(registry, list):
+            errors.append("PEI input receipt evidence_registry must be a list")
+        else:
+            accepted_evidence = {
+                item.get("id")
+                for item in registry
+                if isinstance(item, dict) and _nonempty_string(item.get("id"))
+            }
+
+    bindings = payload.get("artifact_bindings")
+    if not isinstance(bindings, dict):
+        return errors + ["artifact_bindings must be an object"]
+    _expect_keys(
+        bindings,
+        {
+            "authority_version",
+            "validator_sha256",
+            "preliminary_underwrite",
+            "seat_packets",
+            "sealed_memos",
+            "owner_adjudication",
+            "final_model_spec",
+            "model_committed_at",
+            "fv_freeze_receipt",
+        },
+        "artifact_bindings",
+        errors,
+    )
+    if bindings.get("authority_version") != AGENT_COUNCIL_AUTHORITY_VERSION:
+        errors.append(
+            f"artifact_bindings.authority_version must be {AGENT_COUNCIL_AUTHORITY_VERSION}"
+        )
+    if _normalized_sha(bindings.get("validator_sha256")) != _sha256(
+        Path(__file__).resolve()
+    ):
+        errors.append("artifact_bindings.validator_sha256 does not match this validator")
+
+    underwrite, _ = _descriptor_payload(
+        artifact_dir,
+        bindings.get("preliminary_underwrite"),
+        "artifact_bindings.preliminary_underwrite",
+        errors,
+    )
+    assumptions: list[dict[str, Any]] = []
+    assumption_ids: set[str] = set()
+    assumptions_by_id: dict[str, dict[str, Any]] = {}
+    if underwrite is not None:
+        if _identity_values(underwrite) != root_identity:
+            errors.append("preliminary underwrite identity/cutoff must equal Council root")
+        candidate = underwrite.get("candidate_assumptions")
+        if not isinstance(candidate, list) or not candidate:
+            errors.append("preliminary underwrite candidate_assumptions must be non-empty")
+        else:
+            assumptions = [row for row in candidate if isinstance(row, dict)]
+            assumption_ids = {
+                row.get("assumption_id")
+                for row in assumptions
+                if _nonempty_string(row.get("assumption_id"))
+            }
+            assumptions_by_id = {
+                row["assumption_id"]: row
+                for row in assumptions
+                if _nonempty_string(row.get("assumption_id"))
+            }
+            if len(assumptions) != len(candidate) or len(assumption_ids) != len(candidate):
+                errors.append("preliminary assumption IDs must be unique non-empty strings")
+            for index, assumption in enumerate(assumptions):
+                label = f"preliminary assumption[{index}]"
+                evidence_ids = assumption.get("evidence_ids")
+                if not _string_list(evidence_ids) or not set(evidence_ids) <= accepted_evidence:
+                    errors.append(
+                        f"{label}.evidence_ids exceed accepted PEI evidence"
+                    )
+                if not _number(assumption.get("proposed_base")):
+                    errors.append(f"{label}.proposed_base must be numeric")
+                proposed_range = assumption.get("proposed_range")
+                if (
+                    not isinstance(proposed_range, list)
+                    or len(proposed_range) != 2
+                    or not all(_number(item) for item in proposed_range)
+                    or proposed_range[0] > proposed_range[1]
+                ):
+                    errors.append(f"{label}.proposed_range must be an ordered numeric pair")
+                for field in (
+                    "period",
+                    "unit",
+                    "rationale",
+                    "rejected_alternative",
+                    "flip_condition",
+                ):
+                    if not _nonempty_string(assumption.get(field)):
+                        errors.append(f"{label}.{field} must be non-empty")
+        dispositions = underwrite.get("assumption_family_dispositions")
+        disposition_families: set[str] = set()
+        disposition_assumptions: set[str] = set()
+        if not isinstance(dispositions, list):
+            dispositions = []
+        for index, disposition in enumerate(dispositions):
+            label = f"preliminary assumption family disposition[{index}]"
+            if not isinstance(disposition, dict):
+                errors.append(f"{label} must be an object")
+                continue
+            _expect_keys(
+                disposition,
+                {"family", "status", "assumption_ids", "reason"},
+                label,
+                errors,
+            )
+            family = disposition.get("family")
+            if family in disposition_families or family not in ASSUMPTION_FAMILIES:
+                errors.append(f"{label}.family must be a unique recognized family")
+            if isinstance(family, str):
+                disposition_families.add(family)
+            status = disposition.get("status")
+            family_assumptions = disposition.get("assumption_ids")
+            if status == "covered":
+                if not _string_list(family_assumptions):
+                    errors.append(f"{label}.assumption_ids must be non-empty when covered")
+                else:
+                    duplicate_ids = disposition_assumptions & set(family_assumptions)
+                    if duplicate_ids or not set(family_assumptions) <= assumption_ids:
+                        errors.append(f"{label}.assumption_ids must map once to candidates")
+                    disposition_assumptions.update(family_assumptions)
+            elif status == "not_material":
+                if family_assumptions != []:
+                    errors.append(f"{label}.assumption_ids must be empty when not_material")
+            else:
+                errors.append(f"{label}.status must be covered or not_material")
+            if not _nonempty_string(disposition.get("reason")):
+                errors.append(f"{label}.reason must be non-empty")
+        if disposition_families != ASSUMPTION_FAMILIES:
+            errors.append(
+                "preliminary underwrite must disposition exactly all six assumption families"
+            )
+        if disposition_assumptions != assumption_ids:
+            errors.append(
+                "preliminary underwrite must assign every candidate assumption to one family"
+            )
+
+    packet_refs = bindings.get("seat_packets")
+    memo_refs = bindings.get("sealed_memos")
+    if not isinstance(packet_refs, dict) or set(packet_refs) != SEATS:
+        errors.append("artifact_bindings.seat_packets must contain exactly the three seats")
+        packet_refs = {}
+    if not isinstance(memo_refs, dict) or set(memo_refs) != SEATS:
+        errors.append("artifact_bindings.sealed_memos must contain exactly the three seats")
+        memo_refs = {}
+
+    packet_hashes: dict[str, str] = {}
+    memo_hashes: dict[str, str] = {}
+    memo_times: list[datetime] = []
+    for seat in sorted(SEATS):
+        packet, packet_sha = _descriptor_payload(
+            artifact_dir,
+            packet_refs.get(seat),
+            f"artifact_bindings.seat_packets.{seat}",
+            errors,
+        )
+        if packet_sha:
+            packet_hashes[seat] = packet_sha
+        if packet is not None:
+            _expect_keys(
+                packet,
+                {
+                    "schema_version",
+                    "ticker",
+                    "security_id",
+                    "evidence_cutoff",
+                    "seat",
+                    "candidate_assumptions",
+                    "evidence_ids",
+                    "instructions",
+                },
+                f"{seat} packet",
+                errors,
+            )
+            if (
+                packet.get("schema_version") != "council-premodel-seat-packet-v2"
+                or _identity_values(packet) != root_identity
+                or packet.get("seat") != seat
+            ):
+                errors.append(f"{seat} packet identity/schema must equal Council root")
+            if assumptions and packet.get("candidate_assumptions") != assumptions:
+                errors.append(f"{seat} packet candidate assumptions must equal preliminary underwrite")
+            evidence_ids = packet.get("evidence_ids")
+            if not _string_list(evidence_ids):
+                errors.append(f"{seat} packet evidence_ids must be a string list")
+            elif not set(evidence_ids) <= accepted_evidence:
+                errors.append(f"{seat} packet evidence_ids exceed accepted PEI evidence")
+            if not _nonempty_string(packet.get("instructions")):
+                errors.append(f"{seat} packet instructions must be non-empty")
+            else:
+                normalized_instructions = re.sub(
+                    r"[_\s]+", "-", packet["instructions"].casefold()
+                )
+                if not all(
+                    term in normalized_instructions
+                    for term in (
+                        "too-conservative",
+                        "too-aggressive",
+                        "uncertain",
+                        "market-right",
+                    )
+                ):
+                    errors.append(
+                        f"{seat} packet instructions must test conservative, aggressive, uncertain, and market-right cases"
+                    )
+            leaked = _contains_forbidden_agent_output(packet)
+            if leaked:
+                errors.append(f"{seat} packet leaks forbidden field {leaked}")
+
+        memo, memo_sha = _descriptor_payload(
+            artifact_dir,
+            memo_refs.get(seat),
+            f"artifact_bindings.sealed_memos.{seat}",
+            errors,
+        )
+        if memo_sha:
+            memo_hashes[seat] = memo_sha
+        if memo is None:
+            continue
+        _expect_keys(
+            memo,
+            {
+                "schema_version",
+                "seat",
+                "sealed_at",
+                "packet_sha256",
+                "browsed",
+                "added_evidence_ids",
+                "summary",
+                "challenges",
+                "strongest_countercase",
+                "limitations",
+            },
+            f"{seat} memo",
+            errors,
+        )
+        if (
+            memo.get("schema_version") != "council-sealed-memo-v2"
+            or memo.get("seat") != seat
+            or _normalized_sha(memo.get("packet_sha256")) != packet_sha
+        ):
+            errors.append(f"{seat} memo identity/schema or packet hash is invalid")
+        if memo.get("browsed") is not False or memo.get("added_evidence_ids") != []:
+            errors.append(f"{seat} memo must be evidence-closed")
+        if not _nonempty_string(memo.get("summary")):
+            errors.append(f"{seat} memo summary must be non-empty")
+        if not _nonempty_string(memo.get("strongest_countercase")):
+            errors.append(f"{seat} memo strongest_countercase must be non-empty")
+        if not isinstance(memo.get("limitations"), list) or any(
+            not _nonempty_string(item) for item in memo.get("limitations", [])
+        ):
+            errors.append(f"{seat} memo limitations must be a string list")
+        sealed_at = _parse_time(memo.get("sealed_at"), f"{seat} memo sealed_at", errors)
+        if sealed_at:
+            memo_times.append(sealed_at)
+        challenges = memo.get("challenges")
+        if not isinstance(challenges, list):
+            errors.append(f"{seat} memo challenges must be a list")
+            challenges = []
+        for index, challenge in enumerate(challenges):
+            label = f"{seat} memo challenges[{index}]"
+            if not isinstance(challenge, dict):
+                errors.append(f"{label} must be an object")
+                continue
+            _expect_keys(
+                challenge,
+                {
+                    "assumption_id",
+                    "assessment",
+                    "proposed_base",
+                    "proposed_range",
+                    "evidence_ids",
+                    "reasoning",
+                    "decision_impact",
+                    "falsifier",
+                },
+                label,
+                errors,
+            )
+            if challenge.get("assumption_id") not in assumption_ids:
+                errors.append(f"{label}.assumption_id is not in preliminary underwrite")
+            if challenge.get("assessment") not in {
+                "supported",
+                "too_conservative",
+                "too_aggressive",
+                "uncertain",
+            }:
+                errors.append(f"{label}.assessment is invalid")
+            proposed_base = challenge.get("proposed_base")
+            if proposed_base is not None and not _number(proposed_base):
+                errors.append(f"{label}.proposed_base must be numeric or null")
+            proposed_range = challenge.get("proposed_range")
+            if proposed_range is not None and (
+                not isinstance(proposed_range, list)
+                or len(proposed_range) != 2
+                or not all(_number(item) for item in proposed_range)
+                or proposed_range[0] > proposed_range[1]
+            ):
+                errors.append(f"{label}.proposed_range must be an ordered numeric pair or null")
+            challenge_evidence = challenge.get("evidence_ids")
+            if not _string_list(challenge_evidence) or not set(challenge_evidence) <= accepted_evidence:
+                errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
+            for field in ("reasoning", "decision_impact", "falsifier"):
+                if not _nonempty_string(challenge.get(field)):
+                    errors.append(f"{label}.{field} must be non-empty")
+        leaked = _contains_forbidden_agent_output(memo)
+        if leaked:
+            errors.append(f"{seat} memo leaks forbidden field {leaked}")
+
+    final_spec, final_spec_sha = _descriptor_payload(
+        artifact_dir,
+        bindings.get("final_model_spec"),
+        "artifact_bindings.final_model_spec",
+        errors,
+    )
+    final_assumption_ids: set[str] = set()
+    if final_spec is not None and _identity_values(final_spec)[:2] != root_identity[:2]:
+        errors.append("final model spec identity must equal Council root")
+    if final_spec is not None:
+        assumption_values = final_spec.get("assumption_ids")
+        if (
+            not _string_list(assumption_values)
+            or not assumption_values
+            or len(set(assumption_values)) != len(assumption_values)
+        ):
+            errors.append(
+                "final model spec assumption_ids must be a unique non-empty string list"
+            )
+        else:
+            final_assumption_ids = set(assumption_values)
+
+    adjudication, _ = _descriptor_payload(
+        artifact_dir,
+        bindings.get("owner_adjudication"),
+        "artifact_bindings.owner_adjudication",
+        errors,
+    )
+    adjudicated_at = None
+    if adjudication is not None:
+        _expect_keys(
+            adjudication,
+            {
+                "schema_version",
+                "ticker",
+                "security_id",
+                "evidence_cutoff",
+                "adjudicated_at",
+                "packet_hashes",
+                "memo_hashes",
+                "decisions",
+                "final_model_spec_sha256",
+            },
+            "owner adjudication",
+            errors,
+        )
+        if (
+            adjudication.get("schema_version") != "pei-council-adjudication-v2"
+            or _identity_values(adjudication) != root_identity
+        ):
+            errors.append("owner adjudication identity/schema must equal Council root")
+        if adjudication.get("packet_hashes") != packet_hashes:
+            errors.append("owner adjudication packet_hashes must equal bound packets")
+        if adjudication.get("memo_hashes") != memo_hashes:
+            errors.append("owner adjudication memo_hashes must equal bound memos")
+        if _normalized_sha(adjudication.get("final_model_spec_sha256")) != final_spec_sha:
+            errors.append("owner adjudication must bind the final model spec hash")
+        decisions = adjudication.get("decisions")
+        if not isinstance(decisions, list):
+            errors.append("owner adjudication decisions must be a list")
+            decisions = []
+        decision_ids: set[str] = set()
+        adjudicated_model_inputs: set[str] = set()
+        for index, decision in enumerate(decisions):
+            label = f"owner adjudication decisions[{index}]"
+            if not isinstance(decision, dict):
+                errors.append(f"{label} must be an object")
+                continue
+            _expect_keys(
+                decision,
+                {
+                    "assumption_id",
+                    "prior_base",
+                    "prior_range",
+                    "final_base",
+                    "final_range",
+                    "decision",
+                    "council_sources",
+                    "evidence_ids",
+                    "reason",
+                    "model_input_ids",
+                },
+                label,
+                errors,
+            )
+            assumption_id = decision.get("assumption_id")
+            if assumption_id in decision_ids or assumption_id not in assumption_ids:
+                errors.append(f"{label}.assumption_id must map once to the preliminary underwrite")
+            if _nonempty_string(assumption_id):
+                decision_ids.add(assumption_id)
+            preliminary = assumptions_by_id.get(assumption_id, {})
+            prior_base = decision.get("prior_base")
+            if not _number(prior_base):
+                errors.append(f"{label}.prior_base must be numeric")
+            elif prior_base != preliminary.get("proposed_base"):
+                errors.append(f"{label}.prior_base must equal the preliminary Base")
+            prior_range = decision.get("prior_range")
+            if (
+                not isinstance(prior_range, list)
+                or len(prior_range) != 2
+                or not all(_number(item) for item in prior_range)
+                or prior_range[0] > prior_range[1]
+            ):
+                errors.append(f"{label}.prior_range must be an ordered numeric pair")
+            elif prior_range != preliminary.get("proposed_range"):
+                errors.append(f"{label}.prior_range must equal the preliminary range")
+            final_base = decision.get("final_base")
+            if not _number(final_base):
+                errors.append(f"{label}.final_base must be numeric")
+            final_range = decision.get("final_range")
+            if (
+                not isinstance(final_range, list)
+                or len(final_range) != 2
+                or not all(_number(item) for item in final_range)
+                or final_range[0] > final_range[1]
+            ):
+                errors.append(f"{label}.final_range must be an ordered numeric pair")
+            elif _number(final_base) and not final_range[0] <= final_base <= final_range[1]:
+                errors.append(f"{label}.final_base must fall within final_range")
+            if decision.get("decision") not in {"accept", "conditional", "reject"}:
+                errors.append(f"{label}.decision is invalid")
+            if not isinstance(decision.get("council_sources"), list) or not set(
+                decision.get("council_sources", [])
+            ) <= SEATS:
+                errors.append(f"{label}.council_sources are invalid")
+            if not _string_list(decision.get("evidence_ids")) or not set(
+                decision.get("evidence_ids", [])
+            ) <= accepted_evidence:
+                errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
+            if not _nonempty_string(decision.get("reason")):
+                errors.append(f"{label}.reason must be non-empty")
+            model_input_ids = decision.get("model_input_ids")
+            if (
+                not _string_list(model_input_ids)
+                or not model_input_ids
+                or len(set(model_input_ids)) != len(model_input_ids)
+            ):
+                errors.append(
+                    f"{label}.model_input_ids must be a unique non-empty string list"
+                )
+            else:
+                duplicate_inputs = adjudicated_model_inputs & set(model_input_ids)
+                if duplicate_inputs:
+                    errors.append(
+                        "owner adjudication model_input_ids must have one owner: "
+                        + ", ".join(sorted(duplicate_inputs))
+                    )
+                adjudicated_model_inputs.update(model_input_ids)
+        if decision_ids != assumption_ids:
+            errors.append("owner adjudication must decide every preliminary assumption once")
+        missing_model_inputs = final_assumption_ids - adjudicated_model_inputs
+        if missing_model_inputs:
+            errors.append(
+                "owner adjudication model_input_ids do not cover final model assumption_ids: "
+                + ", ".join(sorted(missing_model_inputs))
+            )
+        unexpected_model_inputs = adjudicated_model_inputs - final_assumption_ids
+        if unexpected_model_inputs:
+            errors.append(
+                "owner adjudication model_input_ids are not in final model assumption_ids: "
+                + ", ".join(sorted(unexpected_model_inputs))
+            )
+        adjudicated_at = _parse_time(
+            adjudication.get("adjudicated_at"), "owner_adjudication.adjudicated_at", errors
+        )
+
+    committed_at = _parse_time(
+        bindings.get("model_committed_at"),
+        "artifact_bindings.model_committed_at",
+        errors,
+    )
+    freeze, _ = _descriptor_payload(
+        artifact_dir,
+        bindings.get("fv_freeze_receipt"),
+        "artifact_bindings.fv_freeze_receipt",
+        errors,
+    )
+    frozen_at = None
+    if freeze is not None:
+        if _identity_values(freeze) != root_identity:
+            errors.append("FV freeze identity/cutoff must equal Council root")
+        if _normalized_sha(freeze.get("model_spec_sha256")) != final_spec_sha:
+            errors.append("FV freeze must bind the final model spec hash")
+        for field in ("model_output_sha256", "independent_audit_sha256"):
+            if _normalized_sha(freeze.get(field)) is None:
+                errors.append(f"FV freeze {field} must be a lowercase SHA-256 digest")
+        frozen_at = _parse_time(
+            freeze.get("frozen_at"), "fv_freeze_receipt.frozen_at", errors
+        )
+    latest_memo = max(memo_times, default=None)
+    timeline = [latest_memo, adjudicated_at, committed_at, frozen_at]
+    if all(value is not None for value in timeline) and timeline != sorted(timeline):
+        errors.append(
+            "current Council timeline must be memos <= adjudication <= model commit <= FV freeze"
+        )
+    return errors
 
 
 def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None]:
@@ -2370,9 +2997,11 @@ def validate(
     artifact_dir: Path,
 ) -> list[str]:
     _ = plugin_root
-    errors: list[str] = []
     if not isinstance(payload, dict):
         return ["root must be a JSON object"]
+    if payload.get("schema_version") == AGENT_COUNCIL_SCHEMA_VERSION:
+        return _validate_agent_council_v3(payload, artifact_dir=Path(artifact_dir))
+    errors: list[str] = []
     expected_root_fields = ROOT_FIELDS | (
         {"artifact_bindings"} if "artifact_bindings" in payload else set()
     )

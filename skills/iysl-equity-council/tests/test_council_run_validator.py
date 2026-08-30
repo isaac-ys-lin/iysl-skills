@@ -1760,3 +1760,349 @@ def test_cli_validates_the_public_artifact_seam(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert "Council run is valid" in completed.stdout
+
+
+def _v3_fixture(tmp_path):
+    plugin_root, artifact_dir, pei_path, pei_receipt = _build_chain(tmp_path)
+    support = artifact_dir / "support" / "current-council-v3"
+    identity = {
+        "ticker": "EXAMPLE",
+        "security_id": "SEC-CIK-0000001",
+        "evidence_cutoff": pei_receipt["evidence_cutoff"],
+    }
+    assumption_families = {
+        "revenue_orders_capex_recognition": "revenue_growth",
+        "product_mix_and_margins": "operating_margin",
+        "reinvestment_and_fcff": "sales_to_capital",
+        "capital_structure_and_wacc": "wacc",
+        "duration_fade_and_terminal": "terminal_growth",
+        "twelve_month_market_expectations": "forward_multiple",
+    }
+    assumptions = [
+        {
+            "assumption_id": assumption_id,
+            "proposed_base": 20.0,
+            "proposed_range": [10.0, 30.0],
+            "evidence_ids": ["IR:earnings-release:2026Q2"],
+            "period": "FY2027E",
+            "unit": "percent",
+            "rationale": "Reported growth and guidance anchor the initial range.",
+            "rejected_alternative": "Do not replace the observed range with an arbitrary haircut.",
+            "flip_condition": "Sustained growth below 10 percent.",
+        }
+        for assumption_id in assumption_families.values()
+    ]
+    underwrite = {
+        "schema_version": "pei-preliminary-underwrite-v2",
+        **identity,
+        "candidate_assumptions": assumptions,
+        "assumption_family_dispositions": [
+            {
+                "family": family,
+                "status": "covered",
+                "assumption_ids": [assumption_id],
+                "reason": "The family is decision-material and represented by this candidate.",
+            }
+            for family, assumption_id in assumption_families.items()
+        ],
+    }
+    underwrite_path = support / "preliminary_underwrite.json"
+    _write_json(underwrite_path, underwrite)
+
+    packet_refs = {}
+    memo_refs = {}
+    for minute, seat in enumerate(sorted(VALIDATOR.SEATS), start=20):
+        packet = {
+            "schema_version": "council-premodel-seat-packet-v2",
+            **identity,
+            "seat": seat,
+            "candidate_assumptions": assumptions,
+            "evidence_ids": ["IR:earnings-release:2026Q2"],
+            "instructions": "Test too_conservative, too_aggressive, uncertain, and the market-right countercase; do not browse or choose an action.",
+        }
+        packet_path = support / "packets" / f"{seat}.json"
+        _write_json(packet_path, packet)
+        packet_refs[seat] = _descriptor(packet_path, artifact_dir)
+        memo = {
+            "schema_version": "council-sealed-memo-v2",
+            "seat": seat,
+            "sealed_at": f"2026-08-22T10:{minute}:00+08:00",
+            "packet_sha256": packet_refs[seat]["sha256"],
+            "browsed": False,
+            "added_evidence_ids": [],
+            "summary": "The proposed assumption is supported within the stated range.",
+            "challenges": [
+                {
+                    "assumption_id": "revenue_growth",
+                    "assessment": "supported",
+                    "proposed_base": 20.0,
+                    "proposed_range": [10.0, 30.0],
+                    "evidence_ids": ["IR:earnings-release:2026Q2"],
+                    "reasoning": "The accepted evidence supports the current calibration.",
+                    "decision_impact": "No model change is required.",
+                    "falsifier": "Sustained reported growth below 10 percent.",
+                }
+            ],
+            "strongest_countercase": "The reported period may not represent durable demand.",
+            "limitations": ["Only accepted evidence through the cutoff was reviewed."],
+        }
+        memo_path = support / "memos" / f"{seat}.json"
+        _write_json(memo_path, memo)
+        memo_refs[seat] = _descriptor(memo_path, artifact_dir)
+
+    final_spec = {
+        "schema_version": "owner-model-spec-v1",
+        "identity": identity,
+        "evidence_cutoff": identity["evidence_cutoff"],
+        "owner": "PEI owner",
+        "formula_version": "test-formula-v1",
+        "assumption_ids": list(assumption_families.values()),
+    }
+    final_spec_path = artifact_dir / "support" / "owner-model" / "model.json"
+    _write_json(final_spec_path, final_spec)
+    final_spec_ref = _descriptor(final_spec_path, artifact_dir)
+
+    adjudication = {
+        "schema_version": "pei-council-adjudication-v2",
+        **identity,
+        "adjudicated_at": "2026-08-22T10:24:00+08:00",
+        "packet_hashes": {seat: packet_refs[seat]["sha256"] for seat in sorted(VALIDATOR.SEATS)},
+        "memo_hashes": {seat: memo_refs[seat]["sha256"] for seat in sorted(VALIDATOR.SEATS)},
+        "decisions": [
+            {
+                "assumption_id": assumption_id,
+                "prior_base": 20.0,
+                "prior_range": [10.0, 30.0],
+                "final_base": 20.0,
+                "final_range": [10.0, 30.0],
+                "decision": "accept",
+                "council_sources": sorted(VALIDATOR.SEATS),
+                "evidence_ids": ["IR:earnings-release:2026Q2"],
+                "reason": "All three lenses found no evidence-backed reason to change it.",
+                "model_input_ids": [assumption_id],
+            }
+            for assumption_id in assumption_families.values()
+        ],
+        "final_model_spec_sha256": final_spec_ref["sha256"],
+    }
+    adjudication_path = support / "owner_adjudication.json"
+    _write_json(adjudication_path, adjudication)
+    freeze = {
+        "schema_version": "owner-fv-freeze-v1",
+        **identity,
+        "frozen_at": "2026-08-22T10:26:00+08:00",
+        "model_spec_sha256": final_spec_ref["sha256"],
+        "model_output_sha256": "1" * 64,
+        "independent_audit_sha256": "2" * 64,
+    }
+    freeze_path = support / "fv_freeze_receipt.json"
+    _write_json(freeze_path, freeze)
+
+    council = {
+        "schema_version": 3,
+        "council_runtime": "collaboration_available",
+        "ticker": "EXAMPLE",
+        "security_identity": {
+            "symbol": "EXAMPLE",
+            "issuer": "Example Corporation",
+            "listing": "NASDAQ",
+            "security_id": "SEC-CIK-0000001",
+            "source_id": "IR:earnings-release:2026Q2",
+        },
+        "current_price": {
+            "value": 100.0,
+            "currency": "USD",
+            "as_of": "2026-08-22T09:00:00+08:00",
+            "source_id": "SA:market:2026-08-22",
+        },
+        "decision_horizon": "12 months",
+        "evidence_cutoff": identity["evidence_cutoff"],
+        "pei_input_receipt": _descriptor(pei_path, artifact_dir),
+        "research_admission": "PASS",
+        "artifact_bindings": {
+            "authority_version": 2,
+            "validator_sha256": _sha256(VALIDATOR_PATH),
+            "preliminary_underwrite": _descriptor(underwrite_path, artifact_dir),
+            "seat_packets": packet_refs,
+            "sealed_memos": memo_refs,
+            "owner_adjudication": _descriptor(adjudication_path, artifact_dir),
+            "final_model_spec": final_spec_ref,
+            "model_committed_at": "2026-08-22T10:25:00+08:00",
+            "fv_freeze_receipt": _descriptor(freeze_path, artifact_dir),
+        },
+    }
+    return plugin_root, artifact_dir, council
+
+
+def test_agent_council_v3_accepts_minimal_complete_chain(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    assert _validate(council, plugin_root, artifact_dir) == []
+
+
+def test_agent_council_v3_rejects_unaccepted_preliminary_evidence(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    ref = council["artifact_bindings"]["preliminary_underwrite"]
+    path = artifact_dir / ref["path"]
+    underwrite = json.loads(path.read_text(encoding="utf-8"))
+    underwrite["candidate_assumptions"][0]["evidence_ids"].append("UNACCEPTED")
+    _write_json(path, underwrite)
+    ref["sha256"] = _sha256(path)
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert (
+        "preliminary assumption[0].evidence_ids exceed accepted PEI evidence"
+        in errors
+    )
+
+
+def test_agent_council_v3_requires_all_assumption_family_dispositions(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    ref = council["artifact_bindings"]["preliminary_underwrite"]
+    path = artifact_dir / ref["path"]
+    underwrite = json.loads(path.read_text(encoding="utf-8"))
+    underwrite["assumption_family_dispositions"].pop()
+    _write_json(path, underwrite)
+    ref["sha256"] = _sha256(path)
+
+    assert (
+        "preliminary underwrite must disposition exactly all six assumption families"
+        in _validate(council, plugin_root, artifact_dir)
+    )
+
+
+def test_agent_council_v3_rejects_one_sided_packet_instructions(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    bindings = council["artifact_bindings"]
+    packet_ref = bindings["seat_packets"]["damodaran"]
+    packet_path = artifact_dir / packet_ref["path"]
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    packet["instructions"] = "Test only whether assumptions are too conservative."
+    _write_json(packet_path, packet)
+    packet_ref["sha256"] = _sha256(packet_path)
+
+    memo_ref = bindings["sealed_memos"]["damodaran"]
+    memo_path = artifact_dir / memo_ref["path"]
+    memo = json.loads(memo_path.read_text(encoding="utf-8"))
+    memo["packet_sha256"] = packet_ref["sha256"]
+    _write_json(memo_path, memo)
+    memo_ref["sha256"] = _sha256(memo_path)
+
+    adjudication_ref = bindings["owner_adjudication"]
+    adjudication_path = artifact_dir / adjudication_ref["path"]
+    adjudication = json.loads(adjudication_path.read_text(encoding="utf-8"))
+    adjudication["packet_hashes"]["damodaran"] = packet_ref["sha256"]
+    adjudication["memo_hashes"]["damodaran"] = memo_ref["sha256"]
+    _write_json(adjudication_path, adjudication)
+    adjudication_ref["sha256"] = _sha256(adjudication_path)
+
+    assert (
+        "damodaran packet instructions must test conservative, aggressive, uncertain, and market-right cases"
+        in _validate(council, plugin_root, artifact_dir)
+    )
+
+
+def test_agent_council_v3_rejects_inconsistent_owner_ranges(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    ref = council["artifact_bindings"]["owner_adjudication"]
+    path = artifact_dir / ref["path"]
+    adjudication = json.loads(path.read_text(encoding="utf-8"))
+    decision = adjudication["decisions"][0]
+    decision["prior_base"] = 19.0
+    decision["prior_range"] = [9.0, 30.0]
+    decision["final_base"] = 40.0
+    _write_json(path, adjudication)
+    ref["sha256"] = _sha256(path)
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert "owner adjudication decisions[0].prior_base must equal the preliminary Base" in errors
+    assert "owner adjudication decisions[0].prior_range must equal the preliminary range" in errors
+    assert "owner adjudication decisions[0].final_base must fall within final_range" in errors
+
+
+def test_agent_council_v3_blocks_without_collaboration(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    council["council_runtime"] = "unavailable"
+    assert "current formal Council requires collaboration_available" in _validate(
+        council, plugin_root, artifact_dir
+    )
+
+
+def test_agent_council_v3_rejects_final_action_leak_in_packet(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    ref = council["artifact_bindings"]["seat_packets"]["damodaran"]
+    packet_path = artifact_dir / ref["path"]
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    packet["candidate_assumptions"][0]["action"] = "buy"
+    _write_json(packet_path, packet)
+    ref["sha256"] = _sha256(packet_path)
+    memo_ref = council["artifact_bindings"]["sealed_memos"]["damodaran"]
+    memo_path = artifact_dir / memo_ref["path"]
+    memo = json.loads(memo_path.read_text(encoding="utf-8"))
+    memo["packet_sha256"] = ref["sha256"]
+    _write_json(memo_path, memo)
+    memo_ref["sha256"] = _sha256(memo_path)
+    adjudication_ref = council["artifact_bindings"]["owner_adjudication"]
+    adjudication_path = artifact_dir / adjudication_ref["path"]
+    adjudication = json.loads(adjudication_path.read_text(encoding="utf-8"))
+    adjudication["packet_hashes"]["damodaran"] = ref["sha256"]
+    adjudication["memo_hashes"]["damodaran"] = memo_ref["sha256"]
+    _write_json(adjudication_path, adjudication)
+    adjudication_ref["sha256"] = _sha256(adjudication_path)
+    errors = _validate(council, plugin_root, artifact_dir)
+    assert "damodaran packet leaks forbidden field action" in errors
+
+
+def test_agent_council_v3_does_not_require_probabilities(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    serialized = json.dumps(council)
+    assert "probability" not in serialized
+    assert _validate(council, plugin_root, artifact_dir) == []
+
+
+def test_agent_council_v3_rejects_final_model_assumption_without_owner_adjudication(
+    tmp_path,
+):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    bindings = council["artifact_bindings"]
+
+    final_ref = bindings["final_model_spec"]
+    final_path = artifact_dir / final_ref["path"]
+    final_spec = json.loads(final_path.read_text(encoding="utf-8"))
+    final_spec["assumption_ids"].append("customer_retention")
+    _write_json(final_path, final_spec)
+    final_ref["sha256"] = _sha256(final_path)
+
+    adjudication_ref = bindings["owner_adjudication"]
+    adjudication_path = artifact_dir / adjudication_ref["path"]
+    adjudication = json.loads(adjudication_path.read_text(encoding="utf-8"))
+    adjudication["final_model_spec_sha256"] = final_ref["sha256"]
+    _write_json(adjudication_path, adjudication)
+    adjudication_ref["sha256"] = _sha256(adjudication_path)
+
+    freeze_ref = bindings["fv_freeze_receipt"]
+    freeze_path = artifact_dir / freeze_ref["path"]
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    freeze["model_spec_sha256"] = final_ref["sha256"]
+    _write_json(freeze_path, freeze)
+    freeze_ref["sha256"] = _sha256(freeze_path)
+
+    assert (
+        "owner adjudication model_input_ids do not cover final model assumption_ids: customer_retention"
+        in _validate(council, plugin_root, artifact_dir)
+    )
+
+
+def test_agent_council_v3_rejects_preliminary_assumption_without_flip_condition(
+    tmp_path,
+):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    ref = council["artifact_bindings"]["preliminary_underwrite"]
+    path = artifact_dir / ref["path"]
+    underwrite = json.loads(path.read_text(encoding="utf-8"))
+    del underwrite["candidate_assumptions"][0]["flip_condition"]
+    _write_json(path, underwrite)
+    ref["sha256"] = _sha256(path)
+
+    assert (
+        "preliminary assumption[0].flip_condition must be non-empty"
+        in _validate(council, plugin_root, artifact_dir)
+    )

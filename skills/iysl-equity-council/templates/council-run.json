@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "council_runtime": "collaboration_available",
   "ticker": "",
   "security_identity": {
@@ -18,407 +18,57 @@
   "decision_horizon": "",
   "evidence_cutoff": "",
   "pei_input_receipt": {
-    "artifact": "support/pei_input_receipt.json",
-    "sha256": "",
-    "declared_posture": ""
+    "path": "support/pei_input_receipt.json",
+    "sha256": ""
   },
+  "research_admission": "PASS",
   "artifact_bindings": {
-    "authority_version": 1,
+    "authority_version": 2,
     "validator_sha256": "",
-    "preliminary_underwrite": {"path": "", "sha256": ""},
+    "preliminary_underwrite": {
+      "path": "",
+      "sha256": ""
+    },
     "seat_packets": {
-      "damodaran": {"path": "", "sha256": ""},
-      "soros": {"path": "", "sha256": ""},
-      "mauboussin": {"path": "", "sha256": ""}
+      "damodaran": {
+        "path": "",
+        "sha256": ""
+      },
+      "soros": {
+        "path": "",
+        "sha256": ""
+      },
+      "mauboussin": {
+        "path": "",
+        "sha256": ""
+      }
     },
     "sealed_memos": {
-      "damodaran": {"path": "", "sha256": ""},
-      "soros": {"path": "", "sha256": ""},
-      "mauboussin": {"path": "", "sha256": ""}
+      "damodaran": {
+        "path": "",
+        "sha256": ""
+      },
+      "soros": {
+        "path": "",
+        "sha256": ""
+      },
+      "mauboussin": {
+        "path": "",
+        "sha256": ""
+      }
     },
-    "owner_adjudication": {"path": "", "sha256": ""},
-    "final_model_spec": {"path": "", "sha256": ""},
+    "owner_adjudication": {
+      "path": "",
+      "sha256": ""
+    },
+    "final_model_spec": {
+      "path": "support/owner-model/model.json",
+      "sha256": ""
+    },
     "model_committed_at": "",
-    "fv_freeze_receipt": {"path": "", "sha256": ""},
-    "pm_chair": {"path": "", "sha256": ""}
-  },
-  "research_admission": "BLOCKED",
-  "sealed_inputs": {
-    "upstream_verdict": true,
-    "full_pei_narrative": true,
-    "participation": true,
-    "implementation_readiness": true,
-    "other_seat_outputs": true
-  },
-  "common_factual_spine": {
-    "fields": [
-      {
-        "id": "current_price",
-        "field_class": "market_fact",
-        "value": null,
-        "unit": "",
-        "as_of": "",
-        "evidence_ids": []
-      }
-    ]
-  },
-  "private_partitions": {
-    "damodaran": {
-      "allowed_domains": ["fundamentals", "reverse_valuation", "capital_structure"],
-      "evidence_ids": []
-    },
-    "soros": {
-      "allowed_domains": ["price_path", "marginal_actors", "positioning_reflexivity"],
-      "evidence_ids": []
-    },
-    "mauboussin": {
-      "allowed_domains": ["expectations_revisions", "reference_class", "probability_payoff"],
-      "evidence_ids": []
+    "fv_freeze_receipt": {
+      "path": "",
+      "sha256": ""
     }
-  },
-  "first_round": {
-    "unavailable_seats": [],
-    "memos": [
-      {
-        "seat": "damodaran",
-        "method_completion": "",
-        "work_product": "",
-        "method_artifact": {
-          "artifact_type": "damodaran_reverse_valuation_v1",
-          "requested_horizon": "",
-          "proposition_id": "",
-          "company_archetype": "",
-          "archetype_rationale": "",
-          "valuation_frame": "",
-          "anchor_price": null,
-          "currency": "",
-          "price_implied_drivers": [],
-          "owner_case_drivers": [],
-          "story_to_numbers_bridge": [],
-          "fundamental_value_range": {
-            "low": null,
-            "base": null,
-            "high": null,
-            "currency": "",
-            "evidence_ids": []
-          },
-          "least_plausible_implied_driver": "",
-          "requested_horizon_transmission": "",
-          "method_gap": null
-        },
-        "sealed_at": "",
-        "browsed": false,
-        "added_evidence_ids": [],
-        "accepted_evidence_ids": [],
-        "research_lead_ids": [],
-        "contribution": {
-          "causal_mechanism": "",
-          "primary_mechanism_tag": "",
-          "mechanism_tags": [],
-          "disconfirming_condition": "",
-          "key_metric": "",
-          "source_posture": ""
-        },
-        "provisional_direction": ""
-      },
-      {
-        "seat": "soros",
-        "method_completion": "",
-        "work_product": "",
-        "method_artifact": {
-          "artifact_type": "soros_reflexivity_chain_v1",
-          "requested_horizon": "",
-          "proposition_id": "",
-          "classification": "",
-          "current_trend": {
-            "direction": "",
-            "observation": "",
-            "evidence_ids": []
-          },
-          "prevailing_bias": {
-            "belief": "",
-            "reality_gap": "",
-            "evidence_ids": []
-          },
-          "marginal_actors": [],
-          "feedback_chain": [],
-          "phase": "",
-          "phase_rationale": "",
-          "reversal_trigger": {
-            "metric": "",
-            "operator": "",
-            "threshold": null,
-            "unit": "",
-            "observation_window": "",
-            "evidence_ids": []
-          },
-          "horizon_price_paths": [],
-          "expected_path_return_pct": null,
-          "non_reflexive_tests": [],
-          "method_gap": null
-        },
-        "sealed_at": "",
-        "browsed": false,
-        "added_evidence_ids": [],
-        "accepted_evidence_ids": [],
-        "research_lead_ids": [],
-        "contribution": {
-          "causal_mechanism": "",
-          "primary_mechanism_tag": "",
-          "mechanism_tags": [],
-          "disconfirming_condition": "",
-          "key_metric": "",
-          "source_posture": ""
-        },
-        "provisional_direction": ""
-      },
-      {
-        "seat": "mauboussin",
-        "method_completion": "",
-        "work_product": "",
-        "method_artifact": {
-          "artifact_type": "mauboussin_expectations_distribution_v1",
-          "requested_horizon": "",
-          "proposition_id": "",
-          "anchor_price": null,
-          "currency": "",
-          "price_implied_expectations": [],
-          "reference_class": {
-            "status": "",
-            "definition": "",
-            "inclusion_criteria": [],
-            "exclusion_criteria": [],
-            "sample_size": null,
-            "base_rate_label": "",
-            "base_rate_pct": null,
-            "evidence_ids": [],
-            "gap_reason": null
-          },
-          "inside_view_updates": [],
-          "probability_payoff_states": [],
-          "posterior_mode": "",
-          "posterior_success_probability_pct": null,
-          "success_state_ids": [],
-          "expected_return_pct": null,
-          "sign_sensitivity": [],
-          "method_gap": null
-        },
-        "sealed_at": "",
-        "browsed": false,
-        "added_evidence_ids": [],
-        "accepted_evidence_ids": [],
-        "research_lead_ids": [],
-        "contribution": {
-          "causal_mechanism": "",
-          "primary_mechanism_tag": "",
-          "mechanism_tags": [],
-          "disconfirming_condition": "",
-          "key_metric": "",
-          "source_posture": ""
-        },
-        "provisional_direction": ""
-      }
-    ]
-  },
-  "convergence": {
-    "first_pass_status": "",
-    "implicated_seats": [],
-    "semantic_review": {
-      "reviewed": false,
-      "first_overlap_detected": false,
-      "final_overlap_detected": false,
-      "rationale": ""
-    },
-    "corrective_pass_count": 0,
-    "corrective_memos": [],
-    "final_status": ""
-  },
-  "chair": {
-    "name": "Stanley Druckenmiller — PM Chair",
-    "public_method_persona": true,
-    "started_at": "",
-    "finalized_at": "",
-    "evidence_closed": true,
-    "browsed": false,
-    "added_evidence_ids": [],
-    "used_evidence_ids": [],
-    "seat_decisions": [
-      {
-        "seat": "damodaran",
-        "decision": "",
-        "proposition_id": "",
-        "proposition": "",
-        "reason": "",
-        "retained_limitation": "",
-        "impact": {
-          "stance": "",
-          "participation_effect": "",
-          "refresh_route": ""
-        }
-      },
-      {
-        "seat": "soros",
-        "decision": "",
-        "proposition_id": "",
-        "proposition": "",
-        "reason": "",
-        "retained_limitation": "",
-        "impact": {
-          "stance": "",
-          "participation_effect": "",
-          "refresh_route": ""
-        }
-      },
-      {
-        "seat": "mauboussin",
-        "decision": "",
-        "proposition_id": "",
-        "proposition": "",
-        "reason": "",
-        "retained_limitation": "",
-        "impact": {
-          "stance": "",
-          "participation_effect": "",
-          "refresh_route": ""
-        }
-      }
-    ],
-    "dominant_variable": "",
-    "strongest_disconfirming_path": "",
-    "reversal_trigger": "",
-    "decision_matrix": {
-      "artifact_type": "dominant_variable_state_matrix_v1",
-      "requested_horizon": "",
-      "dominant_variable": "",
-      "dominant_variable_unit": "",
-      "dominance_rationale": "",
-      "transition": {
-        "from": "",
-        "to": "",
-        "mechanism": "",
-        "timing": ""
-      },
-      "states": [
-        {
-          "state_id": "",
-          "scenario_role": "downside",
-          "definition": "",
-          "dominant_variable_interval": {
-            "lower": null,
-            "lower_inclusive": false,
-            "upper": null,
-            "upper_inclusive": false
-          },
-          "probability_pct": null,
-          "target_price": null,
-          "gross_return_pct": null,
-          "decisive_mechanism": "",
-          "seat_inputs": [],
-          "target_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null
-            }
-          ],
-          "probability_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null,
-              "scenario_probability_basis": ""
-            }
-          ],
-          "evidence_ids": []
-        },
-        {
-          "state_id": "",
-          "scenario_role": "base",
-          "definition": "",
-          "dominant_variable_interval": {
-            "lower": null,
-            "lower_inclusive": false,
-            "upper": null,
-            "upper_inclusive": false
-          },
-          "probability_pct": null,
-          "target_price": null,
-          "gross_return_pct": null,
-          "decisive_mechanism": "",
-          "seat_inputs": [],
-          "target_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null
-            }
-          ],
-          "probability_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null,
-              "scenario_probability_basis": ""
-            }
-          ],
-          "evidence_ids": []
-        },
-        {
-          "state_id": "",
-          "scenario_role": "upside",
-          "definition": "",
-          "dominant_variable_interval": {
-            "lower": null,
-            "lower_inclusive": false,
-            "upper": null,
-            "upper_inclusive": false
-          },
-          "probability_pct": null,
-          "target_price": null,
-          "gross_return_pct": null,
-          "decisive_mechanism": "",
-          "seat_inputs": [],
-          "target_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null
-            }
-          ],
-          "probability_components": [
-            {
-              "seat": "",
-              "proposition_id": "",
-              "source_kind": "",
-              "source_id": null,
-              "weight_pct": null,
-              "scenario_probability_basis": ""
-            }
-          ],
-          "evidence_ids": []
-        }
-      ],
-      "gross_expected_return_pct": null,
-      "strongest_disconfirming_state_id": "",
-      "reversal_triggers": []
-    },
-    "gross_expected_return_pct": null,
-    "research_stance": "",
-    "confidence": "",
-    "robustness": "",
-    "participation": "",
-    "implementation_readiness": "",
-    "implementation_blockers": [],
-    "independent_confirmation": false
   }
 }

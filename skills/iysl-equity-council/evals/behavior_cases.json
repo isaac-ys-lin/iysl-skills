@@ -1,342 +1,60 @@
 {
   "cases": [
-    {
-      "id": "mature-growth-saturation",
-      "kind": "complex",
-      "evidence_route": "sealed-pei-baseline",
-      "distribution": {
-        "current_price": 100,
-        "states": [
-          {"price": 92, "probability": 0.5},
-          {"price": 120, "probability": 0.25},
-          {"price": 65, "probability": 0.25}
-        ],
-        "expected_stance": "Short"
-      },
-      "prompt": "匿名上市公司甲的 Public Equity Investing pack 已通過最低門檻：現價 100、as-of 已記錄、期限十二個月，研究方向門檻為 0% gross expected return，6% 是 stance 凍結後才適用的 participation hurdle。成熟產品成長可能飽和；base 目標 92／機率 50%，upside 120／25%，downside 65／25%。PEI 的長期品質錨點偏多，但合成的估值反推、共識 revisions 與價格反應 receipt 顯示市場仍定價較高成長。請由三席分別檢查 story-to-numbers、priced-in expectations 與 requested-horizon price path，再完成終局仲裁。",
+        {
+            "id": "calibration-challenge",
+            "kind": "complex",
+      "prompt": "Accepted evidence and a PEI preliminary underwrite contain growth, margin, reinvestment, WACC, and reverse-DCF assumptions. Run the current Council.",
       "expected": {
         "max_questions": 0,
         "max_subagents": 3,
         "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "give all seats the common factual spine and distinct private evidence partitions",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "issue Short for the requested horizon",
-          "identify expectations revision as the dominant requested-horizon mechanism",
-          "label decisive propositions Accept Conditional or Reject",
-          "separate confidence robustness participation and implementation"
+          "run exactly three isolated named public-method agents",
+          "keep all agents evidence-closed and pre-model",
+          "let each agent identify supported, too conservative, too aggressive, or uncertain assumptions",
+          "require each agent to state the strongest evidence-consistent market-right countercase",
+          "return sealed memos to the same PEI owner for adjudication"
         ],
         "must_not_do": [
-          "replace the stance with watchlist",
-          "give every seat the full PEI narrative",
-          "let the Damodaran name or long-duration value carry evidentiary weight",
-          "let long-duration valuation override the requested horizon without transmission"
-        ],
-        "required_validation": [
-          "adopted observations include origin locator as-of mechanism horizon and falsifier",
-          "Aswath Damodaran memo includes an archetype-appropriate reverse valuation and identifies the least plausible price-implied assumption",
-          "Stanley Druckenmiller PM Chair names expectations revision as the dominant variable and completes the horizon transition state matrix strongest disconfirming path and reversal trigger",
-          "every Chair state target resolves through weighted components to named method artifact proposition IDs and accepted evidence",
-          "every method and Chair state carries an ordered downside base or upside scenario role and every component source matches the Chair state role",
-          "each named method source state is used by only one mutually exclusive Chair state so no probability event is counted twice"
+          "browse",
+          "issue the final investment stance",
+          "calculate a second model",
+          "require a probability matrix",
+          "run a PM Chair"
         ]
       }
     },
-    {
-      "id": "loss-making-optionality",
-      "kind": "complex",
-      "evidence_route": "sealed-pei-baseline",
-      "distribution": {
-        "current_price": 30,
-        "states": [
-          {"price": 26, "probability": 0.45},
-          {"price": 70, "probability": 0.3},
-          {"price": 8, "probability": 0.25}
-        ],
-        "expected_stance": "Long"
-      },
-      "prompt": "匿名上市公司乙的 pack 已通過最低門檻：現價 30、as-of 已記錄、期限十八個月，研究方向門檻為 0% gross expected return，10% 是 participation hurdle。base 26／45%，adoption upside 70／30%，funding downside 8／25%；accepted PEI baseline 已提供採用、margin、融資需求、市場脈絡的因果錨點、來源與 falsifier。ambient_market_context 回報 unmatched，代表沒有額外 Study Flow lead。請讓三席只從共同 factual spine 與各自 sealed partition 出發，不得在 Council 內另行搜尋。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "use only the accepted PEI baseline and sealed method partitions",
-          "issue Long with appropriately reduced confidence",
-          "admit only bounded optionality through the conjecture gate",
-          "state what evidence would delete the adoption path"
-        ],
-        "must_not_do": [
-          "return insufficient evidence as the verdict",
-          "treat all unconfirmed optionality as zero",
-          "treat unconstrained narrative as a scenario",
-          "claim that an unmatched ambient receipt contains coverage"
-        ],
-        "required_validation": [
-          "every adopted claim resolves to evidence already accepted by PEI",
-          "Michael Mauboussin memo defines reference-class criteria, prior, inside-view update, posterior range, and probability-payoff distribution or records Reference-class gap and Partial",
-          "Stanley Druckenmiller PM Chair states the future adoption or funding transition and does not fabricate a missing reference class",
-          "Mauboussin base-rate prior plus signed state-mapped updates reconciles to posterior and success-state probability"
-        ]
-      }
-    },
-    {
-      "id": "cyclical-peak-earnings",
-      "kind": "simple",
-      "evidence_route": "correlated-provider-signals",
-      "distribution": {
-        "current_price": 80,
-        "states": [
-          {"price": 60, "probability": 0.55},
-          {"price": 95, "probability": 0.15},
-          {"price": 35, "probability": 0.3}
-        ],
-        "expected_stance": "Short"
-      },
-      "prompt": "匿名上市公司丙的 pack 已通過最低門檻：現價 80、期限十二個月，研究方向門檻為 0% gross expected return，10% 是 participation hurdle；normalized base 60／55%，continued peak 95／15%，downcycle 35／30%。Seeking Alpha Quant、Wall Street consensus 與兩個 ratings pages 都源自同一組 trailing earnings／consensus inputs；合理參數變化仍明顯為負，沒有 material dispute。此次 runtime 沒有 agent collaboration 能力。請完成判斷，不得用單模型角色扮演冒充三席。",
+        {
+            "id": "runtime-unavailable",
+            "kind": "failure",
+      "prompt": "The preliminary underwrite is admitted but agent collaboration is unavailable.",
       "expected": {
         "max_questions": 0,
         "max_subagents": 0,
         "must_do": [
-          "mark Aswath Damodaran George Soros and Michael Mauboussin Unavailable and record Council runtime unavailable",
-          "run only the Stanley Druckenmiller public-method PM Chair from accepted PEI inputs",
-          "issue Short after Chair reconciliation",
-          "use normalized earnings and base rates rather than trailing peak valuation",
-          "deduplicate the correlated provider signals by underlying origin",
-          "set robustness to Fragile because no independent Council occurred"
+          "mark current formal Council BLOCKED"
         ],
         "must_not_do": [
-          "run the three method cards sequentially inside the Chair",
-          "claim independent agents or fabricated sealed memos",
-          "browse or add evidence as the Chair",
-          "count Quant Wall Street consensus and ratings as independent votes",
-          "mechanically call the security Long because trailing valuation is low"
-        ],
-        "required_validation": [
-          "the Chair identifies the cyclical normalization mechanism and requested horizon",
-          "Michael Mauboussin does not treat correlated provider surfaces as independent reference-class observations",
-          "Stanley Druckenmiller PM Chair completes one non-voting state matrix from deduplicated accepted PEI origins"
+          "simulate three seats in one response",
+          "continue to model commit"
         ]
       }
     },
-    {
-      "id": "turnaround-conflicting-signals",
-      "kind": "ambiguity",
-      "evidence_route": "accepted-ambient-context",
-      "distribution": {
-        "current_price": 40,
-        "states": [
-          {"price": 70, "probability": 0.35},
-          {"price": 42, "probability": 0.35},
-          {"price": 18, "probability": 0.3}
-        ],
-        "expected_stance": "Long"
-      },
-      "prompt": "匿名上市公司丁的 pack 已通過最低門檻：現價 40、期限十二個月，研究方向門檻為 0% gross expected return，8% 是 participation hurdle；upside turnaround 70／35%，partial recovery 42／35%，failure 18／30%。領先指標改善但現金轉換仍惡化。今天 accepted 的 ambient_market_context receipt 與 ticker 匹配；PEI 已把可採用的底層來源與研究 lead 分開，並將必要 evidence IDs 放入各席 partition。請從 sealed record 進行 bounded cross-examination，不得另開來源。",
+        {
+            "id": "missing-probabilities",
+            "kind": "ambiguity",
+      "prompt": "Three sealed memos challenge assumptions but no defensible scenario probability basis exists.",
       "expected": {
         "max_questions": 0,
         "max_subagents": 3,
         "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "reuse the current matched ambient receipt as discovery context",
-          "use only load-bearing source captures already accepted by PEI",
-          "require canonical primary mechanism tags and a semantic convergence review for paraphrased causal overlap",
-          "cross-examine at most two sign-changing disputes",
-          "issue Long while labeling robustness Conditional",
-          "state the observable signal that would flip the stance"
+          "preserve Base fair value as primary",
+          "disclose uncertainty",
+          "let the PEI owner adjudicate"
         ],
         "must_not_do": [
-          "rerun the complete daily collection merely to duplicate the accepted receipt",
-          "treat the ambient receipt as automatic proof",
-          "wait for more quarters instead of judging",
-          "average the council opinions",
-          "browse open a new source cite a new origin or introduce a new fact during cross-examination"
-        ],
-        "required_validation": [
-          "cross-examination responses are Defend Revise or Concede with a distribution delta",
-          "cross-examination uses only sealed first-round receipts and records new leads for a future research cycle",
-          "detect persona_convergence and allow at most one same-evidence corrective pass before Chair synthesis",
-          "George Soros memo includes current trend bias evidenced marginal actors full feedback chain phase and reversal trigger",
-          "Stanley Druckenmiller PM Chair accepts conditions or rejects each decisive proposition and states the dated change-mind trigger",
-          "Chair seat decisions bind each proposition ID to the matching named method artifact"
-        ]
-      }
-    },
-    {
-      "id": "forensic-downside-path",
-      "kind": "quality",
-      "evidence_route": "accepted-public-web-upstream",
-      "distribution": {
-        "current_price": 50,
-        "states": [
-          {"price": 48, "probability": 0.45},
-          {"price": 70, "probability": 0.25},
-          {"price": 15, "probability": 0.3}
-        ],
-        "expected_stance": "Short"
-      },
-      "prompt": "匿名上市公司戊的 pack 已通過最低門檻：現價 50、期限九個月，研究方向門檻為 0% gross expected return，8% 是 participation hurdle；base 48／45%，clean resolution 70／25%，failure path 15／30%。Pack 內已有上游驗收的 public-web 與 primary-source evidence，顯示應收、現金流與流動性張力，但沒有 misconduct 證據。當次 Seeking Alpha route unavailable。請三席只用 sealed PEI evidence 完成判斷並保留來源路徑。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "use upstream accepted public-web evidence and disclose the unavailable Seeking Alpha route",
-          "issue Short from the probability-weighted downside",
-          "separate low-truth market concern from verified company facts",
-          "describe a testable failure mechanism and falsifier"
-        ],
-        "must_not_do": [
-          "claim fraud or misconduct",
-          "invent Seeking Alpha evidence",
-          "use provider unavailability as the reason for Avoid",
-          "turn a headline or search snippet into a company fact"
-        ],
-        "required_validation": [
-          "an exact model-changing evidence gap requires one targeted Public Equity Investing refill before a new Council run",
-          "every named member records current_upstream_reused or unavailable with sealed surfaces inspected and as-of",
-          "Stanley Druckenmiller PM Chair tests the strongest clean-resolution path without adding a new fact"
-        ]
-      }
-    },
-    {
-      "id": "balanced-expected-value-avoid",
-      "kind": "simple",
-      "evidence_route": "unsupported-popular-narrative",
-      "distribution": {
-        "current_price": 50,
-        "states": [
-          {"price": 65, "probability": 0.35},
-          {"price": 50, "probability": 0.3},
-          {"price": 35, "probability": 0.35}
-        ],
-        "expected_stance": "Avoid"
-      },
-      "prompt": "匿名上市公司己的 pack 已通過最低門檻：現價 50、期限十二個月，研究方向門檻為 0% gross expected return，8% 是 participation hurdle；upside 65／35%，base 50／30%，downside 35／35%。Gross expected price return 在模型精度下正好為零，沒有 tail asymmetry。公開討論中存在廣泛但未驗證的樂觀敘事；它沒有可辨識邊際買方、價格反應、因果傳導或 falsifier。請完成判斷。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "issue Avoid because gross expected price return is balanced at zero",
-          "explain the balanced probability-weighted distribution",
-          "exclude the unsupported popular narrative from the distribution",
-          "label the Chair acceptance decision for each decisive proposition"
-        ],
-        "must_not_do": [
-          "force a directional stance to avoid zero participation",
-          "treat popularity alone as high price relevance",
-          "open cross-examination without a material dispute",
-          "use missing data as the reason for Avoid"
-        ],
-        "required_validation": [
-          "truth relevance and price relevance are assessed separately",
-          "Stanley Druckenmiller PM Chair issues Avoid from the balanced state matrix rather than member disagreement"
-        ]
-      }
-    },
-    {
-      "id": "bearish-missing-borrow",
-      "kind": "failure",
-      "evidence_route": "sealed-implementation-inputs",
-      "distribution": {
-        "gross_expected_return_pct": -1.9,
-        "expected_stance": "Short"
-      },
-      "prompt": "匿名上市公司庚的 pack 已通過最低門檻：十二個月 gross expected price return 為 −1.9%，上游只為 Long candidate 設定至少 25% upside，卻把它鏡像套到 Short。研究來源大多共用同一組上游 consensus inputs，來源獨立性低；合理模型範圍跨過 0%，因此研究信心應低、假設穩健性應脆弱。borrow、option pricing 與 liquidity 尚未完成，上游因此標成 wait_for_proof、watchlist 與 Blocked。請把這些 disposition 與 implementation fields 對三席密封，完成 suppression audit。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "issue Short",
-          "set confidence to Low and robustness to Fragile",
-          "set participation to Stand aside",
-          "set implementation readiness to Blocked",
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent"
-        ],
-        "must_not_do": [
-          "change the research stance to Avoid",
-          "apply the Long-only 25% upside target to Short",
-          "show upstream wait watchlist or Blocked labels to council members",
-          "use borrow options or liquidity to decide the research stance",
-          "return Pass Wait Watchlist or Blocked for negative gross expected return",
-          "infer authorization or sizing"
-        ],
-        "required_validation": [
-          "implementation evidence is unsealed only after research stance freeze",
-          "public options price volume positioning and liquidity evidence remain available to George Soros for belief and feedback analysis while execution suitability stays sealed",
-          "Stanley Druckenmiller PM Chair does not infer sizing concentration orders execution or a simulated personal position"
-        ]
-      }
-    },
-    {
-      "id": "near-term-bearish-long-term-upside",
-      "kind": "compatibility",
-      "evidence_route": "targeted-pei-refill",
-      "distribution": {
-        "expected_stance": "Short"
-      },
-      "prompt": "匿名上市公司辛的 pack 已通過最低門檻：指定期限六個月，revisions、催化劑、positioning 與 multiple regime 提供偏空的因果與 payoff 錨點；長期 DCF 顯示三年後 upside。三席各自收到期限內市場敘事、價格反應與共識變化的 sealed partition；若方法分析暴露最多兩個能翻轉方向的精確證據缺口，只能回傳一次 targeted Public Equity Investing refill，不能在 Council 內搜尋。請仲裁。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "run exactly three isolated named public-method personas: Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "then run the Stanley Druckenmiller public-method PM Chair without a fourth agent",
-          "use at most one targeted Public Equity Investing refill for at most two exact sign-changing evidence gaps",
-          "issue Short for the six-month horizon with reduced confidence or robustness",
-          "identify the requested-horizon expectations or reflexive mechanism as dominant",
-          "treat the DCF as a long-duration anchor or boundary"
-        ],
-        "must_not_do": [
-          "let the three-year DCF veto the six-month stance",
-          "start a second refill loop",
-          "use an incomplete explicit distribution as the reason for Avoid",
-          "change the requested horizon"
-        ],
-        "required_validation": [
-          "the Chair accepts conditions or rejects each model-changing accepted proposition",
-          "Stanley Druckenmiller PM Chair makes the six-month transition dominant and keeps three-year value as a boundary without a transmission mechanism"
-        ]
-      }
-    },
-    {
-      "id": "batch-common-implementation-gaps",
-      "kind": "failure",
-      "evidence_route": "common-batch-header",
-      "distribution": {
-        "expected_stances": ["Long", "Short", "Avoid"]
-      },
-      "prompt": "三個匿名上市候選的 PEI packs 均通過最低門檻：候選壬的 gross expected price return 明顯為正、候選癸明顯為負、候選子在模型精度下為零且無 tail asymmetry。三者共同缺少 borrow、options 與完整 liquidity 輸入，上游因此全部標成 pass。請用密封 disposition／implementation fields 的共同 batch header，讓三席只按各自 sealed method partition 分析與仲裁。",
-      "expected": {
-        "max_questions": 0,
-        "max_subagents": 3,
-        "must_do": [
-          "run one exactly-three-named-persona first round over the common batch header with Aswath Damodaran, George Soros, and Michael Mauboussin",
-          "use one common factual spine plus three method-specific private partitions",
-          "then run the Stanley Druckenmiller public-method PM Chair once per candidate decision without adding a fourth agent",
-          "preserve Long Short and Avoid differentiation across the three candidates",
-          "hide upstream pass labels and implementation fields from council members",
-          "keep common implementation gaps in participation and readiness",
-          "deduplicate shared source origins across candidates and personas"
-        ],
-        "must_not_do": [
-          "turn every candidate into pass or watchlist",
-          "claim repeated persona mechanisms are independent confirmation",
-          "impose an activity quota",
-          "spawn a separate council for every candidate",
-          "average persona outputs into one batch verdict"
-        ],
-        "required_validation": [
-          "each candidate retains its own dominant price-formation mechanism and canonical judgment",
-          "each seat states a distinct causal mechanism disconfirming condition key metric and source posture",
-          "the Chair method-completion ledger names Aswath Damodaran George Soros and Michael Mauboussin with completion freshness and distinct contribution",
-          "each candidate receives a distinct Stanley Druckenmiller PM Chair dominant-variable decision matrix"
+          "infer Avoid",
+          "invent probabilities",
+          "block solely because weights are absent"
         ]
       }
     }

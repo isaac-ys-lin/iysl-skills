@@ -1,7 +1,7 @@
 interface:
   display_name: "iysl-equity-council"
-  short_description: "Run three named personas and a named PM Chair."
-  default_prompt: "Use $iysl-equity-council to run the named Aswath Damodaran, George Soros, and Michael Mauboussin public-method personas, then have the Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from an existing Public Equity Investing research pack."
+  short_description: "Run three isolated pre-model assumption challengers."
+  default_prompt: "Use $iysl-equity-council to run the named Aswath Damodaran, George Soros, and Michael Mauboussin public-method agents against an accepted PEI preliminary underwrite. Each agent must test what is too conservative, too aggressive, or uncertain and state the strongest evidence-consistent market-right countercase, then return the sealed challenges to the same PEI owner for adjudication before model commit."
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:
