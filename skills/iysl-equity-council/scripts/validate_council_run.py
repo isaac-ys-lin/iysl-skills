@@ -811,7 +811,12 @@ def _validate_agent_council_v3(
         artifact_dir, payload.get("pei_input_receipt"), "pei_input_receipt", errors
     )
     accepted_evidence: set[str] = set()
+    accepted_evidence_natures: dict[str, str] = {}
     if receipt is not None:
+        pei_errors, pei_posture = _validate_pei_admission_receipt(receipt)
+        errors.extend(f"pei_input_receipt: {error}" for error in pei_errors)
+        if payload.get("research_admission") != pei_posture:
+            errors.append("research_admission must equal the PEI receipt posture")
         if _identity_values(receipt) != root_identity:
             errors.append("PEI input receipt identity/cutoff must equal Council root")
         registry = receipt.get("evidence_registry")
@@ -823,6 +828,16 @@ def _validate_agent_council_v3(
                 for item in registry
                 if isinstance(item, dict) and _nonempty_string(item.get("id"))
             }
+            for index, item in enumerate(registry):
+                if not isinstance(item, dict) or not _nonempty_string(item.get("id")):
+                    continue
+                nature = item.get("evidence_nature")
+                if not _nonempty_string(nature):
+                    errors.append(
+                        f"pei_input_receipt.evidence_registry[{index}].evidence_nature must be non-empty"
+                    )
+                else:
+                    accepted_evidence_natures[item["id"]] = nature
 
     bindings = payload.get("artifact_bindings")
     if not isinstance(bindings, dict):
@@ -861,6 +876,7 @@ def _validate_agent_council_v3(
     assumptions: list[dict[str, Any]] = []
     assumption_ids: set[str] = set()
     assumptions_by_id: dict[str, dict[str, Any]] = {}
+    challenge_signal_evidence_ids: set[str] = set()
     if underwrite is not None:
         if _identity_values(underwrite) != root_identity:
             errors.append("preliminary underwrite identity/cutoff must equal Council root")
@@ -888,6 +904,9 @@ def _validate_agent_council_v3(
                     errors.append(
                         f"{label}.evidence_ids exceed accepted PEI evidence"
                     )
+                parent_evidence_ids = (
+                    set(evidence_ids) if _string_list(evidence_ids) else set()
+                )
                 if not _number(assumption.get("proposed_base")):
                     errors.append(f"{label}.proposed_base must be numeric")
                 proposed_range = assumption.get("proposed_range")
@@ -907,6 +926,93 @@ def _validate_agent_council_v3(
                 ):
                     if not _nonempty_string(assumption.get(field)):
                         errors.append(f"{label}.{field} must be non-empty")
+                signals = assumption.get("challenge_signal_dispositions")
+                if not isinstance(signals, list):
+                    errors.append(
+                        f"{label}.challenge_signal_dispositions must be a list"
+                    )
+                    continue
+                signal_ids: set[str] = set()
+                for signal_index, signal in enumerate(signals):
+                    signal_label = f"{label} challenge signal[{signal_index}]"
+                    if not isinstance(signal, dict):
+                        errors.append(f"{signal_label} must be an object")
+                        continue
+                    _expect_keys(
+                        signal,
+                        {
+                            "signal_id",
+                            "source_kind",
+                            "source_id",
+                            "evidence_nature",
+                            "finding",
+                            "disposition",
+                            "evidence_ids",
+                            "reason",
+                            "flip_condition",
+                        },
+                        signal_label,
+                        errors,
+                    )
+                    signal_id = signal.get("signal_id")
+                    if not _nonempty_string(signal_id) or signal_id in signal_ids:
+                        errors.append(f"{signal_label}.signal_id must be unique and non-empty")
+                    elif isinstance(signal_id, str):
+                        signal_ids.add(signal_id)
+                    source_kind = signal.get("source_kind")
+                    if source_kind not in {"ask_sa", "analysis", "transcript"}:
+                        errors.append(
+                            f"{signal_label}.source_kind must be ask_sa, analysis, or transcript"
+                        )
+                    for field in (
+                        "source_id",
+                        "evidence_nature",
+                        "finding",
+                        "reason",
+                        "flip_condition",
+                    ):
+                        if not _nonempty_string(signal.get(field)):
+                            errors.append(f"{signal_label}.{field} must be non-empty")
+                    if signal.get("disposition") not in {
+                        "adopt",
+                        "reject",
+                        "not_material",
+                    }:
+                        errors.append(
+                            f"{signal_label}.disposition must be adopt, reject, or not_material"
+                        )
+                    signal_evidence = signal.get("evidence_ids")
+                    if not _string_list(signal_evidence) or not signal_evidence:
+                        errors.append(f"{signal_label}.evidence_ids must be non-empty")
+                        signal_evidence_ids: set[str] = set()
+                    else:
+                        signal_evidence_ids = set(signal_evidence)
+                    if signal_evidence_ids and (
+                        not signal_evidence_ids <= accepted_evidence
+                        or not signal_evidence_ids <= parent_evidence_ids
+                    ):
+                        errors.append(
+                            f"{signal_label}.evidence_ids must be accepted evidence on the parent assumption"
+                        )
+                    elif signal_evidence_ids:
+                        challenge_signal_evidence_ids.update(signal_evidence_ids)
+                    if source_kind == "ask_sa":
+                        if signal.get("evidence_nature") != "provider_synthesis":
+                            errors.append(
+                                f"{signal_label}.evidence_nature must be provider_synthesis for Ask SA"
+                            )
+                        if signal.get("source_id") in signal_evidence_ids:
+                            errors.append(
+                                f"{signal_label} cannot use Ask SA provider synthesis as its own supporting evidence"
+                            )
+                        if signal_evidence_ids and all(
+                            accepted_evidence_natures.get(evidence_id)
+                            == "provider_synthesis"
+                            for evidence_id in signal_evidence_ids
+                        ):
+                            errors.append(
+                                f"{signal_label} requires non-synthesis supporting evidence"
+                            )
         dispositions = underwrite.get("assumption_family_dispositions")
         disposition_families: set[str] = set()
         disposition_assumptions: set[str] = set()
@@ -1004,6 +1110,10 @@ def _validate_agent_council_v3(
                 errors.append(f"{seat} packet evidence_ids must be a string list")
             elif not set(evidence_ids) <= accepted_evidence:
                 errors.append(f"{seat} packet evidence_ids exceed accepted PEI evidence")
+            elif not challenge_signal_evidence_ids <= set(evidence_ids):
+                errors.append(
+                    f"{seat} packet evidence_ids omit preliminary challenge-signal evidence"
+                )
             if not _nonempty_string(packet.get("instructions")):
                 errors.append(f"{seat} packet instructions must be non-empty")
             else:

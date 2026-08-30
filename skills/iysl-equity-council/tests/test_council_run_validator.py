@@ -56,16 +56,19 @@ def _build_chain(tmp_path):
                 "id": "SA:market:2026-08-22",
                 "requirement_class": "provider",
                 "source_kind": "seeking_alpha",
+                "evidence_nature": "provider_signal",
             },
             {
                 "id": "IR:earnings-release:2026Q2",
                 "requirement_class": "primary",
                 "source_kind": "primary",
+                "evidence_nature": "company_claim",
             },
             {
                 "id": ambient_claim_id,
                 "requirement_class": "ambient_context",
                 "source_kind": "study_flow",
+                "evidence_nature": "research_lead",
             },
         ],
         "requirements": [
@@ -1789,8 +1792,22 @@ def _v3_fixture(tmp_path):
             "rationale": "Reported growth and guidance anchor the initial range.",
             "rejected_alternative": "Do not replace the observed range with an arbitrary haircut.",
             "flip_condition": "Sustained growth below 10 percent.",
+            "challenge_signal_dispositions": [],
         }
         for assumption_id in assumption_families.values()
+    ]
+    assumptions[0]["challenge_signal_dispositions"] = [
+        {
+            "signal_id": "ask-sa-growth-debate",
+            "source_kind": "ask_sa",
+            "source_id": "ASK_SA:EXAMPLE:2026-08-22",
+            "evidence_nature": "provider_synthesis",
+            "finding": "Ask SA surfaced a debate over whether reported growth is durable.",
+            "disposition": "adopt",
+            "evidence_ids": ["IR:earnings-release:2026Q2"],
+            "reason": "The primary release supports keeping the question in the range calibration.",
+            "flip_condition": "Sustained reported growth below 10 percent.",
+        }
     ]
     underwrite = {
         "schema_version": "pei-preliminary-underwrite-v2",
@@ -1937,6 +1954,39 @@ def _v3_fixture(tmp_path):
 def test_agent_council_v3_accepts_minimal_complete_chain(tmp_path):
     plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
     assert _validate(council, plugin_root, artifact_dir) == []
+
+
+def test_agent_council_v3_rejects_undispositioned_material_challenge_signal(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    underwrite_ref = council["artifact_bindings"]["preliminary_underwrite"]
+    underwrite_path = artifact_dir / underwrite_ref["path"]
+    underwrite = json.loads(underwrite_path.read_text(encoding="utf-8"))
+    del underwrite["candidate_assumptions"][0]["challenge_signal_dispositions"][0][
+        "disposition"
+    ]
+    _write_json(underwrite_path, underwrite)
+    underwrite_ref["sha256"] = _sha256(underwrite_path)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any(
+        "challenge signal[0] is missing fields: disposition" in error
+        for error in errors
+    )
+
+
+def test_agent_council_v3_rejects_ask_sa_supported_only_by_provider_synthesis(tmp_path):
+    plugin_root, artifact_dir, council = _v3_fixture(tmp_path)
+    receipt_ref = council["pei_input_receipt"]
+    receipt_path = artifact_dir / receipt_ref["path"]
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["evidence_registry"][1]["evidence_nature"] = "provider_synthesis"
+    _write_json(receipt_path, receipt)
+    receipt_ref["sha256"] = _sha256(receipt_path)
+
+    errors = _validate(council, plugin_root, artifact_dir)
+
+    assert any("requires non-synthesis supporting evidence" in error for error in errors)
 
 
 def test_agent_council_v3_rejects_unaccepted_preliminary_evidence(tmp_path):

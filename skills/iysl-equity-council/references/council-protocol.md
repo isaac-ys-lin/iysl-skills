@@ -57,6 +57,17 @@ duration/fade/terminal economics; and 12-month market expectations. Each family
 is either `covered` by named candidate assumption IDs or `not_material` with an
 explicit reason. Every candidate belongs to one family.
 
+The PEI owner must reconcile every evidence-gated material Ask SA, opened
+Analysis, and opened Transcript signal delivered by Equity Data. Record each
+one under the affected candidate's `challenge_signal_dispositions` with its
+signal and source IDs, evidence nature, finding, `adopt`／`reject`／`not_material`
+disposition, accepted supporting evidence IDs, reason, and flip condition. Ask
+SA is `provider_synthesis`; its source cannot support itself, and its supporting
+evidence must include non-synthesis accepted evidence. A candidate uses an
+empty list only when the Data handoff contains no eligible material signal for
+that assumption. Every packet's root `evidence_ids` must cover the supporting
+evidence of all included signals. Raw Ask SA does not enter a packet.
+
 Each packet is JSON with only:
 
 - `schema_version`

@@ -67,9 +67,15 @@ and continue.
 ## Workflow
 
 1. Build one packet per seat from the accepted evidence and the same candidate
-   assumptions. Each packet includes only identity, cutoff, horizon, relevant
-   evidence IDs, and instructions. Do not include a final model, fair value,
-   action, position, or another seat's output.
+   assumptions. Material Ask SA, Analysis, or Transcript challenge signals enter
+   only after the PEI owner records each one under the affected
+   `candidate_assumptions[].challenge_signal_dispositions` with provenance,
+   finding, `adopt`／`reject`／`not_material`, accepted supporting evidence IDs,
+   reason, and flip condition. Ask SA remains `provider_synthesis` and cannot
+   use itself as supporting evidence. Do not add raw Ask SA or a root-level
+   parallel signal schema. Each packet includes only identity, cutoff, horizon,
+   relevant evidence IDs, and instructions. Do not include a final model, fair
+   value, action, position, or another seat's output.
 2. Read [references/council-protocol.md](references/council-protocol.md). Spawn
    exactly three parallel leaf agents. They may inspect only their packet and
    its accepted local evidence, may not browse, and may not delegate.
