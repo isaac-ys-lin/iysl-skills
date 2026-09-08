@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "council_runtime": "collaboration_available",
   "ticker": "",
   "security_identity": {
@@ -23,7 +23,7 @@
   },
   "research_admission": "PASS",
   "artifact_bindings": {
-    "authority_version": 2,
+    "authority_version": 3,
     "validator_sha256": "",
     "preliminary_underwrite": {
       "path": "",
@@ -70,5 +70,9 @@
       "path": "",
       "sha256": ""
     }
+  },
+  "council_input_pei_receipt": {
+    "path": "support/council_input_pei_receipt.json",
+    "sha256": ""
   }
 }

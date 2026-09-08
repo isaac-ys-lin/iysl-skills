@@ -490,6 +490,314 @@ def _identity_values(value: dict[str, Any]) -> tuple[Any, Any, Any]:
     )
 
 
+def _historical_correction_facts(
+    value: Any, label: str, errors: list[str]
+) -> list[dict[str, Any]] | None:
+    start = len(errors)
+    expected_periods = ["FY2023A", "FY2024A", "FY2025A"]
+    value_field_sets = (
+        ("revenue", "operating_income"),
+        ("cash_from_operations", "capital_expenditure", "depreciation_and_amortization"),
+    )
+    if not isinstance(value, list) or len(value) != len(expected_periods):
+        errors.append(f"{label} must contain exactly three annual rows")
+        return None
+    normalized: list[dict[str, Any]] = []
+    selected_fields: tuple[str, ...] | None = None
+    for index, row in enumerate(value):
+        row_label = f"{label}[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{row_label} is invalid")
+            continue
+        row_fields = set(row) - {"period", "unit"}
+        matching_fields = next(
+            (fields for fields in value_field_sets if row_fields == set(fields)), None
+        )
+        if matching_fields is None or (
+            selected_fields is not None and matching_fields != selected_fields
+        ):
+            errors.append(f"{row_label} is invalid")
+            continue
+        selected_fields = matching_fields
+        if row.get("period") != expected_periods[index]:
+            errors.append(f"{row_label}.period is invalid")
+        if row.get("unit") != "USD millions":
+            errors.append(f"{row_label}.unit must be USD millions")
+        if any(not _number(row.get(field)) for field in matching_fields):
+            errors.append(f"{row_label} financial values must be finite numeric")
+            continue
+        normalized.append(
+            {
+                "period": row["period"],
+                **{field: float(row[field]) for field in matching_fields},
+                "unit": row["unit"],
+            }
+        )
+    return normalized if len(errors) == start else None
+
+
+def _validated_correction_evidence(
+    artifact_root: Path,
+    descriptor: Any,
+    *,
+    root_identity: tuple[Any, Any, Any],
+    reference_price: Any,
+    errors: list[str],
+) -> set[str]:
+    """Reopen the narrow post-cutoff correction chain before admitting its IDs."""
+
+    start = len(errors)
+    correction_set, _ = _descriptor_payload(
+        artifact_root,
+        descriptor,
+        "correction_validation_set",
+        errors,
+    )
+    if correction_set is None:
+        return set()
+    _expect_keys(
+        correction_set,
+        {
+            "schema_version",
+            "receipt_type",
+            "ticker",
+            "security_id",
+            "evidence_cutoff",
+            "reference_price_usd",
+            "validation_status",
+            "corrections",
+        },
+        "correction validation set",
+        errors,
+    )
+    if (
+        correction_set.get("schema_version")
+        != "formal-correction-validation-set-v1"
+        or correction_set.get("receipt_type") != "formal_correction_validation_set"
+        or _identity_values(correction_set) != root_identity
+        or correction_set.get("validation_status") != "PASS"
+    ):
+        errors.append("correction validation set schema or identity is invalid")
+    if (
+        not _number(reference_price)
+        or not _number(correction_set.get("reference_price_usd"))
+        or not math.isclose(
+            float(correction_set.get("reference_price_usd", 0)),
+            float(reference_price or 0),
+            rel_tol=0,
+            abs_tol=1e-12,
+        )
+    ):
+        errors.append("correction validation set reference price must equal Council price")
+
+    cutoff = _parse_time(root_identity[2], "correction validation cutoff", errors)
+    corrections = correction_set.get("corrections")
+    if not isinstance(corrections, list) or not corrections:
+        errors.append("correction validation set corrections must be non-empty")
+        return set()
+
+    accepted_ids: set[str] = set()
+    correction_fields = {
+        "accepted_evidence_id",
+        "allowed_use",
+        "observation_timing",
+        "acceptance_receipt",
+        "accepted_fields",
+    }
+    receipt_fields = {
+        "schema_version",
+        "receipt_type",
+        "security_id",
+        "observation",
+        "accepted_evidence_id",
+        "accepted_fields",
+        "scope_controls",
+        "validation_status",
+    }
+    expected_controls = {
+        "evidence_cutoff_preserved": root_identity[2],
+        "reference_price_usd_preserved": reference_price,
+        "new_provider_data_used": False,
+        "seeking_alpha_refreshed": False,
+        "new_consensus_or_price_data_used": False,
+        "accepted_evidence_ids_changed_outside_scoped_primary_historical_receipt": False,
+    }
+    for index, correction in enumerate(corrections):
+        label = f"correction validation set corrections[{index}]"
+        if not isinstance(correction, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        _expect_keys(correction, correction_fields, label, errors)
+        evidence_id = correction.get("accepted_evidence_id")
+        if not _nonempty_string(evidence_id) or not evidence_id.startswith("SEC:"):
+            errors.append(f"{label}.accepted_evidence_id must be an SEC evidence ID")
+        elif evidence_id in accepted_ids:
+            errors.append(f"{label}.accepted_evidence_id is duplicated")
+        else:
+            accepted_ids.add(evidence_id)
+        if (
+            correction.get("allowed_use") != "historical_field_correction_only"
+            or correction.get("observation_timing") != "post_cutoff_validation_only"
+        ):
+            errors.append(f"{label} scope is invalid")
+        corrected_facts = _historical_correction_facts(
+            correction.get("accepted_fields"), f"{label}.accepted_fields", errors
+        )
+
+        receipt_descriptor = correction.get("acceptance_receipt")
+        receipt_path = _safe_artifact_path(
+            artifact_root,
+            receipt_descriptor.get("path")
+            if isinstance(receipt_descriptor, dict)
+            else None,
+            f"{label}.acceptance_receipt.path",
+            errors,
+        )
+        receipt, _ = _descriptor_payload(
+            artifact_root,
+            receipt_descriptor,
+            f"{label}.acceptance_receipt",
+            errors,
+        )
+        if receipt is None or receipt_path is None:
+            continue
+        if not receipt_fields <= set(receipt):
+            errors.append(f"{label}.acceptance_receipt is missing required fields")
+            continue
+        if (
+            receipt.get("schema_version")
+            != "scoped-primary-historical-acceptance-receipt-v1"
+            or receipt.get("receipt_type") != "scoped_primary_historical_acceptance"
+            or receipt.get("security_id") != root_identity[1]
+            or receipt.get("accepted_evidence_id") != evidence_id
+            or receipt.get("validation_status") != "PASS"
+        ):
+            errors.append(f"{label}.acceptance_receipt schema or identity is invalid")
+        receipt_facts = _historical_correction_facts(
+            receipt.get("accepted_fields"),
+            f"{label}.acceptance_receipt.accepted_fields",
+            errors,
+        )
+        if corrected_facts is not None and receipt_facts != corrected_facts:
+            errors.append(f"{label}.accepted_fields do not match the acceptance receipt")
+
+        controls = receipt.get("scope_controls")
+        if not isinstance(controls, dict) or set(controls) != set(expected_controls):
+            errors.append(f"{label}.acceptance_receipt.scope_controls are invalid")
+        elif any(
+            controls.get(field) != expected
+            for field, expected in expected_controls.items()
+            if field != "reference_price_usd_preserved"
+        ) or (
+            not _number(controls.get("reference_price_usd_preserved"))
+            or not math.isclose(
+                float(controls["reference_price_usd_preserved"]),
+                float(reference_price),
+                rel_tol=0,
+                abs_tol=1e-12,
+            )
+        ):
+            errors.append(f"{label}.acceptance_receipt.scope_controls drift")
+
+        observation_descriptor = receipt.get("observation")
+        observation_path = _safe_artifact_path(
+            receipt_path.parent,
+            observation_descriptor.get("path")
+            if isinstance(observation_descriptor, dict)
+            else None,
+            f"{label}.acceptance_receipt.observation.path",
+            errors,
+        )
+        observation, _ = _descriptor_payload(
+            receipt_path.parent,
+            observation_descriptor,
+            f"{label}.acceptance_receipt.observation",
+            errors,
+        )
+        if observation is None or observation_path is None:
+            continue
+        if observation_path.parent != receipt_path.parent.resolve():
+            errors.append(f"{label}.acceptance_receipt.observation must be sibling-contained")
+        retrieval = observation.get("retrieval")
+        if (
+            observation.get("schema_version")
+            != "issuer-primary-visible-dom-observation-v1"
+            or observation.get("receipt_type") != "issuer_primary_visible_dom_observation"
+            or observation.get("security_id") != root_identity[1]
+            or not isinstance(retrieval, dict)
+            or retrieval.get("surface") != "codex_in_app_browser_visible_dom"
+            or retrieval.get("form") != "10-K"
+            or retrieval.get("evidence_cutoff") != root_identity[2]
+            or retrieval.get("underlying_document_predates_evidence_cutoff") is not True
+            or not isinstance(retrieval.get("document_url"), str)
+            or not retrieval["document_url"].startswith("https://www.sec.gov/Archives/")
+        ):
+            errors.append(f"{label}.acceptance_receipt.observation authority is invalid")
+        observation_facts = _historical_correction_facts(
+            observation.get("observed_facts"),
+            f"{label}.acceptance_receipt.observation.observed_facts",
+            errors,
+        )
+        if receipt_facts is not None and observation_facts != receipt_facts:
+            errors.append(f"{label}.acceptance_receipt facts differ from observation")
+        try:
+            filed = date.fromisoformat(retrieval.get("filed_date"))
+        except (AttributeError, TypeError, ValueError):
+            errors.append(f"{label}.acceptance_receipt.observation filed_date is invalid")
+        else:
+            if cutoff is not None and filed > cutoff.date():
+                errors.append(f"{label}.acceptance_receipt.observation postdates cutoff")
+
+    return accepted_ids if len(errors) == start else set()
+
+
+def _validate_model_mapping(preliminary, family, decision, final_spec, label, errors):
+    """Check model field meaning using the owner's dependency graph, not ID spelling."""
+    leaves = final_spec.get('dependency_graph', {}).get('leaves', {})
+    if not leaves:
+        return  # Historical minimal model specs retain their existing ID coverage check.
+    fields = {key: value for key, value in leaves.items()
+              if isinstance(value, dict) and value.get('provenance_id') in decision['model_input_ids']}
+    patterns = {
+        'revenue_orders_capex_recognition': r'\.(growth|revenue|premium_growth|investment_income_growth)(\.|$)',
+        'product_mix_and_margins': r'\.(margin|loss_ratio|expense_ratio|annual_fee_rate)(\.|$)',
+        'reinvestment_and_fcff': r'\.(capex(?:_percent_revenue)?|da_percent(?:_revenue)?|nwc(?:_percent(?:_revenue)?)?|cash_conversion|roic|reinvestment|reserve_growth|roe|book_growth)(\.|$)',
+        'capital_structure_and_wacc': r'\.(wacc|discount|risk_free|erp|beta|shares|.*shares|cash|debt|cost_of(?:_(?:equity|debt))?)($|\.)',
+        'duration_fade_and_terminal': r'\.(terminal|fade|duration|holding_days|terminal_growth|terminal_roe)(\.|$)',
+        'twelve_month_market_expectations': r'\.(growth|revenue|multiple|expectations|asset_return|investment_income_growth)(\.|$)',
+    }
+    pattern = patterns.get(family)
+    if pattern is None:
+        return
+    compatible = {key: value for key, value in fields.items() if re.search(pattern, key)}
+    if not compatible or (any('.downside.' in key or '.upside.' in key for key in compatible)
+                          and not any('.base.' in key for key in compatible)):
+        errors.append(f'{label}.model_input_ids do not map to the Base {family} model fields')
+    if family == 'product_mix_and_margins' and compatible:
+        base = [value.get('value') for key, value in compatible.items() if '.base.' in key]
+        final_base = decision.get('final_base')
+        matches_base = any(
+            _number(value) and _number(final_base)
+            and math.isclose(value, final_base, rel_tol=1e-9, abs_tol=1e-9)
+            for value in base
+        )
+        insurer_combined_ratio = (
+            final_spec.get('formula_version')
+            in {'insurer-residual-income-v1', 'insurer-residual-income-v2', 'insurer-residual-income-v3'}
+        )
+        base_loss = compatible.get('input.base.loss_ratio', {}).get('value')
+        base_expense = compatible.get('input.base.expense_ratio', {}).get('value')
+        matches_insurer_combined = (
+            insurer_combined_ratio
+            and _number(base_loss)
+            and _number(base_expense)
+            and _number(final_base)
+            and math.isclose(base_loss + base_expense, final_base, rel_tol=1e-9, abs_tol=1e-9)
+        )
+        if base and not matches_base and not matches_insurer_combined:
+            errors.append(f'{label}.final_base does not match its mapped Base margin values')
+
+
 def _validate_current_artifact_bindings(
     payload: dict[str, Any], artifact_root: Path, errors: list[str]
 ) -> None:
@@ -741,20 +1049,34 @@ def _validate_agent_council_v3(
     """Validate only durable mechanics; investment judgment stays with PEI."""
 
     errors: list[str] = []
+    discovery = payload.get("schema_version") == 4
+    root_fields = {
+        "schema_version",
+        "council_runtime",
+        "ticker",
+        "security_identity",
+        "current_price",
+        "decision_horizon",
+        "evidence_cutoff",
+        "pei_input_receipt",
+        "research_admission",
+        "artifact_bindings",
+    }
+    if discovery:
+        root_fields.add("council_input_pei_receipt")
+    split_cutoff_fields = {
+        "owner_model_evidence_cutoff",
+        "final_research_evidence_cutoff",
+    }
+    present_split_cutoff_fields = split_cutoff_fields & set(payload)
+    root_fields.update(present_split_cutoff_fields)
+    if present_split_cutoff_fields:
+        root_fields.add("owner_model_pei_input_receipt")
+    if "correction_validation_set" in payload:
+        root_fields.add("correction_validation_set")
     _expect_keys(
         payload,
-        {
-            "schema_version",
-            "council_runtime",
-            "ticker",
-            "security_identity",
-            "current_price",
-            "decision_horizon",
-            "evidence_cutoff",
-            "pei_input_receipt",
-            "research_admission",
-            "artifact_bindings",
-        },
+        root_fields,
         "root",
         errors,
     )
@@ -765,6 +1087,29 @@ def _validate_agent_council_v3(
     if not _nonempty_string(payload.get("decision_horizon")):
         errors.append("decision_horizon must be a non-empty string")
     cutoff = _parse_time(payload.get("evidence_cutoff"), "evidence_cutoff", errors)
+    owner_model_cutoff = payload.get("evidence_cutoff")
+    if present_split_cutoff_fields:
+        if present_split_cutoff_fields != split_cutoff_fields:
+            errors.append("Council split cutoff fields must be complete")
+        owner_model_cutoff = payload.get("owner_model_evidence_cutoff")
+        owner_cutoff = _parse_time(
+            owner_model_cutoff, "owner_model_evidence_cutoff", errors
+        )
+        final_cutoff = _parse_time(
+            payload.get("final_research_evidence_cutoff"),
+            "final_research_evidence_cutoff",
+            errors,
+        )
+        if payload.get("evidence_cutoff") != payload.get(
+            "final_research_evidence_cutoff"
+        ):
+            errors.append("Council evidence_cutoff must equal final research cutoff")
+        if (
+            owner_cutoff is not None
+            and final_cutoff is not None
+            and final_cutoff < owner_cutoff
+        ):
+            errors.append("Council final research cutoff cannot precede owner model cutoff")
 
     identity = payload.get("security_identity")
     if not isinstance(identity, dict):
@@ -807,6 +1152,11 @@ def _validate_agent_council_v3(
         identity.get("security_id"),
         payload.get("evidence_cutoff"),
     )
+    owner_model_identity = (
+        payload.get("ticker"),
+        identity.get("security_id"),
+        owner_model_cutoff,
+    )
     receipt, _ = _descriptor_payload(
         artifact_dir, payload.get("pei_input_receipt"), "pei_input_receipt", errors
     )
@@ -838,6 +1188,93 @@ def _validate_agent_council_v3(
                     )
                 else:
                     accepted_evidence_natures[item["id"]] = nature
+    if present_split_cutoff_fields == split_cutoff_fields:
+        owner_receipt, _ = _descriptor_payload(
+            artifact_dir,
+            payload.get("owner_model_pei_input_receipt"),
+            "owner_model_pei_input_receipt",
+            errors,
+        )
+        if owner_receipt is not None:
+            owner_errors, owner_posture = _validate_pei_admission_receipt(owner_receipt)
+            errors.extend(
+                f"owner_model_pei_input_receipt: {error}"
+                for error in owner_errors
+            )
+            if owner_posture != payload.get("research_admission"):
+                errors.append(
+                    "owner model PEI receipt posture must equal Council research_admission"
+                )
+            if _identity_values(owner_receipt) != owner_model_identity:
+                errors.append(
+                    "owner model PEI receipt identity/cutoff must equal Council owner model"
+                )
+            owner_registry = owner_receipt.get("evidence_registry")
+            if not isinstance(owner_registry, list):
+                errors.append(
+                    "owner_model_pei_input_receipt.evidence_registry must be a list"
+                )
+            else:
+                accepted_evidence = {
+                    item.get("id")
+                    for item in owner_registry
+                    if isinstance(item, dict) and _nonempty_string(item.get("id"))
+                }
+                accepted_evidence_natures = {
+                    item["id"]: item["evidence_nature"]
+                    for item in owner_registry
+                    if isinstance(item, dict)
+                    and _nonempty_string(item.get("id"))
+                    and _nonempty_string(item.get("evidence_nature"))
+                }
+    if "correction_validation_set" in payload:
+        correction_ids = _validated_correction_evidence(
+            artifact_dir,
+            payload.get("correction_validation_set"),
+            root_identity=root_identity,
+            reference_price=price.get("value"),
+            errors=errors,
+        )
+        overlap = correction_ids & accepted_evidence
+        if overlap:
+            errors.append(
+                "correction evidence must be additive to PEI evidence: "
+                + ", ".join(sorted(overlap))
+            )
+        else:
+            accepted_evidence.update(correction_ids)
+
+    final_receipt = owner_receipt if present_split_cutoff_fields == split_cutoff_fields else receipt
+    final_registry = (final_receipt or {}).get("evidence_registry", [])
+    admitted_sources = {
+        row["id"]: row
+        for row in (final_registry if isinstance(final_registry, list) else [])
+        if isinstance(row, dict) and _nonempty_string(row.get("id"))
+    }
+
+    # The starting packet stays immutable; Data may admit discoveries before
+    # the owner's final receipt without sending the Council through another round.
+    input_evidence = accepted_evidence
+    input_natures = accepted_evidence_natures
+    input_identity = owner_model_identity
+    if discovery:
+        initial, _ = _descriptor_payload(artifact_dir, payload.get("council_input_pei_receipt"), "council_input_pei_receipt", errors)
+        input_evidence, input_natures = set(), {}
+        if initial is not None:
+            initial_errors, _ = _validate_pei_admission_receipt(initial)
+            errors.extend(f"council_input_pei_receipt: {error}" for error in initial_errors)
+            input_identity = _identity_values(initial)
+            initial_cutoff = _parse_time(input_identity[2], "Council input cutoff", errors)
+            final_cutoff = _parse_time(owner_model_identity[2], "owner model cutoff", errors)
+            if input_identity[:2] != owner_model_identity[:2] or (initial_cutoff and final_cutoff and initial_cutoff > final_cutoff):
+                errors.append("Council input identity/cutoff must precede the same owner model")
+            registry = initial.get("evidence_registry", [])
+            if not isinstance(registry, list):
+                errors.append("Council input evidence_registry must be a list")
+                registry = []
+            input_natures = {row["id"]: row.get("evidence_nature", "") for row in registry if isinstance(row, dict) and _nonempty_string(row.get("id"))}
+            input_evidence = set(input_natures)
+    source_candidates: dict[str, dict[str, Any]] = {}
 
     bindings = payload.get("artifact_bindings")
     if not isinstance(bindings, dict):
@@ -858,9 +1295,9 @@ def _validate_agent_council_v3(
         "artifact_bindings",
         errors,
     )
-    if bindings.get("authority_version") != AGENT_COUNCIL_AUTHORITY_VERSION:
+    if bindings.get("authority_version") != (3 if discovery else AGENT_COUNCIL_AUTHORITY_VERSION):
         errors.append(
-            f"artifact_bindings.authority_version must be {AGENT_COUNCIL_AUTHORITY_VERSION}"
+            f"artifact_bindings.authority_version must be {3 if discovery else AGENT_COUNCIL_AUTHORITY_VERSION}"
         )
     if _normalized_sha(bindings.get("validator_sha256")) != _sha256(
         Path(__file__).resolve()
@@ -878,8 +1315,8 @@ def _validate_agent_council_v3(
     assumptions_by_id: dict[str, dict[str, Any]] = {}
     challenge_signal_evidence_ids: set[str] = set()
     if underwrite is not None:
-        if _identity_values(underwrite) != root_identity:
-            errors.append("preliminary underwrite identity/cutoff must equal Council root")
+        if _identity_values(underwrite) != input_identity:
+            errors.append("preliminary underwrite identity/cutoff must equal Council owner model")
         candidate = underwrite.get("candidate_assumptions")
         if not isinstance(candidate, list) or not candidate:
             errors.append("preliminary underwrite candidate_assumptions must be non-empty")
@@ -900,13 +1337,10 @@ def _validate_agent_council_v3(
             for index, assumption in enumerate(assumptions):
                 label = f"preliminary assumption[{index}]"
                 evidence_ids = assumption.get("evidence_ids")
-                if not _string_list(evidence_ids) or not set(evidence_ids) <= accepted_evidence:
+                if not _string_list(evidence_ids) or not set(evidence_ids) <= input_evidence:
                     errors.append(
                         f"{label}.evidence_ids exceed accepted PEI evidence"
                     )
-                parent_evidence_ids = (
-                    set(evidence_ids) if _string_list(evidence_ids) else set()
-                )
                 if not _number(assumption.get("proposed_base")):
                     errors.append(f"{label}.proposed_base must be numeric")
                 proposed_range = assumption.get("proposed_range")
@@ -987,12 +1421,9 @@ def _validate_agent_council_v3(
                         signal_evidence_ids: set[str] = set()
                     else:
                         signal_evidence_ids = set(signal_evidence)
-                    if signal_evidence_ids and (
-                        not signal_evidence_ids <= accepted_evidence
-                        or not signal_evidence_ids <= parent_evidence_ids
-                    ):
+                    if signal_evidence_ids and not signal_evidence_ids <= input_evidence:
                         errors.append(
-                            f"{signal_label}.evidence_ids must be accepted evidence on the parent assumption"
+                            f"{signal_label}.evidence_ids must be accepted PEI evidence"
                         )
                     elif signal_evidence_ids:
                         challenge_signal_evidence_ids.update(signal_evidence_ids)
@@ -1006,7 +1437,7 @@ def _validate_agent_council_v3(
                                 f"{signal_label} cannot use Ask SA provider synthesis as its own supporting evidence"
                             )
                         if signal_evidence_ids and all(
-                            accepted_evidence_natures.get(evidence_id)
+                            input_natures.get(evidence_id)
                             == "provider_synthesis"
                             for evidence_id in signal_evidence_ids
                         ):
@@ -1099,16 +1530,16 @@ def _validate_agent_council_v3(
             )
             if (
                 packet.get("schema_version") != "council-premodel-seat-packet-v2"
-                or _identity_values(packet) != root_identity
+                or _identity_values(packet) != input_identity
                 or packet.get("seat") != seat
             ):
-                errors.append(f"{seat} packet identity/schema must equal Council root")
+                errors.append(f"{seat} packet identity/schema must equal Council owner model")
             if assumptions and packet.get("candidate_assumptions") != assumptions:
                 errors.append(f"{seat} packet candidate assumptions must equal preliminary underwrite")
             evidence_ids = packet.get("evidence_ids")
             if not _string_list(evidence_ids):
                 errors.append(f"{seat} packet evidence_ids must be a string list")
-            elif not set(evidence_ids) <= accepted_evidence:
+            elif not set(evidence_ids) <= input_evidence:
                 errors.append(f"{seat} packet evidence_ids exceed accepted PEI evidence")
             elif not challenge_signal_evidence_ids <= set(evidence_ids):
                 errors.append(
@@ -1159,18 +1590,20 @@ def _validate_agent_council_v3(
                 "challenges",
                 "strongest_countercase",
                 "limitations",
-            },
+            } | ({"source_candidates"} if discovery else set()),
             f"{seat} memo",
             errors,
         )
         if (
-            memo.get("schema_version") != "council-sealed-memo-v2"
+            memo.get("schema_version") != ("council-sealed-memo-v3" if discovery else "council-sealed-memo-v2")
             or memo.get("seat") != seat
             or _normalized_sha(memo.get("packet_sha256")) != packet_sha
         ):
             errors.append(f"{seat} memo identity/schema or packet hash is invalid")
-        if memo.get("browsed") is not False or memo.get("added_evidence_ids") != []:
-            errors.append(f"{seat} memo must be evidence-closed")
+        if memo.get("added_evidence_ids") != [] or (not discovery and memo.get("browsed") is not False):
+            errors.append(f"{seat} memo must not self-admit evidence" if discovery else f"{seat} memo must be evidence-closed")
+        if discovery and not isinstance(memo.get("browsed"), bool):
+            errors.append(f"{seat} memo browsed must be boolean")
         if not _nonempty_string(memo.get("summary")):
             errors.append(f"{seat} memo summary must be non-empty")
         if not _nonempty_string(memo.get("strongest_countercase")):
@@ -1182,6 +1615,40 @@ def _validate_agent_council_v3(
         sealed_at = _parse_time(memo.get("sealed_at"), f"{seat} memo sealed_at", errors)
         if sealed_at:
             memo_times.append(sealed_at)
+        seat_candidates: set[str] = set()
+        if discovery:
+            candidates = memo.get("source_candidates")
+            if not isinstance(candidates, list):
+                errors.append(f"{seat} source_candidates must be a list")
+                candidates = []
+            if candidates and memo.get("browsed") is not True:
+                errors.append(f"{seat} source candidates require truthful browsing")
+            for candidate in candidates:
+                if not isinstance(candidate, dict):
+                    errors.append(f"{seat} source candidate must be an object")
+                    continue
+                _expect_keys(candidate, {"candidate_id", "url", "source_locator", "as_of", "retrieved_at", "assumption_ids", "finding", "evidence_nature"}, f"{seat} source candidate", errors)
+                candidate_id = candidate.get("candidate_id")
+                if not _nonempty_string(candidate_id) or candidate_id in source_candidates or candidate_id in accepted_evidence or candidate_id in input_evidence:
+                    errors.append(f"{seat} candidate_id must be unique and distinct from evidence IDs")
+                    continue
+                if not isinstance(candidate.get("url"), str) or not re.match(r"https?://[^/\s]+", candidate["url"]):
+                    errors.append(f"{seat} source candidate must have an original HTTP(S) URL")
+                for field in ("finding", "evidence_nature", "source_locator"):
+                    if not _nonempty_string(candidate.get(field)):
+                        errors.append(f"{seat} source candidate {field} must be non-empty")
+                as_of = candidate.get("as_of")
+                published_at = _parse_time(as_of + "T00:00:00Z" if isinstance(as_of, str) and len(as_of) == 10 else as_of, f"{seat} candidate as_of", errors)
+                discovered_at = _parse_time(candidate.get("retrieved_at"), f"{seat} candidate retrieved_at", errors)
+                if published_at and discovered_at and published_at.date() > discovered_at.date():
+                    errors.append(f"{seat} candidate publication cannot follow discovery")
+                if discovered_at and sealed_at and discovered_at > sealed_at:
+                    errors.append(f"{seat} source discovery cannot follow its sealed memo")
+                affected = candidate.get("assumption_ids")
+                if not _string_list(affected) or not affected or not set(affected) <= assumption_ids:
+                    errors.append(f"{seat} source candidate must name affected assumptions")
+                source_candidates[candidate_id] = candidate
+                seat_candidates.add(candidate_id)
         challenges = memo.get("challenges")
         if not isinstance(challenges, list):
             errors.append(f"{seat} memo challenges must be a list")
@@ -1202,7 +1669,7 @@ def _validate_agent_council_v3(
                     "reasoning",
                     "decision_impact",
                     "falsifier",
-                },
+                } | ({"candidate_source_ids"} if discovery else set()),
                 label,
                 errors,
             )
@@ -1227,8 +1694,14 @@ def _validate_agent_council_v3(
             ):
                 errors.append(f"{label}.proposed_range must be an ordered numeric pair or null")
             challenge_evidence = challenge.get("evidence_ids")
-            if not _string_list(challenge_evidence) or not set(challenge_evidence) <= accepted_evidence:
+            if not _string_list(challenge_evidence) or not set(challenge_evidence) <= input_evidence:
                 errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
+            if discovery:
+                candidates = challenge.get("candidate_source_ids")
+                if not _string_list(candidates) or not set(candidates) <= seat_candidates:
+                    errors.append(f"{label}.candidate_source_ids must refer only to this seat's discoveries")
+                elif any(challenge.get("assumption_id") not in source_candidates[c]["assumption_ids"] for c in candidates if _string_list(source_candidates[c].get("assumption_ids"))):
+                    errors.append(f"{label} candidate does not address this assumption")
             for field in ("reasoning", "decision_impact", "falsifier"):
                 if not _nonempty_string(challenge.get(field)):
                     errors.append(f"{label}.{field} must be non-empty")
@@ -1243,8 +1716,8 @@ def _validate_agent_council_v3(
         errors,
     )
     final_assumption_ids: set[str] = set()
-    if final_spec is not None and _identity_values(final_spec)[:2] != root_identity[:2]:
-        errors.append("final model spec identity must equal Council root")
+    if final_spec is not None and _identity_values(final_spec) != owner_model_identity:
+        errors.append("final model spec identity/cutoff must equal Council owner model")
     if final_spec is not None:
         assumption_values = final_spec.get("assumption_ids")
         if (
@@ -1278,21 +1751,67 @@ def _validate_agent_council_v3(
                 "memo_hashes",
                 "decisions",
                 "final_model_spec_sha256",
-            },
+            } | ({"source_dispositions"} if discovery else set()),
             "owner adjudication",
             errors,
         )
         if (
-            adjudication.get("schema_version") != "pei-council-adjudication-v2"
-            or _identity_values(adjudication) != root_identity
+            adjudication.get("schema_version") != ("pei-council-adjudication-v3" if discovery else "pei-council-adjudication-v2")
+            or _identity_values(adjudication) != owner_model_identity
         ):
-            errors.append("owner adjudication identity/schema must equal Council root")
+            errors.append("owner adjudication identity/schema must equal Council owner model")
         if adjudication.get("packet_hashes") != packet_hashes:
             errors.append("owner adjudication packet_hashes must equal bound packets")
         if adjudication.get("memo_hashes") != memo_hashes:
             errors.append("owner adjudication memo_hashes must equal bound memos")
         if _normalized_sha(adjudication.get("final_model_spec_sha256")) != final_spec_sha:
             errors.append("owner adjudication must bind the final model spec hash")
+        if discovery:
+            dispositions = adjudication.get("source_dispositions")
+            if not isinstance(dispositions, list):
+                errors.append("owner source_dispositions must be a list")
+                dispositions = []
+            disposed: set[str] = set()
+            for row in dispositions:
+                if not isinstance(row, dict):
+                    errors.append("source disposition must be an object")
+                    continue
+                _expect_keys(row, {"candidate_id", "disposition", "evidence_ids", "reason"}, "source disposition", errors)
+                candidate_id = row.get("candidate_id")
+                if not _nonempty_string(candidate_id) or candidate_id not in source_candidates or candidate_id in disposed:
+                    errors.append("source disposition must map each candidate exactly once")
+                    continue
+                disposed.add(candidate_id)
+                evidence_ids = row.get("evidence_ids")
+                if row.get("disposition") == "accepted":
+                    if not _string_list(evidence_ids) or not evidence_ids or not set(evidence_ids) <= accepted_evidence:
+                        errors.append("accepted source requires evidence admitted in the final PEI receipt")
+                    else:
+                        candidate = source_candidates[candidate_id]
+                        for evidence_id in evidence_ids:
+                            admitted = admitted_sources.get(evidence_id, {})
+                            provenances = [admitted.get(field) for field in ("primary_provenance", "public_provenance")]
+                            same_source = any(
+                                isinstance(provenance, dict)
+                                and provenance.get("source_url") == candidate.get("url")
+                                and provenance.get("source_locator") == candidate.get("source_locator")
+                                for provenance in provenances
+                            )
+                            candidate_date = candidate.get("as_of")
+                            date_only = isinstance(candidate_date, str) and len(candidate_date) == 10
+                            candidate_at = _parse_time(candidate_date + "T00:00:00Z" if date_only else candidate_date, "candidate source provenance publication", errors)
+                            admitted_at = _parse_time(admitted.get("as_of"), "candidate source provenance admitted publication", errors)
+                            same_date = candidate_at is not None and admitted_at is not None and (
+                                candidate_at.date() == admitted_at.date() if date_only else candidate_at == admitted_at
+                            )
+                            if not same_source or not same_date or admitted.get("evidence_nature") != candidate.get("evidence_nature"):
+                                errors.append("accepted candidate source provenance must match its admitted URL, locator, date and evidence nature")
+                elif row.get("disposition") not in {"rejected", "not_material"} or evidence_ids != []:
+                    errors.append("unaccepted source disposition must not admit evidence")
+                if not _nonempty_string(row.get("reason")):
+                    errors.append("source disposition reason must be non-empty")
+            if disposed != set(source_candidates):
+                errors.append("owner must disposition every discovered source")
         decisions = adjudication.get("decisions")
         if not isinstance(decisions, list):
             errors.append("owner adjudication decisions must be a list")
@@ -1378,16 +1897,18 @@ def _validate_agent_council_v3(
                 )
             else:
                 duplicate_inputs = adjudicated_model_inputs & set(model_input_ids)
-                if duplicate_inputs:
+                if duplicate_inputs and not (final_spec or {}).get('dependency_graph'):
                     errors.append(
                         "owner adjudication model_input_ids must have one owner: "
                         + ", ".join(sorted(duplicate_inputs))
                     )
                 adjudicated_model_inputs.update(model_input_ids)
+                family = next((item.get('family') for item in (underwrite or {}).get('assumption_family_dispositions', []) if assumption_id in item.get('assumption_ids', [])), None)
+                _validate_model_mapping(preliminary, family, decision, final_spec or {}, label, errors)
         if decision_ids != assumption_ids:
             errors.append("owner adjudication must decide every preliminary assumption once")
         missing_model_inputs = final_assumption_ids - adjudicated_model_inputs
-        if missing_model_inputs:
+        if missing_model_inputs and not (final_spec or {}).get('dependency_graph'):
             errors.append(
                 "owner adjudication model_input_ids do not cover final model assumption_ids: "
                 + ", ".join(sorted(missing_model_inputs))
@@ -1415,8 +1936,8 @@ def _validate_agent_council_v3(
     )
     frozen_at = None
     if freeze is not None:
-        if _identity_values(freeze) != root_identity:
-            errors.append("FV freeze identity/cutoff must equal Council root")
+        if _identity_values(freeze) != owner_model_identity:
+            errors.append("FV freeze identity/cutoff must equal Council owner model")
         if _normalized_sha(freeze.get("model_spec_sha256")) != final_spec_sha:
             errors.append("FV freeze must bind the final model spec hash")
         for field in ("model_output_sha256", "independent_audit_sha256"):
@@ -1528,6 +2049,127 @@ def _validate_pei_admission_receipt(payload: Any) -> tuple[list[str], str | None
     elif payload.get("output_posture") != posture:
         errors.append(f"output_posture must equal derived posture {posture}")
     return errors, posture
+
+
+def validate_pre_dispatch_admission(
+    *,
+    artifact_dir: Path,
+    owner_model_pei_input: Path,
+    preliminary_underwrite: Path,
+) -> list[str]:
+    """Validate the narrow evidence boundary required before Council dispatch.
+
+    This is intentionally separate from a completed Council run: full validation
+    still requires its canonical final PEI receipt and split owner-model receipt.
+    """
+
+    errors: list[str] = []
+    owner_path = _safe_artifact_path(
+        artifact_dir, str(owner_model_pei_input), "owner_model_pei_input", errors
+    )
+    preliminary_path = _safe_artifact_path(
+        artifact_dir, str(preliminary_underwrite), "preliminary_underwrite", errors
+    )
+    owner = _load_json(owner_path, "owner model PEI input", errors)
+    preliminary = _load_json(preliminary_path, "preliminary underwrite", errors)
+    if not isinstance(owner, dict) or not isinstance(preliminary, dict):
+        return errors
+
+    receipt_errors, _ = _validate_pei_admission_receipt(owner)
+    errors.extend(f"owner_model_pei_input: {error}" for error in receipt_errors)
+    if owner.get("schema_version") != 2:
+        errors.append("owner_model_pei_input.schema_version must be 2 before Council dispatch")
+    declaration = owner.get("owner_declaration")
+    declared = declaration.get("declared_receipt_kinds") if isinstance(declaration, dict) else None
+    if not isinstance(declared, list) or "model" not in declared:
+        errors.append("owner_model_pei_input must declare a model owner receipt")
+
+    owner_identity = owner.get("security_identity")
+    owner_security_id = (
+        owner_identity.get("security_id") if isinstance(owner_identity, dict) else None
+    )
+    for field, expected in (
+        ("ticker", owner.get("ticker")),
+        ("security_id", owner_security_id),
+        ("evidence_cutoff", owner.get("evidence_cutoff")),
+    ):
+        if preliminary.get(field) != expected:
+            errors.append(
+                f"preliminary_underwrite.{field} must equal owner model PEI input"
+            )
+    if preliminary.get("schema_version") != "pei-preliminary-underwrite-v2":
+        errors.append("preliminary_underwrite.schema_version must be pei-preliminary-underwrite-v2")
+    if not _nonempty_string(preliminary.get("owner")):
+        errors.append("preliminary_underwrite.owner must be a non-empty string")
+    if not _nonempty_string(preliminary.get("decision_horizon")):
+        errors.append("preliminary_underwrite.decision_horizon must be a non-empty string")
+    if not isinstance(preliminary.get("candidate_assumptions"), list) or not preliminary["candidate_assumptions"]:
+        errors.append("preliminary_underwrite.candidate_assumptions must be non-empty")
+
+    model_subordinates = [
+        item
+        for item in owner.get("subordinate_receipts", [])
+        if isinstance(item, dict) and item.get("kind") == "model"
+    ]
+    if len(model_subordinates) != 1:
+        errors.append("owner_model_pei_input must contain exactly one model subordinate receipt")
+        return errors
+    model_subordinate = model_subordinates[0]
+    model_path = _safe_artifact_path(
+        artifact_dir,
+        model_subordinate.get("artifact"),
+        "owner_model_pei_input model subordinate",
+        errors,
+    )
+    if model_path is None or not model_path.is_file():
+        return errors
+    if model_subordinate.get("sha256") != _sha256(model_path):
+        errors.append("owner_model_pei_input model subordinate hash does not match artifact")
+        return errors
+    model = _load_json(model_path, "model owner receipt", errors)
+    if not isinstance(model, dict):
+        return errors
+    for field, expected in (
+        ("schema_version", 1),
+        ("kind", "model"),
+        ("ticker", owner.get("ticker")),
+        ("security_id", owner_security_id),
+        ("evidence_cutoff", owner.get("evidence_cutoff")),
+        ("validation_status", "PASS"),
+    ):
+        if model.get(field) != expected:
+            errors.append(f"model owner receipt {field} does not match pre-dispatch boundary")
+
+    if preliminary_path is None:
+        return errors
+    preliminary_artifact = str(preliminary_path.relative_to(artifact_dir.resolve()))
+    preliminary_hash = _sha256(preliminary_path)
+    model_entries = {
+        item.get("id"): item
+        for item in model.get("evidence_registry", [])
+        if isinstance(item, dict) and _nonempty_string(item.get("id"))
+    }
+    matching_ids = {
+        evidence_id
+        for evidence_id, item in model_entries.items()
+        if item.get("artifact") == preliminary_artifact
+        and item.get("sha256") == preliminary_hash
+    }
+    if not matching_ids:
+        errors.append("model owner receipt does not exact-bind the preliminary underwrite")
+        return errors
+    if not matching_ids & set(model.get("evidence_ids") or []):
+        errors.append("model owner receipt does not declare the bound preliminary underwrite")
+    owner_entries = {
+        item.get("id"): item
+        for item in owner.get("evidence_registry", [])
+        if isinstance(item, dict) and _nonempty_string(item.get("id"))
+    }
+    for evidence_id in matching_ids:
+        item = owner_entries.get(evidence_id)
+        if not isinstance(item, dict) or item.get("artifact") != preliminary_artifact or item.get("sha256") != preliminary_hash:
+            errors.append("owner model PEI input does not carry the bound preliminary underwrite")
+    return errors
 
 
 def _normalized(value: str) -> str:
@@ -3109,7 +3751,7 @@ def validate(
     _ = plugin_root
     if not isinstance(payload, dict):
         return ["root must be a JSON object"]
-    if payload.get("schema_version") == AGENT_COUNCIL_SCHEMA_VERSION:
+    if payload.get("schema_version") in {AGENT_COUNCIL_SCHEMA_VERSION, 4}:
         return _validate_agent_council_v3(payload, artifact_dir=Path(artifact_dir))
     errors: list[str] = []
     expected_root_fields = ROOT_FIELDS | (
@@ -3985,8 +4627,41 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate an Equity Council run artifact.")
     parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--artifact-root", type=Path)
-    parser.add_argument("council_run", type=Path)
+    parser.add_argument(
+        "--pre-dispatch",
+        action="store_true",
+        help="validate only the owner-model input and bound preliminary underwrite",
+    )
+    parser.add_argument("--owner-model-pei-input", type=Path)
+    parser.add_argument("--preliminary-underwrite", type=Path)
+    parser.add_argument("council_run", nargs="?", type=Path)
     args = parser.parse_args()
+
+    if args.pre_dispatch:
+        if (
+            args.artifact_root is None
+            or args.owner_model_pei_input is None
+            or args.preliminary_underwrite is None
+            or args.council_run is not None
+        ):
+            parser.error(
+                "--pre-dispatch requires --artifact-root, --owner-model-pei-input, and --preliminary-underwrite only"
+            )
+        errors = validate_pre_dispatch_admission(
+            artifact_dir=args.artifact_root,
+            owner_model_pei_input=args.owner_model_pei_input,
+            preliminary_underwrite=args.preliminary_underwrite,
+        )
+        if errors:
+            print("FAIL: Council pre-dispatch admission is invalid", file=sys.stderr)
+            for error in errors:
+                print(f"- {error}", file=sys.stderr)
+            return 1
+        print("PASS: Council pre-dispatch admission is valid")
+        return 0
+
+    if args.council_run is None:
+        parser.error("council_run is required unless --pre-dispatch is used")
 
     load_errors: list[str] = []
     payload = _load_json(args.council_run, "Council run", load_errors)

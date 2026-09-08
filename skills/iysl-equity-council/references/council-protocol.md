@@ -13,14 +13,22 @@ Spawn exactly three parallel leaf agents. Give every agent only:
 - the same identity, evidence cutoff, current price, and decision horizon;
 - the preliminary underwrite's candidate assumptions;
 - the evidence IDs relevant to its method; and
-- authority to read only the packet and referenced accepted local evidence.
+- authority to inspect the packet, accepted local evidence, and independently
+  search relevant original sources under the project browser/Exa policy.
 
-Every task must say: no browsing, no new evidence, no other seat output, no final
+Every task must say: no self-admitted evidence, no other seat output, no final
 model or action, and no further delegation. It must also require the seat to test
 what may be too conservative, too aggressive, or uncertain and to state the
 strongest evidence-consistent market-right countercase. If collaboration is
 unavailable, return `BLOCKED`; one agent pretending to be three is not
 independent challenge.
+
+The packet instructions must also require each material challenge to trace its
+accepted evidence through a source-to-economic bridge to a proposed Base or
+range and an observable falsifier. A one-variable diagnostic may expose a
+question, but cannot arbitrarily freeze the final central case: the seat must
+say whether connected operating drivers should move together or why they should
+not. This is part of the same first-round instruction, not another review.
 
 ## The three lenses
 
@@ -88,7 +96,11 @@ final owner model, or another seat's memo.
 Each sealed memo contains:
 
 - exact seat and `packet_sha256`;
-- `sealed_at`, `browsed: false`, and `added_evidence_ids: []`;
+- schema `council-sealed-memo-v3`, `sealed_at`, truthful boolean `browsed`, and
+  `added_evidence_ids: []` (discovery is not evidence admission);
+- `source_candidates`: zero or more discoveries, with globally unique
+  `candidate_id`, original `url`, `source_locator`, `as_of` (ISO publication date or timestamp), `retrieved_at`,
+  affected `assumption_ids`, `finding`, and `evidence_nature`;
 - a concise `summary`;
 - zero or more assumption `challenges`;
 - the `strongest_countercase`; and
@@ -100,18 +112,41 @@ Each challenge contains:
 - `assessment`: `supported`, `too_conservative`, `too_aggressive`, or
   `uncertain`;
 - optional `proposed_base` and `proposed_range`;
-- accepted `evidence_ids`;
+- starting-receipt `evidence_ids` and this seat's provisional `candidate_source_ids`;
 - `reasoning`;
 - `decision_impact`; and
 - `falsifier`.
+
+Check for material issues omitted from the preliminary model using the starting
+evidence and independently found originals. Candidates remain provisional;
+search snippets alone cannot substantiate a challenge. State the causal link, the decision it could change, and the
+exact obtainable evidence that would resolve it in existing limitations or
+challenges. Do not build a per-formula question inventory or require another
+Council round merely because a catalogue field was not selected. Future
+uncertainty calls for bounded assumptions and falsifiers, not exhaustive data.
 
 A seat may say an assumption is supported. It must not manufacture a difference
 to appear useful. It must not issue the final investment stance.
 
 ## Owner adjudication
 
-After all three memos seal, the same PEI owner adjudicates every preliminary
-assumption exactly once. For each assumption, record:
+After all three memos seal, Data checks material discoveries through the existing
+PEI receipt path. The schema v4 root binds `council_input_pei_receipt` to the
+unchanged initial packet evidence and `pei_input_receipt` to the final admitted
+inputs. The same security's final cutoff cannot precede its initial cutoff.
+This does not require another Council dispatch or a second evidence registry.
+
+Use root authority_version 3 and `pei-council-adjudication-v3`. Its
+`source_dispositions` maps each candidate exactly once to `candidate_id`,
+`disposition` (`accepted`, `rejected`, `not_material`), admitted `evidence_ids`,
+and `reason`. Only accepted candidates may name final-receipt evidence IDs;
+rejected/not-material rows use an empty list. Data acceptance establishes source
+identity and meaning; PEI still decides whether its claim changes an assumption.
+The original memo may cite a candidate that is later rejected without rewriting
+history. Each final assumption cites only final-receipt accepted evidence.
+
+The same PEI owner adjudicates every preliminary assumption exactly once.
+For each assumption, record:
 
 - prior Base/range;
 - final Base/range;
@@ -127,9 +162,14 @@ fluent challenge that is not supported.
 
 ## Stop rule
 
-Request an upstream refill only when an identified gap can plausibly flip the
-research direction, break model recomputation, or make promotion unsafe. Ask for
-at most two exact inputs. Otherwise disclose the limitation and proceed.
+Do one targeted refill only for a remaining gap that can materially change the
+judgment or break essential computation. Then retain a defensible estimate,
+conditional scenarios, or an explicit inability to select a central value;
+never fill uncertainty with an arbitrary haircut. Do not restart Council.
+Check changed decision-critical calculations and their consistency with the
+paper, then stop. Schema v3 historical runs retain their evidence-closed memo
+and adjudication contracts; do not migrate or reseal their artifacts.
 
-Once the owner model is independently recomputed, source-linked, and consistent
-with the paper under reasonable extreme scenarios, stop adding process.
+For v4 accepted source dispositions, each evidence ID must resolve to the same original URL, document/claim locator, publication date and evidence nature through the final PEI registry primary/public provenance. An unrelated accepted ID cannot stand in for a candidate. If Data corrects the candidate classification, reject that candidate as stated and explain the corrected evidence separately in the owner decision; do not relabel a sealed memo.
+
+Use the Data taxonomy for candidates: opened public analyst articles are `corroborating_context` with `public_provenance`; label their estimates and inference in the finding and owner reason. They can influence the central assumption without becoming company facts. This discovery route uses original articles, not untraceable provider target summaries.
