@@ -30,19 +30,37 @@ def parse_frontmatter(path: Path) -> dict[str, str]:
         return {}
     raw = text[4 : text.index("\n---\n", 4)]
     values: dict[str, str] = {}
+    section = None
+    child_indent = None
+    compatibility = None
     for line in raw.splitlines():
-        if not line or line[0].isspace() or line.lstrip().startswith("#"):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[0].isspace():
+            if section == "metadata":
+                indent = len(line) - len(line.lstrip())
+                if child_indent is None:
+                    child_indent = indent
+                key, separator, value = line.strip().partition(":")
+                if indent == child_indent and key == "compatibility" and separator:
+                    if compatibility is not None:
+                        raise ValueError(f"duplicate metadata.compatibility in {path}")
+                    compatibility = value.strip().strip('"').strip("'")
             continue
         if ":" not in line:
             raise ValueError(f"malformed frontmatter line {line!r} in {path}")
         key, value = line.split(":", 1)
         key = key.strip()
+        section = key if not value.strip() else None
+        child_indent = None
         if key in values:
             raise ValueError(f"duplicate frontmatter key {key!r} in {path}")
         raw_value = value.strip()
         if key == "disable-model-invocation" and raw_value not in {"true", "false"}:
             raise ValueError(f"{key} must use canonical true or false in {path}")
         values[key] = raw_value.strip('"').strip("'")
+    if compatibility is not None:
+        values.setdefault("compatibility", compatibility)
     return values
 
 

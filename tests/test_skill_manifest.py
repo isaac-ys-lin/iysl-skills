@@ -132,3 +132,14 @@ def test_manifest_separates_maintainer_from_origin():
         "original",
         "forked",
     }
+
+
+@pytest.mark.parametrize("extra", ["", "  notes: |\n    compatibility: Not a runtime requirement\n"])
+def test_frontmatter_reads_metadata_compatibility(tmp_path: Path, extra: str):
+    path = tmp_path / "SKILL.md"
+    path.write_text(
+        "---\nname: example\nmetadata:\n"
+        + extra + "  compatibility: Requires Python\n---\n",
+        encoding="utf-8",
+    )
+    assert parse_frontmatter(path)["compatibility"] == "Requires Python"

@@ -1,70 +1,18 @@
 {
   "recommended_threshold": 0.75,
   "fallback_positive_concepts": [
-    "terminal_judgment",
-    "usable_upstream_or_explicit"
+    "preliminary_underwrite_challenge"
   ],
   "positive_concepts": {
-    "terminal_judgment": {
-      "weight": 0.5,
+    "preliminary_underwrite_challenge": {
+      "weight": 1.0,
       "phrases": [
-        "research stance",
-        "Long、Short 或 Avoid",
-        "final stance",
-        "終局仲裁",
-        "最終投資方向",
-        "投資判斷",
+        "Challenge the assumptions",
+        "三席 Council 挑戰假設",
+        "three isolated public-method agents",
+        "preliminary underwrite",
+        "candidate assumptions",
         "$iysl-equity-council"
-      ]
-    },
-    "usable_upstream_or_explicit": {
-      "weight": 0.5,
-      "phrases": [
-        "minimally usable",
-        "Public Equity Investing 已完成",
-        "既有研究分布",
-        "既有 PEI pack",
-        "已完成的 PEI workflows",
-        "已完成 PEI packs",
-        "completed public-equity research pack",
-        "source pack and valuation model are complete",
-        "既有研究包已完成",
-        "$iysl-equity-council"
-      ]
-    },
-    "stance_readiness_conflict": {
-      "weight": 0.25,
-      "phrases": [
-        "研究方向和實作準備度分開",
-        "借券和 options",
-        "watchlist",
-        "implementation gap"
-      ]
-    },
-    "horizon_conflict": {
-      "weight": 0.2,
-      "phrases": [
-        "長期 DCF",
-        "指定期限",
-        "期限權重相反"
-      ]
-    },
-    "bounded_uncertainty": {
-      "weight": 0.15,
-      "phrases": [
-        "尚未證實",
-        "有界假設",
-        "optionality",
-        "證據不足作結"
-      ]
-    },
-    "serial_suppression": {
-      "weight": 0.1,
-      "phrases": [
-        "全部變成 pass",
-        "方向差異",
-        "共同缺少",
-        "serial suppression"
       ]
     }
   },
