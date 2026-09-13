@@ -65,6 +65,15 @@ duration/fade/terminal economics; and 12-month market expectations. Each family
 is either `covered` by named candidate assumption IDs or `not_material` with an
 explicit reason. Every candidate belongs to one family.
 
+Preserve the original investment question and horizon in the existing candidate
+rationale and packet instructions. For twelve-month market expectations, ask
+whether the proposed operating basis, target-date pricing mechanism, capital /
+distribution assumptions and probability reasoning can support that question.
+An annual revenue guide alone is not this bridge. `covered` means the relevant
+candidate relationships are available for challenge, not that the question is
+answered. Unresolved relationships stay explicit in candidate rationale and
+falsifiers; final prices, stance and owner model remain excluded from packets.
+
 The PEI owner must reconcile every evidence-gated material Ask SA, opened
 Analysis, and opened Transcript signal delivered by Equity Data. Record each
 one under the affected candidate's `challenge_signal_dispositions` with its
@@ -155,6 +164,12 @@ For each assumption, record:
 - accepted evidence IDs;
 - reason; and
 - affected model input IDs.
+
+In the existing decision reason, connect the accepted, conditional or rejected
+assumption back to the original question: does it support a horizon conclusion,
+or leave a specific relationship unresolved? The PEI owner then follows the
+project formal workflow's investment-question completion check before writing;
+sealing three memos or retaining a company guide does not itself answer it.
 
 The adjudication is the final assumption authority. It is not a vote: repeated
 claims from correlated evidence do not gain weight, and the owner may reject a
