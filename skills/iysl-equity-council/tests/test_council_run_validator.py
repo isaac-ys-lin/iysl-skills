@@ -5,7 +5,7 @@ import json
 import pytest
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -600,10 +600,23 @@ def _pre_dispatch_fixture(artifact_dir, pei_receipt):
     return preliminary_path, model_path
 
 
-def test_pre_dispatch_admits_only_an_exact_underwrite_bound_owner_model_input(tmp_path):
+@pytest.mark.parametrize("windows_relative_path", [False, True])
+def test_pre_dispatch_admits_only_an_exact_underwrite_bound_owner_model_input(
+    tmp_path, monkeypatch, windows_relative_path
+):
     _, artifact_dir, _, _, pei_path, pei_receipt = _fixture(tmp_path)
     _pre_dispatch_fixture(artifact_dir, pei_receipt)
     _write_json(pei_path, pei_receipt)
+
+    if windows_relative_path:
+        relative_to = Path.relative_to
+        preliminary_path = artifact_dir / "support/council/preliminary_underwrite.json"
+
+        def platform_relative_path(path, *args, **kwargs):
+            result = relative_to(path, *args, **kwargs)
+            return PureWindowsPath(result.as_posix()) if path == preliminary_path else result
+
+        monkeypatch.setattr(Path, "relative_to", platform_relative_path)
 
     errors = VALIDATOR.validate_pre_dispatch_admission(
         artifact_dir=artifact_dir,

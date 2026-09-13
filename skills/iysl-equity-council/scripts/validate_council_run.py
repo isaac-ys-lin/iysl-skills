@@ -2142,7 +2142,7 @@ def validate_pre_dispatch_admission(
 
     if preliminary_path is None:
         return errors
-    preliminary_artifact = str(preliminary_path.relative_to(artifact_dir.resolve()))
+    preliminary_artifact = preliminary_path.relative_to(artifact_dir.resolve()).as_posix()
     preliminary_hash = _sha256(preliminary_path)
     model_entries = {
         item.get("id"): item
