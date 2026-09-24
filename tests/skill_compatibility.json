@@ -2,5 +2,6 @@
   "ask-matt": ["Python"],
   "iysl-anidiagram": ["Python", "browser", "ffmpeg"],
   "iysl-ytdlp-html-report": ["Node.js", "yt-dlp", "ffmpeg", "network"],
-  "iysl-deckab": ["Python"]
+  "iysl-deckab": ["Python"],
+  "iysl-transglobe": ["Node.js"]
 }

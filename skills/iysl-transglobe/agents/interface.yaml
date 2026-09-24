@@ -1,7 +1,7 @@
 interface:
-  display_name: "全球藍設計套用"
-  short_description: "Apply TransGlobe design to Office, HTML, and SVG."
-  default_prompt: "Use $iysl-transglobe 將這份簡報、文件或圖表套用全球藍規範，保留數據與原意，圖表以 SVG 優先。"
+  display_name: "iysl-transglobe"
+  short_description: "Select and render TransGlobe charts; restyle Office and HTML."
+  default_prompt: "Use $iysl-transglobe 依報告情境與資料自動選出最適合的全球藍圖表，產生 SVG 或套用到文件，保留數據與原意。"
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:

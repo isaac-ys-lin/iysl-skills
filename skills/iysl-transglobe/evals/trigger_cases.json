@@ -24,6 +24,18 @@
     {
       "text": "Use $iysl-transglobe to restyle the attached presentation.",
       "family": "explicit"
+    },
+    {
+      "text": "用全球藍依這份資料自動推薦並選出最適合的圖表，不用讓我逐一挑。",
+      "family": "chart-selection"
+    },
+    {
+      "text": "依全球藍圖表範例，把這些前後數字做成 SVG 啞鈴圖，附原始資料。",
+      "family": "chart-generation"
+    },
+    {
+      "text": "Use TransGlobe to decide whether a waterfall or a trend chart explains this data better.",
+      "family": "chart-selection-en"
     }
   ],
   "should_not_trigger": [

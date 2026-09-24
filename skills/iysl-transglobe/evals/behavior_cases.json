@@ -178,6 +178,124 @@
           "inspect standalone SVG separately from the report"
         ]
       }
+    },
+    {
+      "id": "auto-chart-by-question",
+      "kind": "complex",
+      "prompt": "把報告中的資料做成最適合的全球藍圖表，不要問我選哪種。2026 Q2 期初保單 100 件，新增 30、解約 -12、失效 -3，期末 115 件；來源：營運月報。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "select waterfall because the values are an additive bridge from opening to closing",
+          "state the selection and a short reason",
+          "preserve all signed changes period unit and source"
+        ],
+        "must_not_do": [
+          "ask the user to choose a chart",
+          "use a Pareto chart merely because there are multiple causes"
+        ]
+      }
+    },
+    {
+      "id": "same-composition-different-question",
+      "kind": "quality",
+      "prompt": "通路甲與乙的商品 A/B/C 銷售額分別為 70/20/10 與 20/30/50。問題是各通路的商品組成差在哪裡；請自動選圖。",
+      "expected": {
+        "must_do": [
+          "select 100% stacked bars because the question is composition by channel",
+          "retain all amounts and label the denominator"
+        ],
+        "must_not_do": [
+          "use Marimekko when total channel size is not part of the question",
+          "present equal-width bars as market-size comparison"
+        ]
+      }
+    },
+    {
+      "id": "same-data-market-structure",
+      "kind": "quality",
+      "prompt": "通路甲與乙的商品 A/B/C 銷售額分別為 700/200/100 與 20/30/50。問題是誰的市場較大且各自賣什麼；請自動選圖。",
+      "expected": {
+        "must_do": [
+          "select Marimekko because both total market size and internal composition matter",
+          "preserve a common area denominator"
+        ],
+        "must_not_do": [
+          "use equal-width 100% stacked bars as the sole answer"
+        ]
+      }
+    },
+    {
+      "id": "seductive-chart-data-ineligible",
+      "kind": "failure",
+      "prompt": "有客訴原因可複選：價格 40、等待 35、服務 30。請做帕累托圖並說前三項累計占比。",
+      "expected": {
+        "must_do": [
+          "identify that overlapping reasons invalidate a cumulative share of cases",
+          "use a ranked comparison or table without a misleading cumulative case share"
+        ],
+        "must_not_do": [
+          "claim the Pareto cumulative percentage is a share of unique cases"
+        ]
+      }
+    },
+    {
+      "id": "insufficient-funnel-cohort",
+      "kind": "failure",
+      "prompt": "每月收到申請 100、審核 80、完成 90；這三個數是不同月份彙總。請做漏斗圖。",
+      "expected": {
+        "must_do": [
+          "identify that the stages are not the same cohort and cannot support a funnel",
+          "recommend a period-by-stage table or trend without inventing conversion rates"
+        ],
+        "must_not_do": [
+          "silently force the completed count below review count"
+        ]
+      }
+    },
+    {
+      "id": "dense-categories-preserved",
+      "kind": "complex",
+      "prompt": "自動選圖呈現 12 個固定產品在 6 個月的銷售；每個產品都要保留並可跨月追蹤。",
+      "expected": {
+        "must_do": [
+          "use small multiples split charts or a table instead of one unreadable categorical chart",
+          "retain all 12 products and values"
+        ],
+        "must_not_do": [
+          "merge products into Other without authorization",
+          "assign more than four fixed categorical colors in one chart"
+        ]
+      }
+    },
+    {
+      "id": "explicit-appropriate-override",
+      "kind": "simple",
+      "prompt": "有四個門市同口徑的改善前與改善後等候分鐘數；請用啞鈴圖，不要自動換圖。",
+      "expected": {
+        "must_do": [
+          "honor dumbbell because paired before-after observations are eligible",
+          "show each matched pair and its difference"
+        ],
+        "must_not_do": [
+          "replace the requested appropriate chart with a ranking chart"
+        ]
+      }
+    },
+    {
+      "id": "summary-is-not-distribution",
+      "kind": "failure",
+      "prompt": "用全球藍自動選圖比較 A、B、C 部門處理天數的分布。我只有平均天數 4.2、5.1、3.8，沒有逐筆資料或分位數。",
+      "expected": {
+        "must_do": [
+          "explain that means alone cannot show distributions",
+          "render a comparison of provided means or a table and state the missing distribution data"
+        ],
+        "must_not_do": [
+          "invent quartiles whiskers or outliers",
+          "present a box plot from means alone"
+        ]
+      }
     }
   ]
 }

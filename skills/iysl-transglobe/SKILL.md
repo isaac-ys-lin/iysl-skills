@@ -1,19 +1,20 @@
 ---
 name: iysl-transglobe
-description: Apply 全球藍 / TransGlobe design rules to existing PowerPoint, Word, Excel charts, HTML presentations or documents, and SVG charts. Use for brand restyling while preserving data and meaning; exclude design-system maintenance and generic blue styling.
+description: Apply 全球藍 / TransGlobe design to PowerPoint, Word, Excel charts, HTML, and SVG. Recommend and select suitable charts from the reporting question and data, then generate reusable SVG charts or restyle existing content while preserving meaning. Exclude design-system maintenance and generic blue styling.
+metadata:
+  compatibility: Bundled SVG renderer requires Node.js 18 or later; Office editing requires an available format tool.
 ---
 
-# 全球藍設計套用
+# iysl-transglobe
 
-將既有簡報、文件或圖表套用全球藍規範，交付修改後的副本。
-此 skill 負責設計套用；文件讀寫沿用環境已有的格式工具，
-不維護或發布設計系統。
+將既有簡報、文件或圖表套用全球藍規範，也可從提供的資料選圖並產生 SVG。
+文件讀寫沿用環境已有的格式工具；此 skill 不維護或發布設計系統。
 
 ## 套用前
 
 - 讀取 [設計規範](references/design-rules.md)，依使用者指定版本；
   未指定時使用隨附快照，只有要求最新規範或遇到衝突時才核對來源網站。
-- 先讀原檔與可用資料，辨識輸出容器、原生可編輯內容、圖表資料來源，
+- 先讀原檔或提供的資料，辨識輸出容器、原生可編輯內容、圖表資料來源，
   以及需保留的數據、單位、期間、來源、假設與限制。保留原檔。
 - 讀 [格式與驗收](references/formats-and-validation.md) 中相關格式段落；
   工具缺少某格式能力時，完成可處理部分並明示缺口。
@@ -32,9 +33,27 @@ description: Apply 全球藍 / TransGlobe design rules to existing PowerPoint, W
 
 ## 執行與交付
 
-依內容選 Focus、Ordered 或 Categorical，依簡報、文件、純圖的閱讀密度
-安排版面；不把全頁簡報尺寸套到所有容器。套用字型角色與色彩語意，
-保留圖表比例與必要的非色彩辨識。
+### 自動推薦與選圖
+
+需要新建或替換圖表時，讀 [選圖指南](references/chart-selection.md)。
+依「讀者要回答的問題 → 資料是否足夠且可比 → 閱讀情境與密度」篩選圖型，
+從合適候選選出最清楚的一種。預設直接選定並繼續製作，簡短說明理由；
+有實質取捨時才補一至兩個候選，不把整份圖表目錄交給使用者選。
+使用者指定且適合資料的圖型優先；指定圖型不成立時交代缺口並採合適替代。
+
+選圖目錄涵蓋原網站的 18 種圖表。依問題選圖，再選 Focus、Ordered 或
+Categorical；顏色模式本身不是圖型。需要精確查值、資料不足或圖形過密時，
+可選原生表格、單一數字、拆圖或小倍圖。圖種多是選擇範圍，不是成品配額。
+
+### 產生與嵌入
+
+選定圖型後讀 [圖表輸入與產生](references/chart-inputs.md)，使用內附產圖工具，
+填入真實資料與標題、單位、期間、來源及必要註解。沿用工具的 SVG 圖形與樣式，
+不以網站截圖或固定示範數字代替產圖。輸入限制不符時保留資料，按指南改圖或拆圖；
+工具未涵蓋的需求可用現有格式工具處理，交代其驗證範圍。
+
+將產出的 SVG 等比例放回目標容器，依簡報、文件、純圖的閱讀密度安排版面。
+不把全頁簡報尺寸套到所有容器。周邊內容沿用編修契約；純圖可直接交付。
 
 完成後依格式指引分別驗證內容保真、文件結構及實際渲染。
 對照修改前的數據／文字清單，確認重排與圖片替換沒有刪除原生內容；
