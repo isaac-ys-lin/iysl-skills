@@ -6,7 +6,7 @@ const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, scale, tic
 const sum = values => values.reduce((total, value) => total + value, 0);
 const fmt = value => String(Number(value.toFixed(3)));
 const cat = (index, categories) => index === 4 ? '#DDDDDD' : C.cat[index];
-const labelFill = index => index === 3 || index === 4 ? C.ink : '#FFFFFF';
+const labelFill = index => index >= 2 ? C.ink : '#FFFFFF';
 
 function categorySet(s) {
   if (!Array.isArray(s.categories) || s.categories.length < 2 || s.categories.length > 5 ||
@@ -39,7 +39,7 @@ function waffle(s, m) {
         stroke: C.ink, 'stroke-opacity': .14, 'stroke-width': .6, 'data-unit': 1, 'data-category': row.label,
       });
     }
-    const ly = p.y + 24 + index * 26;
+    const ly = p.y + 44 + index * Math.min(76, (p.h - 44) / data.length);
     out += rect(p.x + p.w + 34, ly - 13, 14, 14, cat(index), { stroke: C.ink, 'stroke-width': .5 });
     out += label(p.x + p.w + 56, ly, `${row.label} ${row.value}%`, 155, { fill: C.ink }, 1);
   });
@@ -53,10 +53,10 @@ function stacked(s, m) {
   categories.forEach((name, index) => {
     const x = p.x + index * p.w / categories.length, y = p.y - 34;
     out += rect(x, y - 12, 13, 13, cat(index, categories), { stroke: C.ink, 'stroke-width': .5 });
-    out += label(x + 19, y, name, p.w / categories.length - 24, { fill: C.muted, 'font-size': 14 }, 1);
+    out += label(x + 19, y, name, p.w / categories.length - 24, { fill: C.muted, 'font-size': 16 }, 1);
   });
   data.forEach((row, r) => {
-    const total = sum(row.values), y = p.y + r * rowHeight + 7, height = rowHeight - 14;
+    const total = sum(row.values), height = Math.min(76, rowHeight - 18), y = p.y + r * rowHeight + (rowHeight - height) / 2;
     let x = p.x;
     out += label(p.x - 16, y + height / 2 + 5, row.label, p.x - 38, { 'text-anchor': 'end' });
     row.values.forEach((value, index) => {
@@ -64,17 +64,21 @@ function stacked(s, m) {
       out += rect(x, y, width, height, cat(index, categories), {
         stroke: '#FFFFFF', 'stroke-width': 1.5, 'data-value': String(value), 'data-share': String(pos(share)), 'data-category': categories[index],
       });
-      if (width >= 62) out += label(x + width / 2, y + height / 2 + 5, `${fmt(share)}%`, width - 8, {
-        'text-anchor': 'middle', fill: labelFill(index), 'font-size': 14,
-      }, 1);
-      else smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}（${fmt(share)}%）`);
+      const direct = `${categories[index]} ${fmt(share)}%`;
+      if (width >= Math.max(62, U.countWidth(direct) * 16 + 12) && height >= 52) {
+        out += text(x + width / 2, y + height / 2 - 4, direct, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 16 });
+        out += text(x + width / 2, y + height / 2 + 20, `${value} ${m.unit}`, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 16 });
+      } else {
+        if (width >= 62) out += text(x + width / 2, y + height / 2 + 5, `${fmt(share)}%`, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 16 });
+        smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}（${fmt(share)}%）`);
+      }
       x += width;
     });
   });
-  out += text(p.x, p.y + p.h + 28, '每列＝100%；比較組成，非總規模', { fill: C.muted, 'font-size': 14 });
+  out += text(p.x, p.y + p.h + 28, '每列＝100%；比較組成，非總規模', { fill: C.muted, 'font-size': 16 });
   if (smallNotes.length) {
     if (smallNotes.length > 4) fail('stacked has too many narrow segments for companion labels; split or use a table');
-    out += label(p.x, p.y + p.h + 57, `窄區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 14 }, 2);
+    out += label(p.x, p.y + p.h + 57, `窄區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 16 }, 2);
   }
   return out;
 }
@@ -94,22 +98,23 @@ function mekko(s, m) {
         stroke: '#FFFFFF', 'stroke-width': 1.5, 'data-value': String(value), 'data-share': String(pos(value / grand)), 'data-category': categories[index], 'data-row': row.label,
       });
       if (value === 0 || width < 92 || height < 35) smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}（${fmt(value / total * 100)}%）`);
-      else if (width >= 92 && height >= 35) out += label(x + width / 2, y + height / 2 + 5, `${fmt(value / total * 100)}%`, width - 8, {
-        'text-anchor': 'middle', fill: labelFill(index), 'font-size': 14,
+      else if (width >= 92 && height >= 35) out += label(x + width / 2, y + height / 2 + 5, `${categories[index]} ${fmt(value / total * 100)}%`, width - 8, {
+        'text-anchor': 'middle', fill: labelFill(index), 'font-size': 16,
       }, 1);
       y += height;
     });
-    out += label(x + width / 2, p.y + p.h + 27, `${row.label} ${fmt(total)}`, width - 5, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 14 }, 1);
+    out += label(x + width / 2, p.y + p.h + 27, `${row.label} ${fmt(total)} ${m.unit}`, width - 5, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 16 }, 1);
+    out += text(x + width / 2, p.y + p.h + 51, `市場占比 ${fmt(total / grand * 100)}%`, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 });
     x += width;
   });
   categories.forEach((name, index) => {
     const x0 = p.x + index * p.w / categories.length;
     out += rect(x0, p.y - 34, 13, 13, cat(index, categories), { stroke: C.ink, 'stroke-width': .5 });
-    out += label(x0 + 19, p.y - 22, name, p.w / categories.length - 24, { fill: C.muted, 'font-size': 14 }, 1);
+    out += label(x0 + 19, p.y - 22, name, p.w / categories.length - 24, { fill: C.muted, 'font-size': 16 }, 1);
   });
   if (smallNotes.length) {
     if (smallNotes.length > 4) fail('mekko has too many small cells for companion labels; split or use a table');
-    out += label(p.x, p.y + p.h + 62, `小區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 14 }, 2);
+    out += label(p.x, p.y + p.h + 79, `小區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 16 }, 2);
   }
   return out;
 }
@@ -125,29 +130,29 @@ function pareto(s, m) {
   let out = '', cumulative = 0, points = [];
   for (let i = 0; i <= 4; i += 1) {
     const count = max * i / 4, y = Y(count), pct = i * 25;
-    out += line(p.x, y, p.x + p.w, y) + text(p.x - 10, y + 5, tick(count), { 'text-anchor': 'end', fill: C.muted, 'font-size': 14 });
-    out += text(p.x + p.w + 12, y + 5, `${pct}%`, { fill: C.muted, 'font-size': 14 });
+    out += line(p.x, y, p.x + p.w, y) + text(p.x - 10, y + 5, tick(count), { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
+    out += text(p.x + p.w + 12, y + 5, `${pct}%`, { fill: C.muted, 'font-size': 16 });
   }
   data.forEach((row, index) => {
     const width = slot * .62, x = p.x + index * slot + (slot - width) / 2, y = Y(row.value), center = x + width / 2;
     cumulative += row.value;
     const pct = cumulative / total * 100, cy = p.y + p.h - pct / 100 * p.h;
     out += rect(x, y, width, p.y + p.h - y, C.gray, { 'data-count': String(row.value), 'data-label': row.label });
-    out += text(center, p.y + p.h - 8, String(row.value), { 'text-anchor': 'middle', fill: C.ink, 'font-size': 14 });
-    out += label(center, p.y + p.h + 24, row.label, slot - 5, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 14 }, 2);
+    out += text(center, p.y + p.h - 8, String(row.value), { 'text-anchor': 'middle', fill: C.ink, 'font-size': 16 });
+    out += label(center, p.y + p.h + 24, row.label, slot - 5, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 }, 2);
     points.push([center, cy, pct]);
   });
   const path = points.map(point => `${pos(point[0])},${pos(point[1])}`).join(' ');
   out += el('polyline', { points: path, fill: 'none', stroke: '#FFFFFF', 'stroke-width': 6 });
   out += el('polyline', { points: path, fill: 'none', stroke: C.blue, 'stroke-width': 3, 'data-cumulative-line': 'true' });
   points.forEach(([x, y, pct]) => {
-    const labelY = y < p.y + 24 ? y + 28 : y - 14, value = `${fmt(pct)}%`, width = U.countWidth(value) * 13 + 8;
+    const labelY = y < p.y + 24 ? y + 32 : y - 14, value = `${fmt(pct)}%`, width = U.countWidth(value) * 16 + 8;
     out += dot(x, y, C.blue, { stroke: '#FFFFFF', 'stroke-width': 1.5, 'data-cumulative': String(pos(pct)) });
-    out += rect(x - width / 2, labelY - 15, width, 20, '#FFFFFF');
-    out += text(x, labelY, value, { 'text-anchor': 'middle', fill: C.blue, 'font-size': 13 });
+    out += rect(x - width / 2, labelY - 18, width, 24, '#FFFFFF');
+    out += text(x, labelY, value, { 'text-anchor': 'middle', fill: C.blue, 'font-size': 16 });
   });
-  out += text(p.x, p.y - 14, m.unit || '件數', { fill: C.muted, 'font-size': 14 });
-  out += text(p.x + p.w + 12, p.y - 14, '累計占比', { fill: C.muted, 'font-size': 14 });
+  out += text(p.x, p.y - 14, m.unit || '件數', { fill: C.muted, 'font-size': 16 });
+  out += text(p.x + p.w + 12, p.y - 14, '累計占比', { fill: C.muted, 'font-size': 16 });
   return out;
 }
 
@@ -173,13 +178,13 @@ function indexed(s, m) {
     ticks.forEach(value => {
       const y = Y(value);
       out += line(left, y, right, y);
-      if (panel === 0) out += text(left - 8, y + 5, tick(value), { 'text-anchor': 'end', fill: C.muted, 'font-size': 13 });
+      if (panel === 0) out += text(left - 8, y + 5, tick(value), { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
     });
     out += line(left, Y(100), right, Y(100), { stroke: C.gray, 'stroke-width': 1.5, 'stroke-dasharray': '5 4', 'data-baseline': 100 });
-    out += label((left + right) / 2, p.y - 20, row.label, width, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 15 }, 1);
+    out += label((left + right) / 2, p.y - 20, row.label, width, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 16 }, 1);
     periods.forEach((period, index) => {
       const x = left + index * width / (n - 1);
-      out += label(x, p.y + p.h + 25, period, Math.min(width / (n - 1) - 5, 90), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 13 }, 1);
+      out += label(x, p.y + p.h + 25, period, Math.min(width / (n - 1) - 5, 90), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 }, 1);
     });
     let path = '', connected = false;
     row.values.forEach((value, index) => {
@@ -188,11 +193,11 @@ function indexed(s, m) {
       path += `${connected ? 'L' : 'M'}${pos(x)},${pos(y)} `;
       connected = true;
       out += dot(x, y, C.blue, { 'data-index': String(pos(value)), 'data-original': String(row.originals[index]), 'data-period': periods[index], 'data-series': row.label });
-      out += text(x, y - 10, fmt(value), { 'text-anchor': 'middle', fill: C.blue, 'font-size': 13 });
+      out += text(x, y - 10, fmt(value), { 'text-anchor': 'middle', fill: C.blue, 'font-size': 16 });
     });
     out += el('path', { d: path, fill: 'none', stroke: C.blue, 'stroke-width': 3, 'data-series': row.label, 'data-original-values': row.originals.map(value => value === null ? 'null' : value).join(',') });
   });
-  out += text(p.x, p.y + p.h + 60, `各面板共用非零指數尺度 ${fmt(lo)}–${fmt(hi)}；首期＝100${m.unit ? `；原始單位：${m.unit}` : ''}`, { fill: C.muted, 'font-size': 14 });
+  out += text(p.x, p.y + p.h + 60, `各面板共用非零指數尺度 ${fmt(lo)}–${fmt(hi)}；首期＝100${m.unit ? `；原始單位：${m.unit}` : ''}`, { fill: C.muted, 'font-size': 16 });
   return out;
 }
 

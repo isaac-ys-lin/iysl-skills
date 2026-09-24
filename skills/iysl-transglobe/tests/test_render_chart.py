@@ -13,12 +13,14 @@ def test_node_chart_suites():
         assert result.returncode == 0, result.stderr
 
 def test_cli_preserves_input_metadata_and_writes_xml_svg():
-    spec = {"chart":"waterfall","title":"期末變動","unit":"件","period":"2026 Q1","source":"合成資料","notes":["測試註記"],"start":10,"end":11,"data":[{"label":"新增","value":1}]}
+    examples = json.loads((ROOT / "assets" / "chart-examples.json").read_text(encoding="utf-8"))["charts"]
     with tempfile.TemporaryDirectory() as directory:
         input_path, output_path = Path(directory) / "input.json", Path(directory) / "output.svg"
-        input_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
-        result = subprocess.run(["node", str(ROOT / "scripts" / "render-chart.js"), str(input_path), str(output_path)], text=True, capture_output=True)
-        assert result.returncode == 0, result.stderr
-        root = ET.fromstring(output_path.read_text(encoding="utf-8"))
-        metadata = next(node for node in root if node.tag.endswith("metadata"))
-        assert json.loads(metadata.text) == spec
+        for spec in examples.values():
+            input_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+            result = subprocess.run(["node", str(ROOT / "scripts" / "render-chart.js"), str(input_path), str(output_path)], text=True, capture_output=True)
+            assert result.returncode == 0, result.stderr
+            root = ET.fromstring(output_path.read_text(encoding="utf-8"))
+            metadata = next(node for node in root if node.tag.endswith("metadata"))
+            assert json.loads(metadata.text) == spec
+            assert spec["subtitle"] in "".join(root.itertext())

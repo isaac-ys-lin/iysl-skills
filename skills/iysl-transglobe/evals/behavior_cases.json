@@ -296,6 +296,78 @@
           "present a box plot from means alone"
         ]
       }
+    },
+    {
+      "id": "same-data-document-pptx",
+      "kind": "complex",
+      "prompt": "將含原生圖表與內嵌工作簿的 PPTX 套用全球藍。簡報問題是比較不同規模通路的相對成長，原圖是絕對量長條。請用原數據思考新圖並放回簡報，保留附錄表格與備忘稿。",
+      "expected": {
+        "must_do": [
+          "extract original series and preserve baseline values; evaluate indexed comparison with common positive base period",
+          "deliver a modified document copy with the new chart embedded",
+          "retain original observations unit period source and surrounding editable content",
+          "provide data and reproducible generator alongside SVG",
+          "include supported conclusion reading explanation and directly readable values"
+        ],
+        "must_not_do": [
+          "stop after delivering standalone SVGs",
+          "use illustrative gallery data instead of source values",
+          "rename benchmark or units to fit a chart"
+        ],
+        "required_validation": [
+          "compare before and after data and surrounding content",
+          "read back document structure",
+          "inspect chart at actual document size or disclose visual verification limits"
+        ]
+      }
+    },
+    {
+      "id": "same-data-document-docx",
+      "kind": "complex",
+      "prompt": "將 Word 報告套用全球藍並重新選圖。原圖是實際值 PNG，下方表格提供三項實際值及目標。請保留正文、圖說、資料表與頁首，交付修改後文件。",
+      "expected": {
+        "must_do": [
+          "use source table for rebuilding the chart instead of estimating PNG values; compare actual and declared targets",
+          "deliver a modified document copy with the new chart embedded",
+          "retain original observations unit period source and surrounding editable content",
+          "provide data and reproducible generator alongside SVG",
+          "include supported conclusion reading explanation and directly readable values"
+        ],
+        "must_not_do": [
+          "stop after delivering standalone SVGs",
+          "use illustrative gallery data instead of source values",
+          "rename benchmark or units to fit a chart"
+        ],
+        "required_validation": [
+          "compare before and after data and surrounding content",
+          "read back document structure",
+          "inspect chart at actual document size or disclose visual verification limits"
+        ]
+      }
+    },
+    {
+      "id": "same-data-document-html",
+      "kind": "complex",
+      "prompt": "將既有 HTML 市場報告改用全球藍。報告要同時比較規模和組成；原圖只呈现總量，資料表有各通路互斥商品金額。保留導覽錨點與資料表。",
+      "expected": {
+        "must_do": [
+          "use original table values to select scale-and-composition encoding and insert it in the original chart container",
+          "deliver a modified document copy with the new chart embedded",
+          "retain original observations unit period source and surrounding editable content",
+          "provide data and reproducible generator alongside SVG",
+          "include supported conclusion reading explanation and directly readable values"
+        ],
+        "must_not_do": [
+          "stop after delivering standalone SVGs",
+          "use illustrative gallery data instead of source values",
+          "rename benchmark or units to fit a chart"
+        ],
+        "required_validation": [
+          "compare before and after data and surrounding content",
+          "read back document structure",
+          "inspect chart at actual document size or disclose visual verification limits"
+        ]
+      }
     }
   ]
 }

@@ -16,7 +16,7 @@ const el = (tag, attrs, body = '') => `<${tag}${Object.entries(attrs).map(([k, v
   if (typeof v === 'number' && !finite(v)) fail(`nonfinite SVG attribute ${k}`);
   return ` ${k}="${esc(typeof v === 'number' && !k.startsWith('data-') ? pos(v) : v)}"`;
 }).join('')}>${body}</${tag}>`;
-const text = (x, y, value, attrs = {}) => el('text', { x, y, fill: C.ink, 'font-size': 16, ...attrs }, esc(value));
+const text = (x, y, value, attrs = {}) => el('text', { x, y, fill: C.ink, 'font-size': 20, ...attrs }, esc(value));
 const line = (x1, y1, x2, y2, attrs = {}) => el('line', { x1, y1, x2, y2, stroke: C.grid, ...attrs });
 const rect = (x, y, width, height, fill, attrs = {}) => {
   if (width < 0 || height < 0) fail('negative rectangle dimensions; increase canvas or split the chart');
@@ -36,9 +36,9 @@ function wrap(value, width) {
 }
 
 function label(x, y, value, width, attrs = {}, maxLines = 2) {
-  const lines = wrap(value, width / 16);
+  const fontSize = attrs['font-size'] || 20, lines = wrap(value, width / fontSize);
   if (lines.length > maxLines) fail(`label "${value}" needs more room; enlarge or split the chart, or use a table`);
-  return lines.map((s, i) => text(x, y + i * 20, s, attrs)).join('');
+  return lines.map((s, i) => text(x, y + i * fontSize * 1.25, s, attrs)).join('');
 }
 
 function rows(s, min = 1, max = 12) {
@@ -93,11 +93,11 @@ function xAxis(p, lo, hi, unit) {
   let out = '';
   for (const v of ticks(lo, hi)) {
     const x = scale(v, lo, hi, p.x, p.x + p.w);
-    out += line(x, p.y, x, p.y + p.h) + text(x, p.y - 16, tick(v), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 14 });
+    out += line(x, p.y, x, p.y + p.h) + text(x, p.y - 16, tick(v), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 });
   }
   const zero = scale(0, lo, hi, p.x, p.x + p.w);
-  out += line(zero, p.y, zero, p.y + p.h, { stroke: C.gray, 'stroke-width': 1.5, 'data-baseline': 0 });
-  if (unit) out += text(p.x + p.w, p.y + p.h + 28, unit, { 'text-anchor': 'end', fill: C.muted, 'font-size': 14 });
+  if (lo <= 0 && hi >= 0) out += line(zero, p.y, zero, p.y + p.h, { stroke: C.gray, 'stroke-width': 1.5, 'data-baseline': 0 });
+  if (unit) out += text(p.x + p.w, p.y + p.h + 28, unit, { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
   return out;
 }
 
