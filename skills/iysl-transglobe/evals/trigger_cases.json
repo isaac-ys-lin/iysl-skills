@@ -1,0 +1,51 @@
+{
+  "recommended_threshold": 0.6,
+  "should_trigger": [
+    {
+      "text": "把這份 PowerPoint 改成全球藍設計，保留所有數據。",
+      "family": "pptx"
+    },
+    {
+      "text": "Use TransGlobe design for this Word report.",
+      "family": "docx"
+    },
+    {
+      "text": "請依全球藍規範修改 Excel 圖表，圖以 SVG 優先。",
+      "family": "xlsx"
+    },
+    {
+      "text": "套用全球藍到這份 HTML 簡報。",
+      "family": "html"
+    },
+    {
+      "text": "依全球藍設計整理這張 SVG，缺少原始資料的圖先保留。",
+      "family": "svg"
+    },
+    {
+      "text": "Use $iysl-transglobe to restyle the attached presentation.",
+      "family": "explicit"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "text": "把簡報背景換成淺藍色。",
+      "family": "generic"
+    },
+    {
+      "text": "更新全球藍設計系統的 tokens 並發布網站。",
+      "family": "maintenance"
+    },
+    {
+      "text": "查詢全球人壽的季度財報。",
+      "family": "research"
+    },
+    {
+      "text": "把這份逐字稿做成五頁大綱。",
+      "family": "outline"
+    },
+    {
+      "text": "修正文書錯字，不要改版面。",
+      "family": "copy"
+    }
+  ]
+}

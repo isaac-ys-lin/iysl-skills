@@ -1,0 +1,183 @@
+{
+  "cases": [
+    {
+      "id": "svg-first-ranking",
+      "kind": "simple",
+      "prompt": "把 HTML 圖表套用全球藍。2026 Q2，各通路金額百萬元：A=120、B=88、C=54、D=38；來源：示意資料。可重排與改標題。",
+      "expected": {
+        "max_questions": 0,
+        "max_subagents": 0,
+        "must_do": [
+          "use Focus for the single-period comparison",
+          "deliver SVG with matching data and reproducible generator",
+          "retain period unit source and all four values"
+        ],
+        "must_not_do": [
+          "claim a trend from one period",
+          "flatten surrounding text into an image"
+        ],
+        "required_validation": [
+          "compare output values and labels with source",
+          "inspect rendered chart"
+        ]
+      }
+    },
+    {
+      "id": "raster-missing-data",
+      "kind": "failure",
+      "prompt": "這份 Word 只有圖表 PNG、沒有原始資料，幫我套全球藍。",
+      "expected": {
+        "must_do": [
+          "preserve the original raster chart",
+          "style editable surrounding document content",
+          "identify missing chart source data"
+        ],
+        "must_not_do": [
+          "estimate values from pixels",
+          "claim raster-wrapped SVG is a vector reconstruction",
+          "stop all independent formatting work"
+        ]
+      }
+    },
+    {
+      "id": "native-excel-override",
+      "kind": "compatibility",
+      "prompt": "Excel 圖表套用全球藍，但修改儲存格後必須自動更新。",
+      "expected": {
+        "must_do": [
+          "preserve native data and formulas",
+          "use a supported native chart for automatic updates",
+          "explain any styling limitations"
+        ],
+        "must_not_do": [
+          "promise an embedded SVG will update with edited cells"
+        ]
+      }
+    },
+    {
+      "id": "document-image-replacement",
+      "kind": "failure",
+      "prompt": "重排 Word 報告並把兩張圖換成全球藍 SVG。原生段落與表格都需要保留。",
+      "expected": {
+        "must_do": [
+          "scope image replacement to the intended nodes",
+          "preserve paragraph and table content",
+          "check actual table header contrast"
+        ],
+        "required_validation": [
+          "compare source and output content inventories",
+          "inspect pagination and image aspect ratios"
+        ]
+      }
+    },
+    {
+      "id": "office-rendering-unavailable",
+      "kind": "compatibility",
+      "prompt": "已套用全球藍的 PPTX 可以解析 ZIP，但這裡沒有 PowerPoint。請交付。",
+      "expected": {
+        "must_do": [
+          "report structural checks separately from rendering",
+          "identify unverified target application rendering"
+        ],
+        "must_not_do": [
+          "claim PowerPoint visual acceptance",
+          "claim Windows or Office Web compatibility"
+        ]
+      }
+    },
+    {
+      "id": "categorical-capacity",
+      "kind": "complex",
+      "prompt": "這張全球藍月度堆疊圖有六個固定通路，全部保留；不要自行歸成其他。",
+      "expected": {
+        "must_do": [
+          "retain all six categories and values",
+          "choose small multiples tables or split charts with direct labels"
+        ],
+        "must_not_do": [
+          "collapse categories into Other without authorization",
+          "use action orange as a sixth series"
+        ]
+      }
+    },
+    {
+      "id": "ordered-gaps",
+      "kind": "quality",
+      "prompt": "把四個既有風險等級的矩陣改為全球藍，其中一格是0，另一格缺值。",
+      "expected": {
+        "must_do": [
+          "preserve the original four ordered levels",
+          "use an ordered blue ramp",
+          "distinguish zero from missing data"
+        ],
+        "must_not_do": [
+          "invent a fifth data level to fill the palette",
+          "turn missing data into zero"
+        ]
+      }
+    },
+    {
+      "id": "container-scaling",
+      "kind": "quality",
+      "prompt": "把 960×420 純圖與 16:9 PPTX 同時改全球藍。",
+      "expected": {
+        "must_do": [
+          "preserve the standalone chart aspect ratio",
+          "convert design pixels to actual slide dimensions",
+          "keep sources and data labels readable"
+        ],
+        "must_not_do": [
+          "stretch the chart to fill the slide",
+          "apply slide font floors mechanically to the standalone chart"
+        ]
+      }
+    },
+    {
+      "id": "source-version-conflict",
+      "kind": "compatibility",
+      "prompt": "用全球藍規範套 PPTX，舊 potx 用 Noto 字型，舊圖表文件写 #27327B。",
+      "expected": {
+        "must_do": [
+          "use the verified role colors and typography from the bundled design snapshot",
+          "treat the old Office container as non-authoritative for font roles"
+        ],
+        "must_not_do": [
+          "claim local v2.5.0 tokens equal the complete live v2.5.1 system"
+        ]
+      }
+    },
+    {
+      "id": "maintenance-boundary",
+      "kind": "negative",
+      "prompt": "只修改全球藍網站的設計 tokens，沒有文件要改。",
+      "expected": {
+        "must_do": [
+          "route design-system maintenance outside this adaptation skill"
+        ],
+        "must_not_do": [
+          "apply document restyling workflow",
+          "claim the application proposal is approved CIS"
+        ]
+      }
+    },
+    {
+      "id": "signed-values-and-detached-chart",
+      "kind": "failure",
+      "prompt": "把區域營業利益 HTML 報告套用全球藍，另附可單独使用的 SVG。2026 Q2，百萬元：北區75、中區0、南區-12、海外未提供。註：海外尚未回報，不含稅項調整。來源：內部示意資料。",
+      "expected": {
+        "must_do": [
+          "retain zero negative and missing values distinctly",
+          "include period unit source and interpretive notes in the standalone SVG",
+          "use Focus blue and gray for ordinary comparison"
+        ],
+        "must_not_do": [
+          "infer risk status from a negative sign alone",
+          "rely only on the containing HTML for source context"
+        ],
+        "required_validation": [
+          "inspect standalone SVG separately from the report"
+        ]
+      }
+    }
+  ]
+}

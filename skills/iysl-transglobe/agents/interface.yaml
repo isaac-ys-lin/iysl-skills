@@ -1,0 +1,22 @@
+interface:
+  display_name: "全球藍設計套用"
+  short_description: "Apply TransGlobe design to Office, HTML, and SVG."
+  default_prompt: "Use $iysl-transglobe 將這份簡報、文件或圖表套用全球藍規範，保留數據與原意，圖表以 SVG 優先。"
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "generic"
+  activation:
+    mode: "implicit"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "native-implicit-skill"
+    generic: "description-routed"

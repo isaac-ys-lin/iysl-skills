@@ -126,6 +126,16 @@
         "copyright": "Matt Pocock"
       },
       "required_gates": []
+    },
+    "iysl-transglobe": {
+      "maintainer": "iysl",
+      "origin": "original",
+      "visibility": "implicit",
+      "license": "repository",
+      "required_gates": [
+        "trigger",
+        "behavior"
+      ]
     }
   }
 }
