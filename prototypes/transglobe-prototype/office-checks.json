@@ -1,0 +1,87 @@
+{
+  "purpose": "Package check only. It does not prove rendering in Office applications.",
+  "svg_priority": {
+    "pptx": {
+      "path": "/Users/isaacyslin/.codex/worktrees/transglobe-prototype/iysl-skills/prototypes/transglobe-prototype/output/transglobe-prototype.pptx",
+      "svg_parts": [
+        "ppt/media/image.svg",
+        "ppt/media/image2.svg"
+      ],
+      "png_fallback_parts": [
+        "ppt/media/image.png",
+        "ppt/media/image2.png"
+      ],
+      "svg_relationship_parts": [
+        "ppt/slides/_rels/slide1.xml.rels",
+        "ppt/slides/_rels/slide2.xml.rels",
+        "[Content_Types].xml"
+      ],
+      "contains_all_data_labels": true
+    },
+    "docx": {
+      "path": "/Users/isaacyslin/.codex/worktrees/transglobe-prototype/iysl-skills/prototypes/transglobe-prototype/output/transglobe-prototype.docx",
+      "svg_parts": [
+        "word/media/chart-before.svg",
+        "word/media/chart-after.svg"
+      ],
+      "png_fallback_parts": [],
+      "svg_relationship_parts": [
+        "[Content_Types].xml",
+        "word/document.xml",
+        "word/_rels/document.xml.rels"
+      ],
+      "contains_all_data_labels": true
+    },
+    "xlsx": {
+      "path": "/Users/isaacyslin/.codex/worktrees/transglobe-prototype/iysl-skills/prototypes/transglobe-prototype/output/transglobe-prototype.xlsx",
+      "svg_parts": [
+        "xl/media/image.svg",
+        "xl/media/image2.svg"
+      ],
+      "png_fallback_parts": [
+        "xl/media/image.png",
+        "xl/media/image2.png"
+      ],
+      "svg_relationship_parts": [
+        "xl/drawings/_rels/drawing1.xml.rels",
+        "[Content_Types].xml"
+      ],
+      "contains_all_data_labels": true,
+      "sum_formula_preserved": true
+    }
+  },
+  "png_fallback_used": true,
+  "svg_image_aspect_ratio": {
+    "source_svg": 2.285714,
+    "pptx": [
+      2.285714,
+      2.285714
+    ],
+    "docx": [
+      2.285714,
+      2.285714
+    ],
+    "xlsx": [
+      2.285714,
+      2.285714
+    ]
+  },
+  "reader_copy_has_no_authoring_notes": true,
+  "docx_retains_titles_period_and_body": true,
+  "font_contracts": {
+    "docx_title": true,
+    "xlsx_cells": true
+  },
+  "data": {
+    "unit": "百萬元",
+    "illustrative": true,
+    "channels": {
+      "業務員": 120,
+      "銀保": 88,
+      "經代": 54,
+      "直效": 38
+    },
+    "total": 300
+  },
+  "result": "pass"
+}
