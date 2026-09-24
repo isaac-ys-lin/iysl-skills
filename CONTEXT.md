@@ -71,3 +71,7 @@ _Avoid_: renderer, presentation backend, layout engine
 **Exploration view**:
 僅在使用者明確要求時，從已驗證且適合讀者閱讀的報告內容建立的對話內視覺化。它不屬於標準產物、不取代正式報告，也不回寫 spec。
 _Avoid_: presentation backend, 第二份最終 HTML, report artifact
+
+**Design adaptation（設計套用）**:
+將既有簡報、文件或圖表的呈現方式調整為指定設計規範；可重排版面、替換圖型與改寫標題，但保留原始數據與原意。它不包含維護或發布設計系統本身。
+_Avoid_: 設計系統維護, 單純換色, 內容重寫

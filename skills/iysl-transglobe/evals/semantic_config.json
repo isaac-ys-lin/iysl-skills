@@ -1,0 +1,45 @@
+{
+  "purpose": "test-heuristic-only",
+  "runtime_authoritative": false,
+  "recommended_threshold": 0.6,
+  "fallback_positive_concepts": [
+    "transglobe",
+    "adaptation"
+  ],
+  "positive_concepts": {
+    "transglobe": {
+      "weight": 0.8,
+      "phrases": [
+        "全球藍",
+        "TransGlobe",
+        "iysl-transglobe"
+      ]
+    },
+    "adaptation": {
+      "weight": 0.2,
+      "phrases": [
+        "套用",
+        "修改",
+        "改成",
+        "restyle",
+        "design",
+        "整理"
+      ]
+    }
+  },
+  "negative_concepts": {
+    "maintenance": {
+      "weight": 0.9,
+      "exclusive": true,
+      "phrases": [
+        "更新全球藍設計系統",
+        "發布網站",
+        "維護設計系統",
+        "update the design system"
+      ]
+    }
+  },
+  "exclusive_negative_concepts": [
+    "maintenance"
+  ]
+}
