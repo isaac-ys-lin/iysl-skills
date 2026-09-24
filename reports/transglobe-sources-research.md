@@ -10,15 +10,15 @@
 ## 最小來源優先序
 
 1. 公開網站 [全球藍設計系統 v2.5.1](https://transglobe-blue.isaacyslin.chatgpt.site/)：本次指定的優先版本。網站可見 54 個範例，涵蓋圖表、簡報與品牌規則，並提供三個 Logo 與 Office 容器下載。
-2. 本機 [`design-tokens.json`](../../../../visuals/designs/transglobe-blue-token-system/design-tokens.json)：v2.5.0；可機讀的顏色、字體角色、字級、間距、版面與圖表規則來源。不得自行視為與 v2.5.1 相同。
-3. 本機 [`COLOR-REFERENCE.md`](../../../../visuals/designs/transglobe-blue-token-system/COLOR-REFERENCE.md) 與 [`CHART-READABILITY.md`](../../../../visuals/designs/transglobe-blue-token-system/CHART-READABILITY.md)：前者定義色彩來源與官方性邊界，後者將圖表規則限制在閱讀任務和容器脈絡。
+2. 本機 visuals repo：`designs/transglobe-blue-token-system/design-tokens.json`（v2.5.0）；可機讀的顏色、字體角色、字級、間距、版面與圖表規則來源。不得自行視為與 v2.5.1 相同。
+3. 同一 repo 的 `designs/transglobe-blue-token-system/COLOR-REFERENCE.md` 與 `CHART-READABILITY.md`：前者定義色彩來源與官方性邊界，後者將圖表規則限制在閱讀任務和容器脈絡。
 
 ## 可直接沿用
 
-- 色彩角色與藍階、灰階、Focus／Ordered／Categorical 圖表選色，以及狀態色必須同時搭配文字或符號。
+- 色彩角色與藍階、灰階、Focus／Ordered／Categorical 圖表選色，以及狀態色必須同時呈現符號與文字。
 - 角色排印：封面／章節用 Cambria + PMingLiU；內文、圖表與數字用 Arial + Microsoft JhengHei；Mac 後備為 Songti TC／PingFang TC。這是 HTML 規則。
 - 三個確認官方的 SVG：`TGL Logo_blue.svg`、`TGL Logo_white.svg`、`TGL Logo_English.svg`。
-- `dist/TGL.thmx`、`dist/TGL.potx` 可作可選 Office 起點；本機 `check-share.js` 也確認分享版下載的五項資產與來源位元組相同。
+- `dist/TGL.thmx`、`dist/TGL.potx` 可作可選 Office 起點；`check-share.js` 包含本機分享包的五項下載資產位元組一致性檢查。本次未重跑，不能據此證明線上 v2.5.1 與本機等同。
 
 ## 必須保留的界線
 
