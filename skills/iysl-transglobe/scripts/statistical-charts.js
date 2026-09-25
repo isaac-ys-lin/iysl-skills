@@ -2,7 +2,7 @@
 
 const { C, finite, fail, text, line, rect, dot, countWidth, rows, namedFocus, extent, scale, tick, plot, label } = require('./chart-utils');
 
-const caption = { fill: C.muted, 'font-size': 16 };
+const caption = { fill: C.muted, 'font-size': 18 };
 const unitLabel = (value, name) => {
   if (typeof value !== 'string' || !value.trim() || !/[（(].+[）)]/.test(value)) fail(`${name} must state its unit, for example "處理時間（天）"`);
   return value;
@@ -73,8 +73,8 @@ function scatter(s, m) {
     } else out += text(r.cx + 10, r.cy - 8, String(i + 1), { fill: C.ink, 'font-size': 20, 'font-weight': 700 });
   });
   const legendRows = direct ? 0 : Math.ceil(marks.length / 2);
-  if (!direct) marks.forEach((r, i) => { out += label(p.x + (i % 2) * p.w / 2, p.y + p.h + 48 + Math.floor(i / 2) * 20, `${i + 1}. ${r.label}（${String(r.x)}，${String(r.y)}）`, p.w / 2 - 12, { ...caption, fill: r.label === focus ? C.blue : C.muted }, 1); });
-  if (explicitX || explicitY) out += text(p.x, p.y + p.h + 50 + legendRows * 20, `顯示範圍：${xLabel} ${tick(xDomain[0])}–${tick(xDomain[1])}；${yLabel} ${tick(yDomain[0])}–${tick(yDomain[1])}`, caption);
+  if (!direct) marks.forEach((r, i) => { out += label(p.x + (i % 2) * p.w / 2, p.y + p.h + 48 + Math.floor(i / 2) * 24, `${i + 1}. ${r.label}（${String(r.x)}，${String(r.y)}）`, p.w / 2 - 12, { ...caption, fill: r.label === focus ? C.blue : C.muted }, 1); });
+  if (explicitX || explicitY) out += text(p.x, p.y + p.h + 50 + legendRows * 24, `顯示範圍：${xLabel} ${tick(xDomain[0])}–${tick(xDomain[1])}；${yLabel} ${tick(yDomain[0])}–${tick(yDomain[1])}`, caption);
   return out;
 }
 
@@ -99,7 +99,7 @@ function box(s, m) {
     out += line(x - 13, y(r.low), x + 13, y(r.low), { stroke: color, 'stroke-width': 2 }) + line(x - 13, y(r.high), x + 13, y(r.high), { stroke: color, 'stroke-width': 2 });
     out += rect(x - half, y(r.q3), half * 2, y(r.q1) - y(r.q3), 'white', { stroke: color, 'stroke-width': 2, 'data-q1': r.q1, 'data-q3': r.q3 }) + line(x - half, y(r.median), x + half, y(r.median), { stroke: color, 'stroke-width': 3, 'data-median': r.median });
     r.outliers.forEach(v => {
-      const cy = y(v), value = String(v), note = `離群 ${value}`, item = { left: x + 9, right: x + 9 + countWidth(note) * 16, top: cy < p.y + 22 ? cy + 3 : cy - 22, bottom: cy < p.y + 22 ? cy + 22 : cy - 3 };
+      const cy = y(v), value = String(v), note = `離群 ${value}`, item = { left: x + 9, right: x + 9 + countWidth(note) * 18, top: cy < p.y + 22 ? cy + 3 : cy - 22, bottom: cy < p.y + 22 ? cy + 22 : cy - 3 };
       if (item.right > p.x + p.w || outlierLabels.some(other => item.left < other.right + 6 && item.right + 6 > other.left && item.top < other.bottom + 6 && item.bottom + 6 > other.top)) fail('box outlier labels overlap; enlarge, split, or use a table');
       outlierLabels.push(item);
       out += dot(x, cy, 'white', { r: 4, stroke: color, 'stroke-width': 2, 'data-outlier': v }) + text(item.left, item.bottom - 3, note, { ...caption, fill: labelColor });

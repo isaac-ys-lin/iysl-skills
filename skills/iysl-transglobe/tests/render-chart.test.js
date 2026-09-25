@@ -10,5 +10,17 @@ assert.throws(()=>render({...common,chart:'waterfall',start:1,end:9,data:[{label
 assert.throws(()=>render({...common,chart:'funnel',sameCohort:true,data:[{label:'x',value:1.5},{label:'y',value:1}]}),/nonnegative integers/);
 assert.throws(()=>render({...common,chart:'tornado',baseline:1,data:[{label:'x',low:0,high:2},{label:'y',low:0,high:2}]}),/model and assumptions/);
 const tornadoInput={...common,chart:'tornado',baseline:1,model:'model',assumptions:['fixed'],data:[{label:'wide',low:0,high:3},{label:'narrow',low:0,high:2}]}; const before=JSON.stringify(tornadoInput.data);assert(render(tornadoInput).includes('data-baseline="1"'));assert.strictEqual(JSON.stringify(tornadoInput.data),before);
+const placementInput = valid('ranking', specs.ranking);
+for (const [layout, widthInches, minBody, minFooter] of [['document', 6.1, 9, 8], ['slide', 12, 16, 12]]) {
+  const svg = render({ ...placementInput, layout, placementWidthInches: widthInches });
+  assert(Number(svg.match(/data-body-size-pt="([\d.]+)"/)[1]) >= minBody);
+  assert(Number(svg.match(/data-footer-size-pt="([\d.]+)"/)[1]) >= minFooter);
+  assert(svg.includes('data-value="-2"'));
+}
+assert.throws(() => render({ ...placementInput, layout:'document' }), /actual placementWidthInches/);
+assert.throws(() => render({ ...placementInput, layout:'document', placementWidthInches:6.1, width:1200 }), /too small/);
+assert.throws(() => render({ ...placementInput, layout:'slide', placementWidthInches:6 }), /too small/);
+assert.throws(() => render({ ...placementInput, layout:'unknown' }), /layout must/);
+assert.throws(() => render({ ...placementInput, layout:'document', placementWidthInches:Infinity }), /actual placementWidthInches/);
 console.log(`rendered ${chartTypes.length} chart types`);
 module.exports={specs,common,valid};

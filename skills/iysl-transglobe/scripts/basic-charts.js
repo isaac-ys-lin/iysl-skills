@@ -33,16 +33,16 @@ function bullet(s, m) {
   if (slot < 46) fail('bullet rows too dense; enlarge or split');
   const X = v => scale(v, lo, hi, p.x, p.x + p.w), zero = X(0);
   let out = xAxis(p, lo, hi, m.unit);
-  out += text(p.x + p.w + 16, p.y - 16, '實際 / 目標', { fill: C.muted, 'font-size': 16 });
+  out += text(p.x + p.w + 32, p.y - 16, '實際 / 目標', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const y = p.y + (i + .5) * slot, x = X(r.actual);
     out += label(p.x - 16, y - 4, r.label, p.x - 40, { 'text-anchor': 'end' });
     out += rect(p.x, y - 10, p.w, 20, '#F6F6F6');
     out += rect(Math.min(zero, x), y - 10, Math.abs(x - zero), 20, C.blue, { 'data-actual': String(r.actual) });
     out += line(X(r.target), y - 18, X(r.target), y + 18, { stroke: C.ink, 'stroke-width': 3, 'data-target': String(r.target) });
-    out += label(p.x + p.w + 16, y + 5, `${r.actual} / ${r.target}`, 190);
+    out += label(p.x + p.w + 32, y + 5, `${r.actual} / ${r.target}`, 190);
   });
-  out += text(p.x, p.y + p.h + 28, '藍條＝實際；黑線＝目標', { fill: C.muted, 'font-size': 16 });
+  out += text(p.x, p.y + p.h + 28, '藍條＝實際；黑線＝目標', { fill: C.muted, 'font-size': 18 });
   return out;
 }
 
@@ -66,7 +66,7 @@ function heatmap(s, m) {
     });
   });
   C.seq.forEach((color, i) => { out += rect(p.x + i * 28, p.y + p.h + 17, 28, 18, color, { stroke: C.gray, 'stroke-width': .5 }); });
-  out += label(p.x + 158, p.y + p.h + 32, `淺 → 深：${min} → ${max} ${m.unit || ''}；空白格標示缺值`, p.w - 158, { fill: C.muted, 'font-size': 16 });
+  out += label(p.x + 158, p.y + p.h + 32, `淺 → 深：${min} → ${max} ${m.unit || ''}；空白格標示缺值`, p.w - 158, { fill: C.muted, 'font-size': 18 });
   return out;
 }
 
@@ -89,10 +89,10 @@ function trend(s, m, tracking = false) {
   let out = '';
   for (const v of ticks(lo, hi)) {
     const y = Y(v);
-    out += line(p.x, y, p.x + p.w, y) + text(p.x - 12, y + 5, tick(v), { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
+    out += line(p.x, y, p.x + p.w, y) + text(p.x - 12, y + 5, tick(v), { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   }
   labels.forEach((v, i) => { out += label(X(i), p.y + p.h + 34, v, Math.min(step - 6, 90), { 'text-anchor': 'middle', fill: C.muted }); });
-  if (m.unit) out += text(p.x, p.y - 14, m.unit, { fill: C.muted, 'font-size': 16 });
+  if (m.unit) out += text(p.x, p.y - 14, m.unit, { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const color = tracking ? C.cat[i] : r.label === s.focus ? C.blue : C.gray;
     const dash = ['', '10 5', '3 5', '12 4 3 4', '2 4', '10 4 2 4'][i];
@@ -114,7 +114,7 @@ function trend(s, m, tracking = false) {
     const end = endpoints.find(end => end.i === i), x = p.x + p.w + 24;
     if (end.j >= 0) out += line(X(end.j) + 7, end.y, x - 8, end.labelY - 5, { stroke: color, 'stroke-width': 1 });
     out += label(x, end.labelY, r.label, 225, { 'font-weight': r.label === s.focus ? 700 : 400 }, 1);
-    out += label(x, end.labelY + 24, end.j < 0 ? '未提供' : `${r.values[end.j]}（${labels[end.j]}${end.j < n - 1 ? '，最後已知' : ''}）`, 225, { fill: C.muted, 'font-size': 16 }, 1);
+    out += label(x, end.labelY + 24, end.j < 0 ? '未提供' : `${r.values[end.j]}（${labels[end.j]}${end.j < n - 1 ? '，最後已知' : ''}）`, 225, { fill: C.muted, 'font-size': 18 }, 1);
   });
   return out;
 }

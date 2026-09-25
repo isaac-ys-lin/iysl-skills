@@ -93,11 +93,11 @@ function xAxis(p, lo, hi, unit) {
   let out = '';
   for (const v of ticks(lo, hi)) {
     const x = scale(v, lo, hi, p.x, p.x + p.w);
-    out += line(x, p.y, x, p.y + p.h) + text(x, p.y - 16, tick(v), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 });
+    out += line(x, p.y, x, p.y + p.h) + text(x, p.y - 16, tick(v), { 'text-anchor': 'middle', fill: C.muted, 'font-size': 18 });
   }
   const zero = scale(0, lo, hi, p.x, p.x + p.w);
   if (lo <= 0 && hi >= 0) out += line(zero, p.y, zero, p.y + p.h, { stroke: C.gray, 'stroke-width': 1.5, 'data-baseline': 0 });
-  if (unit) out += text(p.x + p.w, p.y + p.h + 28, unit, { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
+  if (unit) out += text(p.x + p.w, p.y + p.h + 28, unit, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   return out;
 }
 
@@ -106,4 +106,4 @@ function columns(s, n) {
   return s.labels;
 }
 
-module.exports = { C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, scale, tick, ticks, plot, xAxis, columns };
+module.exports = { C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, niceStep, scale, tick, ticks, plot, xAxis, columns };

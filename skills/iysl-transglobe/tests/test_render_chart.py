@@ -24,3 +24,17 @@ def test_cli_preserves_input_metadata_and_writes_xml_svg():
             metadata = next(node for node in root if node.tag.endswith("metadata"))
             assert json.loads(metadata.text) == spec
             assert spec["subtitle"] in "".join(root.itertext())
+
+def test_gallery_uses_the_same_composition_data_for_three_questions():
+    source = json.loads((ROOT / "assets" / "chart-examples.json").read_text(encoding="utf-8"))["charts"]["stacked"]
+    with tempfile.TemporaryDirectory() as directory:
+        subprocess.run(["node", str(ROOT / "tests" / "make-gallery.js"), directory], check=True, capture_output=True)
+        specs = {name: json.loads((Path(directory) / f"same-data-{name}.json").read_text(encoding="utf-8"))
+                 for name in ["total-size", "within-channel", "size-and-composition"]}
+        assert specs["total-size"]["data"] == [{"label": row["label"], "value": sum(row["values"])} for row in source["data"]]
+        for name in ["within-channel", "size-and-composition"]:
+            assert specs[name]["data"] == source["data"]
+            assert specs[name]["categories"] == source["categories"]
+        for spec in specs.values():
+            assert spec["unit"] == source["unit"] and spec["period"] == source["period"]
+            assert spec["sourceReference"]

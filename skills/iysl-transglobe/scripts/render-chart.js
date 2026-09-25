@@ -28,7 +28,7 @@ function waterfall(s, m) {
   const p = plot(m, 125, 45), Y = v => scale(v, lo, hi, p.y + p.h, p.y), step = p.w / parts.length;
   if (step < 75) fail('waterfall labels too dense; widen canvas or use a table');
   let out = '';
-  for (const v of ticks(lo, hi)) out += line(p.x, Y(v), p.x + p.w, Y(v)) + text(p.x - 12, Y(v) + 5, tick(v), { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 });
+  for (const v of ticks(lo, hi)) out += line(p.x, Y(v), p.x + p.w, Y(v)) + text(p.x - 12, Y(v) + 5, tick(v), { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   out += line(p.x, Y(0), p.x + p.w, Y(0), { stroke: C.gray, 'data-baseline': 0 });
   parts.forEach((r, i) => {
     const x = p.x + (i + .18) * step, width = step * .64, y = Math.min(Y(r.from), Y(r.to)), height = Math.abs(Y(r.from) - Y(r.to));
@@ -58,8 +58,8 @@ function dumbbell(s, m) {
     out += dot(X(r.before), y, 'white', { stroke: C.gray, 'stroke-width': 3, 'data-before': r.before });
     out += dot(X(r.after), y, color, { stroke: color, 'data-after': r.after });
     if (slot >= 70) {
-      out += text(X(r.before), y - 18, r.before, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 16 });
-      out += text(X(r.after), y + 27, r.after, { 'text-anchor': 'middle', fill: color, 'font-size': 16 });
+      out += text(X(r.before), y - 18, r.before, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 18 });
+      out += text(X(r.after), y + 27, r.after, { 'text-anchor': 'middle', fill: color, 'font-size': 18 });
     }
     out += label(p.x + p.w + 12, y + 5, `${r.before} → ${r.after} (${delta >= 0 ? '+' : ''}${delta})`, 240);
   });
@@ -76,7 +76,7 @@ function funnel(s, m) {
   if (s.sameCohort !== true) fail('funnel requires confirmed sameCohort: true from source data');
   const p = plot(m, 220, 210), slot = p.h / data.length, base = data[0].value;
   if (slot < 45) fail('funnel too dense; increase height or use a stage table');
-  let out = text(p.x + p.w + 12, p.y - 18, '件數 / 階段完成率', { fill: C.muted, 'font-size': 16 });
+  let out = text(p.x + p.w + 12, p.y - 18, '件數 / 階段完成率', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const height = Math.min(48, slot - 16), y = p.y + i * slot + (slot - height) / 2, width = p.w * r.value / base;
     const rate = !i ? '起始母體' : !data[i - 1].value ? '不適用' : `${Number((r.value / data[i - 1].value * 100).toFixed(2))}%`;
@@ -98,16 +98,16 @@ function tornado(s, m) {
   const lo = s.baseline - span, hi = s.baseline + span, p = plot(m, 300, 220), X = v => scale(v, lo, hi, p.x, p.x + p.w), slot = p.h / data.length;
   if (slot < 60) fail('tornado rows too dense; increase height or split');
   let out = xAxis(p, lo, hi, m.unit) + line(X(s.baseline), p.y, X(s.baseline), p.y + p.h, { stroke: C.ink, 'stroke-width': 2, 'data-baseline': s.baseline });
-  out += text(p.x + p.w + 16, p.y - 18, '下界 / 上界結果', { fill: C.muted, 'font-size': 16 });
+  out += text(p.x + p.w + 32, p.y - 18, '下界 / 上界結果', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const y = p.y + (i + .5) * slot;
     out += label(p.x - 16, y - (r.lowLabel ? 8 : 4), r.label, p.x - 40, { 'text-anchor': 'end' }, 1);
-    if (r.lowLabel) out += label(p.x - 16, y + 18, `${r.lowLabel} ／ ${r.highLabel}`, p.x - 40, { 'text-anchor': 'end', fill: C.muted, 'font-size': 16 }, 1);
+    if (r.lowLabel) out += label(p.x - 16, y + 18, `${r.lowLabel} ／ ${r.highLabel}`, p.x - 40, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 }, 1);
     out += rect(X(r.low), y - 12, X(s.baseline) - X(r.low), 24, C.gray, { 'data-low': r.low });
     out += rect(X(s.baseline), y - 12, X(r.high) - X(s.baseline), 24, C.blue, { 'data-high': r.high });
-    out += label(p.x + p.w + 16, y + 5, `${r.low} / ${r.high}`, 185);
+    out += label(p.x + p.w + 32, y + 5, `${r.low} / ${r.high}`, 185);
   });
-  return out + text(p.x, p.y + p.h + 55, `基準：${s.baseline}；橫軸以基準為中心；灰＝下界結果，藍＝上界結果`, { fill: C.muted, 'font-size': 16 });
+  return out + text(p.x, p.y + p.h + 55, `基準：${s.baseline}；橫軸以基準為中心；灰＝下界結果，藍＝上界結果`, { fill: C.muted, 'font-size': 18 });
 }
 
 function table(s, m) {
@@ -136,8 +136,13 @@ function render(spec) {
   const fn = renderers[spec.chart];
   if (typeof fn !== 'function' || !Object.hasOwn(renderers, spec.chart)) fail(`unknown chart; use ${Object.keys(renderers).join(', ')}`);
   if (spec.subtitle !== undefined && (typeof spec.subtitle !== 'string' || !spec.subtitle.trim())) fail('subtitle must be a nonempty reading explanation');
-  const w = spec.width ?? 1200, h = spec.height ?? 800;
+  const layout = spec.layout ?? 'web';
+  const size = { web: [1200, 800], document: [840, 720], slide: [960, 540] };
+  if (typeof layout !== 'string' || !Object.hasOwn(size, layout)) fail('layout must be web, document, or slide');
+  const w = spec.width ?? size[layout][0], h = spec.height ?? size[layout][1];
   if (!Number.isInteger(w) || !Number.isInteger(h) || w < 500 || h < 350 || w > 10000 || h > 20000) fail('canvas must be 500–10000 wide and 350–20000 high');
+  if (layout !== 'web' && (!finite(spec.placementWidthInches) || spec.placementWidthInches <= 0)) fail('Office layout requires the actual placementWidthInches');
+  if (layout === 'web' && spec.placementWidthInches !== undefined) fail('placementWidthInches requires document or slide layout');
   const titleLines = wrap(spec.title, (w - 88) / 34);
   if (titleLines.length > 2) fail('title needs more than two lines; increase width or revise title without changing meaning');
   const subtitleLines = spec.subtitle ? wrap(spec.subtitle, (w - 88) / 18) : [];
@@ -146,11 +151,21 @@ function render(spec) {
   const extra = spec.chart === 'tornado' ? [`模型：${spec.model}`, ...(spec.assumptions || [])] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : [];
   const footer = [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...spec.notes, ...extra].flatMap(v => wrap(v, (w - 88) / 16));
   const footerTop = h - 32 - (footer.length - 1) * 22;
-  const m = { w, h, unit: spec.unit, plotTop: subtitleTop + subtitleLines.length * 24 + 40, plotBottom: footerTop - 148 };
+  const bottomGap = { ranking: 70, ordered: 70, bullet: 90, heatmap: 100, trend: 75, tracking: 75, waterfall: 85, dumbbell: 120, funnel: 115, tornado: 100, table: 40, waffle: 40, stacked: 120, mekko: 145, pareto: 90, indexed: 110, scatter: 160, box: 110, matrix: 95 }[spec.chart];
+  const m = { w, h, unit: spec.unit, plotTop: subtitleTop + subtitleLines.length * 24 + 40, plotBottom: footerTop - bottomGap };
   if (m.plotBottom - m.plotTop < 100) fail('metadata and chart need more height; enlarge canvas or split content');
   const body = fn(spec, m);
+  const placement = { 'data-layout': layout };
+  if (layout !== 'web') {
+    const scaleToPoints = spec.placementWidthInches * 72 / w;
+    const bodyPoints = Math.min(18, ...[...body.matchAll(/font-size="([\d.]+)"/g)].map(match => Number(match[1]))) * scaleToPoints;
+    const footerPoints = 16 * scaleToPoints;
+    const [minBody, minFooter] = layout === 'document' ? [9, 8] : [16, 12];
+    if (bodyPoints < minBody || footerPoints < minFooter) fail(`text would be too small at ${spec.placementWidthInches} inches; reflow with a narrower canvas, enlarge the placement, or split the chart`);
+    Object.assign(placement, { 'data-placement-width-inches': spec.placementWidthInches, 'data-body-size-pt': bodyPoints, 'data-footer-size-pt': footerPoints });
+  }
   const id = 'tg-' + crypto.createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 12);
-  return el('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-labelledby': `${id}-title ${id}-desc`, 'font-family': 'Arial, Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif', 'font-variant-numeric': 'tabular-nums' },
+  return el('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-labelledby': `${id}-title ${id}-desc`, 'font-family': 'Arial, Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif', 'font-variant-numeric': 'tabular-nums', ...placement },
     el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...spec.notes, ...extra].filter(Boolean).join('；'))) +
     el('metadata', {}, esc(JSON.stringify(spec))) + rect(0, 0, w, h, '#FFFFFF') + titleLines.map((v, i) => text(44, 52 + i * 42, v, { fill: '#000099', 'font-size': 34, 'font-weight': 700 })).join('') +
     subtitleLines.map((v, i) => text(44, subtitleTop + i * 24, v, { fill: C.muted, 'font-size': 18, 'data-reading-guide': true })).join('') + body + line(44, footerTop - 24, w - 44, footerTop - 24) +
