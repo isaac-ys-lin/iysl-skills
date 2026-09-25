@@ -1,5 +1,7 @@
 # 全球藍設計套用校準原型
 
+此為 2026-09-24 的歷史校準材料，決策票 #17 已關閉；現行功能與規則見 [iysl-transglobe](../../skills/iysl-transglobe/SKILL.md)。以下保留當時的建置與驗證方式，不作為現行 skill 的能力限制。
+
 決策票：[iysl-skills #17](https://github.com/isaac-ys-lin/iysl-skills/issues/17)。這是可丟棄的決策素材，未建立或安裝正式 skill。資料全部為示意。
 
 從 `prototype.html` 查看三種閱讀情境及缺資料例外；頁面含 Office、SVG 及資料下載。`source-notes.md` 記錄規範來源，`validation.md` 區分已測與未測項目。

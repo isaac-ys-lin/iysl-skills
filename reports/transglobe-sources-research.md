@@ -3,6 +3,8 @@
 研究票：[確認全球藍規範來源、版本差異與可沿用資源](https://github.com/isaac-ys-lin/iysl-skills/issues/15)  
 日期：2026-09-24
 
+歷史來源研究；文末「第一版」建議記錄當時範圍。現行功能與規則見 [iysl-transglobe](../skills/iysl-transglobe/SKILL.md)。
+
 ## 結論
 
 新 skill 可以把全球藍做為「來源支持的應用規範」來套用；不應把它表述為完整或已核准的 CIS。使用者指定的公開網站是行為與內容的優先來源；本機資料夾提供可攜 tokens、素材與可重用檢查，但目前是另一個版本快照。
