@@ -123,3 +123,5 @@ Office `.thmx`／`.potx` 只可作可選起點，並非 HTML 簡報的轉檔權�
 `CHART-READABILITY.md` 的 `#27327B` 等範例色碼已被本規則中已核對的角色取代。
 原型只校準過 Focus；Ordered、Categorical 與跨平台 Office／列印仍需按實際成品
 檢查。
+skill 擴充圖型（`grouped`、`combo`、`histogram`、`sharetrend`）沿用本規則的色彩角色與字級，
+但不在網站 v2.5.1，也未經原型或 Office 實機校準。

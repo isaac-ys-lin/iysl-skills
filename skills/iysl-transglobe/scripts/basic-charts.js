@@ -1,5 +1,5 @@
 'use strict';
-const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, scale, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
+const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, scale, num, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
 
 function bars(s, m, ordered = false) {
   const input = rows(s);
@@ -21,7 +21,7 @@ function bars(s, m, ordered = false) {
     const color = ordered ? C.seq[Math.round((r.value - min) / (max - min || 1) * 4)] : r.label === s.focus ? C.blue : C.gray;
     out += rect(Math.min(x, zero), y - 10, Math.abs(x - zero), 20, color, { stroke: C.gray, 'stroke-width': .8, 'data-value': String(r.value), 'data-label': r.label });
     if (r.value === 0) out += line(zero, y - 10, zero, y + 10, { stroke: color, 'stroke-width': 2 });
-    out += text(p.x + p.w + 12, y + 5, String(r.value), { fill: C.ink });
+    out += text(p.x + p.w + 12, y + 5, num(r.value), { fill: C.ink });
   });
   return out;
 }
@@ -40,7 +40,7 @@ function bullet(s, m) {
     out += rect(p.x, y - 10, p.w, 20, '#F6F6F6');
     out += rect(Math.min(zero, x), y - 10, Math.abs(x - zero), 20, C.blue, { 'data-actual': String(r.actual) });
     out += line(X(r.target), y - 18, X(r.target), y + 18, { stroke: C.ink, 'stroke-width': 3, 'data-target': String(r.target) });
-    out += label(p.x + p.w + 32, y + 5, `${r.actual} / ${r.target}`, 190);
+    out += label(p.x + p.w + 32, y + 5, `${num(r.actual)} / ${num(r.target)}`, 190);
   });
   out += text(p.x, p.y + p.h + 28, '藍條＝實際；黑線＝目標', { fill: C.muted, 'font-size': 18 });
   return out;
@@ -62,11 +62,11 @@ function heatmap(s, m) {
     r.values.forEach((v, j) => {
       const x = p.x + j * cw, index = v === null ? 0 : Math.round((v - min) / (max - min || 1) * 4);
       out += rect(x, y, cw, ch, v === null ? '#FFFFFF' : C.seq[index], { stroke: C.gray, 'stroke-width': 1, 'data-value': v === null ? 'null' : String(v) });
-      out += label(x + cw / 2, y + ch / 2 + 5, v === null ? '未提供' : String(v), cw - 8, { 'text-anchor': 'middle', fill: v !== null && index >= 3 ? '#FFFFFF' : C.ink }, 1);
+      out += label(x + cw / 2, y + ch / 2 + 5, v === null ? '未提供' : num(v), cw - 8, { 'text-anchor': 'middle', fill: v !== null && index >= 3 ? '#FFFFFF' : C.ink }, 1);
     });
   });
   C.seq.forEach((color, i) => { out += rect(p.x + i * 28, p.y + p.h + 17, 28, 18, color, { stroke: C.gray, 'stroke-width': .5 }); });
-  out += label(p.x + 158, p.y + p.h + 32, `淺 → 深：${min} → ${max} ${m.unit || ''}；空白格標示缺值`, p.w - 158, { fill: C.muted, 'font-size': 18 });
+  out += label(p.x + 158, p.y + p.h + 32, `淺 → 深：${num(min)} → ${num(max)} ${m.unit || ''}；空白格標示缺值`, p.w - 158, { fill: C.muted, 'font-size': 18 });
   return out;
 }
 
@@ -114,7 +114,7 @@ function trend(s, m, tracking = false) {
     const end = endpoints.find(end => end.i === i), x = p.x + p.w + 24;
     if (end.j >= 0) out += line(X(end.j) + 7, end.y, x - 8, end.labelY - 5, { stroke: color, 'stroke-width': 1 });
     out += label(x, end.labelY, r.label, 225, { 'font-weight': r.label === s.focus ? 700 : 400 }, 1);
-    out += label(x, end.labelY + 24, end.j < 0 ? '未提供' : `${r.values[end.j]}（${labels[end.j]}${end.j < n - 1 ? '，最後已知' : ''}）`, 225, { fill: C.muted, 'font-size': 18 }, 1);
+    out += label(x, end.labelY + 24, end.j < 0 ? '未提供' : `${num(r.values[end.j])}（${labels[end.j]}${end.j < n - 1 ? '，最後已知' : ''}）`, 225, { fill: C.muted, 'font-size': 18 }, 1);
   });
   return out;
 }

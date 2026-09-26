@@ -2,28 +2,10 @@
 
 // Composition and relative-change encodings.  The caller supplies the SVG frame and metadata.
 const U = require('./chart-utils');
-const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, scale, tick, plot, columns } = U;
-const sum = values => values.reduce((total, value) => total + value, 0);
-const fmt = value => String(Number(value.toFixed(3)));
-const cat = (index, categories) => index === 4 ? '#DDDDDD' : C.cat[index];
-const labelFill = index => index >= 2 ? C.ink : '#FFFFFF';
-
-function categorySet(s) {
-  if (!Array.isArray(s.categories) || s.categories.length < 2 || s.categories.length > 5 ||
-      s.categories.some(value => typeof value !== 'string' || !value.trim()) ||
-      new Set(s.categories).size !== s.categories.length) fail('categories must be 2–4 unique names; a fifth is allowed only for existing Other');
-  if (s.categories.length === 5 && !/^(other|其他)$/i.test(s.categories[4].trim())) fail('a fifth category must be the existing Other category');
-  return s.categories;
-}
-
-function composition(s, m, maxRows) {
-  const categories = categorySet(s), data = rows(s, 2, maxRows), n = categories.length;
-  if (data.some(row => !Array.isArray(row.values) || row.values.length !== n ||
-      row.values.some(value => !finite(value) || value < 0) || !finite(sum(row.values)) || sum(row.values) <= 0)) {
-    fail('composition rows need one nonnegative finite value per category and a positive row total');
-  }
-  return { categories, data, n };
-}
+const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, scale, tick, plot, columns, sum, composition } = U;
+const fmt = value => U.num(Number(value.toFixed(3)));
+const pct = value => U.num(Number(value.toFixed(1))); // derived shares; raw values stay exact
+const cat = U.catFill, labelFill = U.catText;
 
 function waffle(s, m) {
   const data = rows(s, 2, 5), values = data.map(row => row.value);
@@ -50,7 +32,7 @@ function stacked(s, m) {
   const { categories, data } = composition(s, m, 6), p = plot(m, 210, 60), rowHeight = p.h / data.length;
   if (rowHeight < 42) fail('stacked rows are too dense; enlarge, split, or use a table');
   let out = '', smallNotes = [];
-  out += text(p.x + p.w, p.y - 52, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
+  out += text(p.x + p.w, p.y - 60, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   categories.forEach((name, index) => {
     const x = p.x + index * p.w / categories.length, y = p.y - 34;
     out += rect(x, y - 12, 13, 13, cat(index, categories), { stroke: C.ink, 'stroke-width': .5 });
@@ -66,12 +48,12 @@ function stacked(s, m) {
       out += rect(x, y, width, height, cat(index, categories), {
         stroke: '#FFFFFF', 'stroke-width': 1.5, 'data-value': String(value), 'data-share': String(pos(share)), 'data-category': categories[index],
       });
-      const direct = `${fmt(share)}% · ${fmt(value)}`;
-      if (width >= Math.max(62, U.countWidth(direct) * 18 + 12) && height >= 52) {
+      const direct = `${pct(share)}% · ${fmt(value)}`;
+      if (width >= Math.max(62, U.countWidth(direct) * 18 + 12) && height >= 30) {
         out += text(x + width / 2, y + height / 2 + 5, direct, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 18 });
       } else {
-        if (width >= 62) out += text(x + width / 2, y + height / 2 + 5, `${fmt(share)}%`, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 18 });
-        smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}/${fmt(total)}（${fmt(share)}%）`);
+        if (width >= 62) out += text(x + width / 2, y + height / 2 + 5, `${pct(share)}%`, { 'text-anchor': 'middle', fill: labelFill(index), 'font-size': 18 });
+        smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}/${fmt(total)}（${pct(share)}%）`);
       }
       x += width;
     });
@@ -90,7 +72,7 @@ function mekko(s, m) {
   if (!finite(grand) || grand <= 0) fail('mekko grand total must be finite and positive');
   if (p.w * Math.min(...totals) / grand < minWidth) fail('mekko has a group too narrow to label; split it or use a table');
   let out = '', x = p.x, smallNotes = [];
-  out += text(p.x + p.w, p.y - 52, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
+  out += text(p.x + p.w, p.y - 60, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   data.forEach((row, r) => {
     const total = totals[r], width = p.w * total / grand;
     let y = p.y;
@@ -99,14 +81,14 @@ function mekko(s, m) {
       out += rect(x, y, width, height, cat(index, categories), {
         stroke: '#FFFFFF', 'stroke-width': 1.5, 'data-value': String(value), 'data-share': String(pos(value / grand)), 'data-category': categories[index], 'data-row': row.label,
       });
-      if (value === 0 || width < 92 || height < 35) smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}/${fmt(total)}（${fmt(value / total * 100)}%）`);
-      else if (width >= 92 && height >= 35) out += label(x + width / 2, y + height / 2 + 5, `${fmt(value / total * 100)}% · ${fmt(value)}`, width - 8, {
+      if (value === 0 || width < 92 || height < 35) smallNotes.push(`${row.label}／${categories[index]} ${fmt(value)}/${fmt(total)}（${pct(value / total * 100)}%）`);
+      else if (width >= 92 && height >= 35) out += label(x + width / 2, y + height / 2 + 5, `${pct(value / total * 100)}% · ${fmt(value)}`, width - 8, {
         'text-anchor': 'middle', fill: labelFill(index), 'font-size': 18,
       }, 1);
       y += height;
     });
     out += label(x + width / 2, p.y + p.h + 27, `${row.label} ${fmt(total)}`, width - 5, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 18 }, 1);
-    out += text(x + width / 2, p.y + p.h + 51, `市場占比 ${fmt(total / grand * 100)}%`, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 18 });
+    out += text(x + width / 2, p.y + p.h + 51, `市場占比 ${pct(total / grand * 100)}%`, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 18 });
     x += width;
   });
   categories.forEach((name, index) => {
@@ -128,19 +110,20 @@ function pareto(s, m) {
   if (!Number.isSafeInteger(total) || total <= 0) fail('pareto needs a positive safe-integer total count');
   const data = [...input].sort((a, b) => b.value - a.value), p = plot(m, 100, 105), slot = p.w / data.length;
   if (slot < 68) fail('pareto labels are too dense; split or use a table');
-  const max = Math.max(...data.map(row => row.value), 1), Y = value => p.y + p.h - value / max * p.h;
+  // Counts share the cumulative scale (total = 100%), so a bar top never reads as a cumulative share.
+  const Y = value => p.y + p.h - value / total * p.h;
   let out = '', cumulative = 0, points = [];
-  for (let i = 0; i <= 4; i += 1) {
-    const count = max * i / 4, y = Y(count), pct = i * 25;
-    out += line(p.x, y, p.x + p.w, y) + text(p.x - 10, y + 5, tick(count), { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
-    out += text(p.x + p.w + 12, y + 5, `${pct}%`, { fill: C.muted, 'font-size': 18 });
+  for (const count of U.ticks(0, total)) out += line(p.x, Y(count), p.x + p.w, Y(count)) + text(p.x - 10, Y(count) + 5, tick(count), { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
+  for (const pct of [0, 25, 50, 75, 100]) {
+    const y = p.y + p.h - pct / 100 * p.h;
+    out += line(p.x + p.w, y, p.x + p.w + 6, y, { stroke: C.gray }) + text(p.x + p.w + 12, y + 5, `${pct}%`, { fill: C.muted, 'font-size': 18 });
   }
   data.forEach((row, index) => {
     const width = slot * .62, x = p.x + index * slot + (slot - width) / 2, y = Y(row.value), center = x + width / 2;
     cumulative += row.value;
     const pct = cumulative / total * 100, cy = p.y + p.h - pct / 100 * p.h;
     out += rect(x, y, width, p.y + p.h - y, C.gray, { 'data-count': String(row.value), 'data-label': row.label });
-    out += text(center, p.y + p.h - 8, String(row.value), { 'text-anchor': 'middle', fill: C.ink, 'font-size': 18 });
+    out += text(center, p.y + p.h - 8, U.num(row.value), { 'text-anchor': 'middle', fill: C.ink, 'font-size': 18 });
     out += label(center, p.y + p.h + 24, row.label, slot - 5, { 'text-anchor': 'middle', fill: C.muted, 'font-size': 18 }, 2);
     points.push([center, cy, pct]);
   });
@@ -182,7 +165,7 @@ function indexed(s, m) {
   indexData.forEach((row, panel) => {
     const mark = focus && row.label !== focus ? C.gray : C.blue;
     const valueFill = focus && row.label !== focus ? C.muted : C.blue;
-    const left = p.x + panel * panelWidth + 30, right = p.x + (panel + 1) * panelWidth - 18, width = right - left;
+    const left = p.x + panel * panelWidth + 40, right = p.x + (panel + 1) * panelWidth - 28, width = right - left;
     if (width / (n - 1) < 32) fail('indexed period labels are too dense; split the chart or use a table');
     ticks.forEach(value => {
       const y = Y(value);

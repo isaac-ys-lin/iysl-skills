@@ -23,7 +23,10 @@ const rect = (x, y, width, height, fill, attrs = {}) => {
   return el('rect', { x, y, width, height, fill, ...attrs });
 };
 const dot = (cx, cy, fill, attrs = {}) => el('circle', { cx, cy, r: 5, fill, ...attrs });
-const countWidth = s => [...String(s)].reduce((n, c) => n + (/[^\x00-\x7F]/.test(c) ? 1 : 0.57), 0);
+// Width in em. CJK and other non-ASCII glyphs are full width; Latin classes follow Arial rounded up a few
+// percent, because Office may substitute a font with different metrics (Windows vs Mac).
+const latinWidth = c => /[MW@]/.test(c) ? .94 : /[A-Z%&]/.test(c) ? .72 : /[mw]/.test(c) ? .83 : /[il.,:;!|'`\s]/.test(c) ? .28 : /[fjrt()[\]\/-]/.test(c) ? .39 : .58;
+const countWidth = s => [...String(s)].reduce((n, c) => n + (/[^\x00-\x7F]/.test(c) ? 1 : latinWidth(c)), 0);
 
 function wrap(value, width) {
   const result = []; let row = '';
@@ -80,7 +83,9 @@ function ticks(lo, hi) {
   return result;
 }
 const scale = (v, lo, hi, start, end) => start + (v - lo) / (hi - lo) * (end - start);
-const tick = v => String(Number(v.toPrecision(3)));
+// Visible numbers get thousands separators; data-* attributes and metadata keep raw values.
+const num = v => typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(v) ? String(v).replace(/^-?\d+/, s => s.replace(/\B(?=(\d{3})+$)/g, ',')) : String(v);
+const tick = v => num(Number(v.toPrecision(12)));
 
 function plot(m, left = 220, right = 140) {
   const top = m.plotTop || 115, bottom = m.plotBottom || m.h - 125;
@@ -101,9 +106,31 @@ function xAxis(p, lo, hi, unit) {
   return out;
 }
 
+// Categorical fill (fifth slot is the existing Other) and the label colour that keeps 4.5:1 on it.
+const catFill = index => index === 4 ? '#DDDDDD' : C.cat[index];
+const catText = index => index >= 2 ? C.ink : '#FFFFFF';
+const sum = values => values.reduce((total, value) => total + value, 0);
+
+function categorySet(s) {
+  if (!Array.isArray(s.categories) || s.categories.length < 2 || s.categories.length > 5 ||
+      s.categories.some(value => typeof value !== 'string' || !value.trim()) ||
+      new Set(s.categories).size !== s.categories.length) fail('categories must be 2–4 unique names; a fifth is allowed only for existing Other');
+  if (s.categories.length === 5 && !/^(other|其他)$/i.test(s.categories[4].trim())) fail('a fifth category must be the existing Other category');
+  return s.categories;
+}
+
+function composition(s, m, maxRows) {
+  const categories = categorySet(s), data = rows(s, 2, maxRows), n = categories.length;
+  if (data.some(row => !Array.isArray(row.values) || row.values.length !== n ||
+      row.values.some(value => !finite(value) || value < 0) || !finite(sum(row.values)) || sum(row.values) <= 0)) {
+    fail('composition rows need one nonnegative finite value per category and a positive row total');
+  }
+  return { categories, data, n };
+}
+
 function columns(s, n) {
   if (!Array.isArray(s.labels) || s.labels.length !== n || s.labels.some(v => typeof v !== 'string' || !v.trim()) || new Set(s.labels).size !== n) fail('labels must name every column/period uniquely');
   return s.labels;
 }
 
-module.exports = { C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, niceStep, scale, tick, ticks, plot, xAxis, columns };
+module.exports = { catFill, catText, sum, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, niceStep, scale, num, tick, ticks, plot, xAxis, columns };
