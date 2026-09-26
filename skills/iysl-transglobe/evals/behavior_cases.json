@@ -368,6 +368,55 @@
           "inspect chart at actual document size or disclose visual verification limits"
         ]
       }
+    },
+    {
+      "id": "amount-and-rate-combo",
+      "kind": "complex",
+      "prompt": "用全球藍自動選圖：2022–2026 各年保費收入 4210、4380、4520、4890、5120 百萬元，年增率 2023 起為 4.0%、3.2%、8.2%、4.7%。報告要同時看規模和成長速度。來源：年報。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "select combo with amount columns and a rate line on labelled independent axes",
+          "keep 2022 rate as missing rather than zero",
+          "state the selection and a short reason"
+        ],
+        "must_not_do": [
+          "compare column height with line height as if both shared one scale",
+          "invent a 2022 growth rate"
+        ]
+      }
+    },
+    {
+      "id": "raw-observations-histogram",
+      "kind": "complex",
+      "prompt": "這裡有 40 筆理賠逐筆處理天數（附原始清單），請用全球藍呈現分布集中在哪裡，組距用 2 天。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "select histogram from the raw observations with the stated 2-day bins",
+          "state the observation count and the bin rule"
+        ],
+        "must_not_do": [
+          "replace the raw distribution with an average only",
+          "fabricate quartiles for a box plot"
+        ]
+      }
+    },
+    {
+      "id": "composition-over-periods",
+      "kind": "complex",
+      "prompt": "三個通路 2022–2026 的新契約保費金額都有，問題是通路占比怎麼逐年移動；請用全球藍自動選圖。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "select sharetrend to compare composition across ordered periods",
+          "keep every channel and period in source order"
+        ],
+        "must_not_do": [
+          "merge channels into Other without permission",
+          "use a single-period stacked or waffle chart for multi-period change"
+        ]
+      }
     }
   ]
 }

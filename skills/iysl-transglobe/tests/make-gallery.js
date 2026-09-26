@@ -43,7 +43,7 @@ function readerSpec(spec) {
   const notes = spec.chart === 'tracking' ? ['固定通路資料為設計示意，不能視為實際營運值。'] : spec.notes;
   return {
     ...spec,
-    source: 'TransGlobe Blue 設計原型（示意資料）',
+    source: spec.source.startsWith('iysl-transglobe') ? spec.source : 'TransGlobe Blue 設計原型（示意資料）',
     notes,
     sourceReference: spec.source,
     provenance: { sourceReference: spec.source, originalNotes: spec.notes }
