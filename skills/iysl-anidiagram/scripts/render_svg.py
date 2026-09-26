@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Render a hand-authored SMIL animated SVG into MP4/PNG (and optional GIF).
+"""Validate a hand-authored SMIL animated SVG and optionally render media.
 
 Pipeline stages:
   (a) structural validation of the SVG source        -> exit 2 on violation
   (b) deterministic browser rendering + quality gate -> exit 1 on failure
-  (c) ffmpeg encoding + output contract checks       -> exit 1 on failure
+  (c) optional PNG capture / ffmpeg encoding checks  -> exit 1 on failure
 
 Exit codes match the legacy JSON-spec pipeline:
-  0 = all checks passed, outputs written
+  0 = all checks passed, requested outputs written
   1 = quality or output checks failed
   2 = structural validation failed
 """
@@ -163,7 +163,7 @@ def has_valid_spline(element):
 def exclusive_render_lock(lock_path=DEFAULT_RENDER_LOCK, timeout=180.0):
     """Serialize browser capture across Creative subprocesses.
 
-    Creative work remains parallel; only the Chrome/ffmpeg critical section queues.
+    Creative work remains parallel; only the browser/ffmpeg critical section queues.
     Advisory locks are released automatically if a renderer exits or crashes.
     """
     lock_path = Path(lock_path)
@@ -789,10 +789,6 @@ def render_pipeline(svg_text, meta, args):
                     ),
                 })
 
-                # poster frame at data-poster-t
-                seek_and_wait_for_paint(page, meta["poster_t"])
-                png_path = outdir / f"{args.basename}.png"
-                svg_el.screenshot(path=str(png_path))
                 checks.append({
                     "name": "external_resource_runtime",
                     "ok": not blocked_requests,
@@ -804,24 +800,31 @@ def render_pipeline(svg_text, meta, args):
                     ),
                 })
 
-                # --- (c) encoding -------------------------------------------
-                ffmpeg = ffmpeg_path()
-                if ffmpeg is None:
-                    raise RuntimeError("ffmpeg not found at /opt/homebrew/bin/ffmpeg or on PATH")
+                # --- (c) requested media ------------------------------------
+                png_path = None
+                if args.png:
+                    seek_and_wait_for_paint(page, meta["poster_t"])
+                    png_path = outdir / f"{args.basename}.png"
+                    svg_el.screenshot(path=str(png_path))
 
-                mp4_path = outdir / f"{args.basename}.mp4"
-                run_ffmpeg([
-                    ffmpeg, "-y",
-                    "-framerate", str(fps),
-                    "-i", str(frames_dir / "frame_%05d.png"),
-                    "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:color=white",
-                    "-c:v", "libx264",
-                    "-pix_fmt", "yuv420p",
-                    "-movflags", "+faststart",
-                    str(mp4_path),
-                ])
-
+                mp4_path = None
                 gif_path = None
+                if args.mp4 or args.gif:
+                    ffmpeg = ffmpeg_path()
+                    if ffmpeg is None:
+                        raise RuntimeError("ffmpeg not found at /opt/homebrew/bin/ffmpeg or on PATH")
+                if args.mp4:
+                    mp4_path = outdir / f"{args.basename}.mp4"
+                    run_ffmpeg([
+                        ffmpeg, "-y",
+                        "-framerate", str(fps),
+                        "-i", str(frames_dir / "frame_%05d.png"),
+                        "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:color=white",
+                        "-c:v", "libx264",
+                        "-pix_fmt", "yuv420p",
+                        "-movflags", "+faststart",
+                        str(mp4_path),
+                    ])
                 if args.gif:
                     gif_path = outdir / f"{args.basename}.gif"
                     palette = tmp / "palette.png"
@@ -844,13 +847,14 @@ def render_pipeline(svg_text, meta, args):
         finally:
             browser.close()
 
-    # --- output contract checks (outside the browser session) ---------------
+    # --- requested output contract checks (outside the browser session) -----
     expected_duration = n_frames / fps
-    mp4_ok = mp4_path.exists() and mp4_path.stat().st_size > 0
-    if mp4_ok:
-        info = probe_video(mp4_path)
-        duration_ok = abs(info["duration"] - expected_duration) < 0.2
-        even_ok = info["width"] % 2 == 0 and info["height"] % 2 == 0
+    outputs = {}
+    if mp4_path is not None:
+        mp4_ok = mp4_path.exists() and mp4_path.stat().st_size > 0
+        info = probe_video(mp4_path) if mp4_ok else None
+        duration_ok = info is not None and abs(info["duration"] - expected_duration) < 0.2
+        even_ok = info is not None and info["width"] % 2 == 0 and info["height"] % 2 == 0
         checks.append({
             "name": "output_mp4",
             "ok": duration_ok and even_ok,
@@ -858,28 +862,23 @@ def render_pipeline(svg_text, meta, args):
                 f"{mp4_path.name}: {info['width']}x{info['height']}, "
                 f"duration {info['duration']:.3f}s (expected {expected_duration:.3f}s +-0.2s), "
                 f"even dimensions={even_ok}"
+                if info is not None else f"{mp4_path} missing or empty"
             ),
         })
-    else:
+        outputs["mp4"] = str(mp4_path)
+    if png_path is not None:
+        png_ok = png_path.exists() and png_path.stat().st_size > 0
         checks.append({
-            "name": "output_mp4",
-            "ok": False,
-            "detail": f"{mp4_path} missing or empty",
+            "name": "output_png",
+            "ok": png_ok,
+            "detail": (
+                f"{png_path.name}: poster frame at t={meta['poster_t']:g}s "
+                f"(device_scale_factor={DEVICE_SCALE_FACTOR})"
+                if png_ok
+                else f"{png_path} missing or empty"
+            ),
         })
-
-    png_ok = png_path.exists() and png_path.stat().st_size > 0
-    checks.append({
-        "name": "output_png",
-        "ok": png_ok,
-        "detail": (
-            f"{png_path.name}: poster frame at t={meta['poster_t']:g}s "
-            f"(device_scale_factor={DEVICE_SCALE_FACTOR})"
-            if png_ok
-            else f"{png_path} missing or empty"
-        ),
-    })
-
-    outputs = {"mp4": str(mp4_path), "png": str(png_path)}
+        outputs["png"] = str(png_path)
     if args.gif:
         gif_ok = gif_path is not None and gif_path.exists() and gif_path.stat().st_size > 0
         checks.append({
@@ -887,7 +886,7 @@ def render_pipeline(svg_text, meta, args):
             "ok": gif_ok,
             "detail": f"{gif_path.name}: palettegen/paletteuse two-pass" if gif_ok else "gif missing or empty",
         })
-        outputs["gif"] = str(gif_path) if gif_path else None
+        outputs["gif"] = str(gif_path)
 
     report = {
         "ok": all(check["ok"] for check in checks),
@@ -907,13 +906,15 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
 
     parser = argparse.ArgumentParser(
-        description="Validate and render a SMIL animated SVG into MP4/PNG (and optional GIF)."
+        description="Validate a SMIL animated SVG; render PNG, MP4, or GIF only when requested."
     )
     parser.add_argument("--svg", required=True, help="Path to the animated SVG file.")
     parser.add_argument("--outdir", required=True, help="Output directory.")
-    parser.add_argument("--basename", required=True, help="Output basename (NAME.mp4/NAME.png).")
+    parser.add_argument("--basename", required=True, help="Output basename for requested media.")
     parser.add_argument("--fps", type=int, default=30, help="Frames per second (default 30).")
-    parser.add_argument("--gif", action="store_true", help="Also encode NAME.gif.")
+    parser.add_argument("--png", action="store_true", help="Write NAME.png poster frame (no ffmpeg).")
+    parser.add_argument("--mp4", action="store_true", help="Encode NAME.mp4 with ffmpeg.")
+    parser.add_argument("--gif", action="store_true", help="Encode NAME.gif with ffmpeg.")
     parser.add_argument(
         "--collision-tolerance", type=float, default=2.0,
         help="Max text bbox overlap in px on both axes before failing (default 2).",

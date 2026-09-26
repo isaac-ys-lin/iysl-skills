@@ -1,10 +1,11 @@
-"""Tests for scripts/render_svg.py (animated SVG -> MP4/PNG toolchain).
+"""Tests for scripts/render_svg.py (animated SVG validation and optional media).
 
 Structural validation tests never need a browser and always run.
 Browser-dependent tests skip when playwright + a launchable Chrome/Chromium
 are unavailable.
 """
 
+import argparse
 import json
 import shutil
 import subprocess
@@ -376,7 +377,10 @@ class TestFullPipeline:
 
     def test_sample_svg_renders_end_to_end(self, browser_available, tmp_path):
         outdir = tmp_path / "out"
-        result = run_cli(SAMPLE_SVG, outdir, basename="sample", extra_args=["--fps", "10"])
+        result = run_cli(
+            SAMPLE_SVG, outdir, basename="sample",
+            extra_args=["--fps", "10", "--png", "--mp4"],
+        )
         assert result.returncode == 0, result.stdout + result.stderr
         report = json.loads(result.stdout)
         assert report["ok"] is True
@@ -408,6 +412,40 @@ class TestFullPipeline:
         assert {"readability_text_collision", "readability_canvas_margin",
                 "motion_nonzero", "loop_position_seam", "external_resource_runtime",
                 "output_mp4", "output_png"} <= check_names
+
+    def test_default_validation_writes_no_derived_media(self, browser_available, tmp_path):
+        result = run_cli(SAMPLE_SVG, tmp_path, basename="svg-only", extra_args=["--fps", "10"])
+        assert result.returncode == 0, result.stdout + result.stderr
+        report = json.loads(result.stdout)
+        assert report["ok"] is True
+        assert report["outputs"] == {}
+        assert not (tmp_path / "svg-only.png").exists()
+        assert not (tmp_path / "svg-only.mp4").exists()
+
+    def test_png_render_does_not_require_ffmpeg(self, browser_available, tmp_path, monkeypatch):
+        sys.path.insert(0, str(SCRIPT.parent))
+        try:
+            import render_svg
+            messages, meta = render_svg.validate_structure(SAMPLE_SVG.read_text(encoding="utf-8"))
+            assert messages == []
+            monkeypatch.setattr(
+                render_svg, "ffmpeg_path",
+                lambda: pytest.fail("PNG-only render must not look up ffmpeg"),
+            )
+            report = render_svg.render_pipeline(
+                SAMPLE_SVG.read_text(encoding="utf-8"),
+                meta,
+                argparse.Namespace(
+                    outdir=tmp_path, basename="poster-only", fps=10, png=True,
+                    mp4=False, gif=False, collision_tolerance=2.0, margin=8.0,
+                ),
+            )
+        finally:
+            sys.path.remove(str(SCRIPT.parent))
+        assert report["ok"] is True
+        assert report["outputs"].keys() == {"png"}
+        assert (tmp_path / "poster-only.png").stat().st_size > 0
+        assert not (tmp_path / "poster-only.mp4").exists()
 
     def test_text_collision_fails_quality_gate(self, browser_available, tmp_path):
         bad = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200"
@@ -510,7 +548,7 @@ class TestFullPipeline:
                 SAMPLE_SVG,
                 tmp_path / name,
                 basename=name,
-                extra_args=["--fps", "5"],
+                extra_args=["--fps", "5", "--mp4"],
             )
 
         with ThreadPoolExecutor(max_workers=2) as executor:

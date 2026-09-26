@@ -4,6 +4,10 @@ This context defines the product language used to design and maintain the reusab
 
 ## Language
 
+**Design adaptation（設計套用）**:
+將既有簡報、文件或圖表的呈現方式調整為指定設計規範；可重排版面、替換圖型與改寫標題，但保留原始數據與原意。它不包含維護或發布設計系統本身。
+_Avoid_: 設計系統維護, 單純換色, 內容重寫
+
 **Visual explainer**:
 A skill experience that helps an adult novice understand one primary concept through a visual and a concise plain-language explanation.
 _Avoid_: ELI5, HTML explainer, general explanation

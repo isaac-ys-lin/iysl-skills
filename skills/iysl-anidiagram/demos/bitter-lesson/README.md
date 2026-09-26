@@ -29,5 +29,6 @@ python3 ../../scripts/render_svg.py \
   --svg diagram.svg \
   --outdir /tmp/bitter-lesson-out \
   --basename bitter-lesson \
+  --png --mp4 \
   --check
 ```

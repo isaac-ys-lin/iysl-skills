@@ -303,15 +303,15 @@ class YtdlpReportContractTest(unittest.TestCase):
             self.assertNotEqual(leaked.returncode, 0)
             self.assertIn("file url", leaked.stderr.lower())
 
-    def test_generic_video_summary_keeps_the_full_report_bundle(self):
-        normalized_skill = " ".join(self.skill.split())
-        self.assertIn("generic request", normalized_skill)
-        self.assertIn(
-            "transcript → validated v2 spec → Markdown → HTML → verification sidecar → artifact validation",
-            normalized_skill,
-        )
-        self.assertIn("Do not create a summary-only shortcut", normalized_skill)
-        self.assertIn("or an inline/deep mode", normalized_skill)
+    def test_ordinary_reading_and_formal_report_have_separate_delivery_contracts(self):
+        cases = json.loads((ROOT / "evals/behavior_cases.json").read_text())["cases"]
+        by_id = {case["id"]: case for case in cases}
+        inline = by_id["ordinary-reading-inline"]["expected"]
+        self.assertEqual(inline["max_subagents"], 0)
+        self.assertIn("create a v2 spec", inline["must_not_do"])
+        formal = by_id["native-captions-standard-path"]["expected"]
+        self.assertIn("validate v2 spec", formal["must_do"])
+        self.assertIn("write sidecar", formal["must_do"])
 
     def test_kami_composition_owns_formal_presentation_without_vendoring(self):
         normalized_skill = " ".join(self.skill.split())
@@ -2282,7 +2282,7 @@ class YtdlpReportContractTest(unittest.TestCase):
         # 標準路徑現在必須用到那一個排版 subagent，舊的 0 上限會把正確行為判成錯。
         for case in cases:
             cap = case["expected"].get("max_subagents")
-            if cap is not None:
+            if cap is not None and case["id"] != "ordinary-reading-inline":
                 self.assertGreaterEqual(cap, 1, case["id"])
 
 

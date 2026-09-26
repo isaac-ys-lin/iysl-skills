@@ -9,7 +9,8 @@ This gallery teaches diagram judgment. Use it to reason about a source, not as a
 3. Choose the relation: sequence, loop, narrowing, ranking, tradeoff, layers, contrast, branching, system map, or multi-part story.
 4. Choose the composition that makes that relation easiest to understand, following `references/svg-authoring.md`.
 5. Choose the animation story last, grounded in `references/animation-semantics.md` — motion must encode the relation.
-6. Render with `scripts/render_svg.py --check` and review the poster PNG and MP4 frames by eye.
+6. Validate with `scripts/render_svg.py --check`; add `--png` or `--mp4` only
+   when reviewing or delivering that requested format.
 
 ## Source-Backed Heuristics
 
@@ -46,5 +47,7 @@ The 07 pair is the anti-template lesson: one brief, one relation, two motion sto
 - A claim-free refusal keeps `brief.md` and `decision.md`, starts Primary Claim with `None.`, and contains no `diagram.svg`; this is the explicit admission state for declining to invent a claim.
 - Run `python3 scripts/validate_gallery.py` from the skill directory. It is the shared admission interface used by authors and tests.
 - Every `diagram.svg` must pass `scripts/render_svg.py --check` (exit 0); `tests/test_gallery_examples.py` renders each one and enforces it.
-- Render the poster PNG and MP4 frames and review by eye before committing. `--check` measures text collisions and canvas margins, but hierarchy, density, and whether the poster reads on its own still need eyes.
+- For a requested poster PNG or MP4, render it and review it by eye before
+  committing. `--check` measures text collisions and canvas margins, but hierarchy,
+  density, and whether the poster reads on its own still need eyes.
 - A case earns its place by teaching a judgment the existing cases do not already cover, not by adding another topic for the same relation.

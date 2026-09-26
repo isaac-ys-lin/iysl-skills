@@ -32,15 +32,14 @@ installs are copied snapshots; they do not follow local source changes.
 
 ## Included Skills
 
-- `iysl-anidiagram` — turn a supported claim or relation into a source-faithful animated SVG, MP4, and PNG, with render checks.
+- `iysl-anidiagram` — create a source-faithful animated SVG with render checks; PNG and MP4 exports are optional.
 - `iysl-clarify` — resolve only material intent, scope, authority, safety, or success-criteria ambiguity before an actionable change.
 - `iysl-grill` — run a user-invoked, stateless decision-tree interview that works through frontier rounds before any action.
 - `iysl-deckab` — turn source material into faithful deck outlines, Mode A/B prompts, or style-anchor workflows; it does not export PPTX.
-- `iysl-execute` — finish authorized software changes through proportional delegation, deterministic validation, and fresh independent review when risk warrants it.
 - `iysl-plugging` — explicitly read every bundled skill name and description from one specified Codex plugin, prove completeness, then load only the relevant full skill instructions.
 - `iysl-equity-council` — run named Aswath Damodaran, George Soros, and Michael Mauboussin public-method members with distinct work products, then have a Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from a usable Public Equity Investing pack.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
-- `iysl-ytdlp-html-report` — turn one public video into a transcript-first Traditional Chinese v2 Markdown/HTML report plus verification sidecar; it does not read browser credentials.
+- `iysl-ytdlp-html-report` — read one public video from its transcript and answer inline; explicit formal reports use the verified Traditional Chinese Markdown/HTML bundle.
 - `iysl-transglobe` — select suitable 全球藍 charts from the question and data, generate SVG from 18 design-system chart types plus 4 skill extensions, and restyle Office or HTML while preserving data and meaning.
 - `ask-matt` — route one situation to the right skill or flow over a curated map and render the recommended route as a self-contained HTML page, preserved and extended from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/engineering/ask-matt).
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).

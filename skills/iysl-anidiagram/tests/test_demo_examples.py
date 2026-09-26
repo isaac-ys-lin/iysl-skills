@@ -129,6 +129,7 @@ def test_demo_artifacts_render_on_platform(browser_available, demo_name, tmp_pat
             "--outdir", str(tmp_path),
             "--basename", demo_name,
             "--fps", str(CASES[demo_name]),
+            "--png", "--mp4",
             "--check",
         ],
         capture_output=True,

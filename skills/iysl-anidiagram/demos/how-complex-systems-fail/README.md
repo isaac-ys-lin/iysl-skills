@@ -36,6 +36,7 @@ python3 ../../scripts/render_svg.py \
   --svg diagram.svg \
   --outdir . \
   --basename how-complex-systems-fail \
+  --png --mp4 \
   --check
 ```
 

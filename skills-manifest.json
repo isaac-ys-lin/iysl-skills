@@ -51,16 +51,6 @@
         "behavior"
       ]
     },
-    "iysl-execute": {
-      "maintainer": "iysl",
-      "origin": "original",
-      "visibility": "implicit",
-      "license": "repository",
-      "required_gates": [
-        "trigger",
-        "behavior"
-      ]
-    },
     "iysl-plugging": {
       "maintainer": "iysl",
       "origin": "original",

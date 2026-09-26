@@ -86,6 +86,7 @@ def test_style_range_diagram_passes_check(svg_path, tmp_path):
             basename,
             "--fps",
             "10",
+            "--png",
             "--check",
         ],
         capture_output=True,
@@ -99,7 +100,6 @@ def test_style_range_diagram_passes_check(svg_path, tmp_path):
     assert report["ok"] is True
     fresh_poster = tmp_path / f"{basename}.png"
     assert fresh_poster.stat().st_size > 0
-    assert (tmp_path / f"{basename}.mp4").stat().st_size > 0
     tracked_poster = svg_path.parent / "poster.png"
     difference = normalized_image_difference(tracked_poster, fresh_poster)
     assert difference < 0.02, (

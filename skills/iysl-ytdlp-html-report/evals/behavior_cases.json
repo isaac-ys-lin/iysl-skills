@@ -1,6 +1,26 @@
 {
   "cases": [
     {
+      "id": "ordinary-reading-inline",
+      "kind": "simple",
+      "prompt": "讀這支公開 YouTube 影片，幫我整理重點就好，不用檔案。",
+      "expected": {
+        "max_questions": 0,
+        "max_subagents": 0,
+        "must_do": [
+          "prepare or reuse a verified transcript",
+          "read the transcript and answer inline",
+          "link to the original video and disclose material source limitations"
+        ],
+        "must_not_do": [
+          "create a v2 spec",
+          "render HTML or a Markdown twin",
+          "write a verification sidecar",
+          "dispatch a presentation subagent"
+        ]
+      }
+    },
+    {
       "id": "native-captions-standard-path",
       "kind": "simple",
       "prompt": "用這支公開 YouTube 影片的字幕做繁中 v2 reading report。",
@@ -17,7 +37,7 @@
     {
       "id": "local-asr-fallback",
       "kind": "compatibility",
-      "prompt": "影片沒有字幕，但本機已快取 Qwen3-ASR；請用音訊 fallback。",
+      "prompt": "請製作正式 HTML 閱讀報告。影片沒有字幕，但本機已快取 Qwen3-ASR；請用音訊 fallback。",
       "expected": {
         "max_questions": 0,
         "must_do": [
@@ -47,7 +67,7 @@
     {
       "id": "insufficient-evidence-stop",
       "kind": "failure",
-      "prompt": "逐字稿只有片頭問候，無法支撐洞見、思考題或可行啟發。",
+      "prompt": "請製作正式 HTML 閱讀報告。逐字稿只有片頭問候，無法支撐洞見、思考題或可行啟發。",
       "expected": {
         "must_stop": true,
         "must_do": [
@@ -174,7 +194,7 @@
     {
       "id": "brief-unsupported-stop",
       "kind": "failure",
-      "prompt": "逐字稿支撐得起四章，但沒有任何一句能當成掃讀層的判斷或帶走重點。",
+      "prompt": "請製作正式 HTML 閱讀報告。逐字稿支撐得起四章，但沒有任何一句能當成掃讀層的判斷或帶走重點。",
       "expected": {
         "must_stop": true,
         "must_do": [
@@ -221,7 +241,7 @@
     {
       "id": "topic-dense-interview-keeps-salient-details",
       "kind": "simple",
-      "prompt": "這是一支很長的訪談，除了主線，具體數字、產品決策、趣事和安全取捨也不能漏掉。",
+      "prompt": "請製作正式 HTML 閱讀報告。這是一支很長的訪談，除了主線，具體數字、產品決策、趣事和安全取捨也不能漏掉。",
       "expected": {
         "max_questions": 0,
         "max_subagents": 1,
@@ -240,7 +260,7 @@
     {
       "id": "transcript-only-reader-boundary",
       "kind": "simple",
-      "prompt": "逐字稿內容完整即可；提醒讀者純畫面或語氣可能沒涵蓋，需要時回原影片。",
+      "prompt": "請製作正式 HTML 閱讀報告。逐字稿內容完整即可；提醒讀者純畫面或語氣可能沒涵蓋，需要時回原影片。",
       "expected": {
         "must_do": [
           "show the v2.4 source limitation in the brief",

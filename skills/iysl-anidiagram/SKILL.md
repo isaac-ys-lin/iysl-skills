@@ -1,7 +1,7 @@
 ---
 name: iysl-anidiagram
-description: Create a source-faithful animated explanatory diagram as editable SMIL SVG with MP4 and PNG outputs. Use when the user wants a claim, relation, process, comparison, system map, or neutral structure made visual; do not invent unsupported claims.
-compatibility: Requires Python, Playwright with a launchable browser, and ffmpeg for rendering; structural checks remain available without browser rendering.
+description: Create a source-faithful animated explanatory diagram as editable SMIL SVG. Offer PNG, MP4, or GIF only when requested; do not invent unsupported claims.
+compatibility: Requires Python and Playwright with a launchable browser for readability validation. PNG needs no ffmpeg; MP4 and GIF require ffmpeg. Structural checks remain available without browser rendering.
 ---
 
 # Animated Diagram
@@ -27,7 +27,8 @@ whose composition and motion make the relation easier to understand.
   `references/animation-semantics.md` for relation-to-motion choices.
 - The poster frame must be complete and readable before animation adds focus or
   sequence. A requested variant must differ in actual visual or spatial logic.
-- `render_svg.py --check` must pass before any SVG, MP4, or PNG is delivered.
+- `render_svg.py --check` must pass before delivery. Request `--png`, `--mp4`,
+  or `--gif` only for the media formats the user chose.
 
 ## Adaptive execution
 
@@ -37,10 +38,10 @@ whose composition and motion make the relation easier to understand.
    that relation. Produce one candidate by default.
 3. Run the renderer's structural and output checks. Fix the reported failure,
    then inspect the poster and a complexity-appropriate sample of frames.
-4. Deliver the editable `diagram.svg`, MP4, and poster PNG as the default
-   verified bundle; add GIF only when requested. If browser rendering or ffmpeg
-   is unavailable, report the missing dependency instead of delivering a
-   partially verified bundle. Stop once acceptance is met.
+4. Deliver the editable `diagram.svg` by default. Render a poster PNG, MP4,
+   or GIF only when requested. If browser validation is unavailable, report the
+   missing dependency; a requested MP4 or GIF additionally requires ffmpeg.
+   Stop once acceptance is met.
 
 Escalate to additional candidates, subagents, blind review, or deeper frame
 sampling only for an explicit variants request, materially ambiguous visual
