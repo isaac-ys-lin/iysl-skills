@@ -79,13 +79,33 @@ function niceStep(span) {
 }
 function ticks(lo, hi) {
   const step = niceStep(hi - lo), result = [];
-  for (let i = Math.ceil(lo / step); i * step <= hi + step * 1e-9; i++) result.push(Number((i * step).toPrecision(12)));
+  const first = Math.ceil(lo / step), places = Math.max(0, 1 - Math.floor(Math.log10(step)));
+  if (!finite(first)) fail('numeric range is not drawable; change the declared unit explicitly');
+  // Bound the loop even when a large offset cannot be incremented by one in IEEE-754.
+  for (let i = 0; i <= Math.ceil((hi - lo) / step) + 1; i++) {
+    const raw = (first + i) * step;
+    const value = places <= 100 ? Number(raw.toFixed(places)) : Number(raw.toPrecision(12));
+    if (value >= lo - step * 1e-9 && value <= hi + step * 1e-9 && !result.includes(value)) result.push(value);
+  }
   return result;
 }
 const scale = (v, lo, hi, start, end) => start + (v - lo) / (hi - lo) * (end - start);
 // Visible numbers get thousands separators; data-* attributes and metadata keep raw values.
 const num = v => typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(v) ? String(v).replace(/^-?\d+/, s => s.replace(/\B(?=(\d{3})+$)/g, ',')) : String(v);
-const tick = v => num(Number(v.toPrecision(12)));
+const tick = v => num(v);
+
+function domain(value, name) {
+  if (!Array.isArray(value) || value.length !== 2 || !value.every(finite) || value[0] >= value[1] || !finite(value[1] - value[0])) fail(`${name} must be [min, max] with min < max and a finite span`);
+  ticks(...value);
+  return value;
+}
+
+function observedDomain(values, explicit, name = 'yDomain') {
+  if (!values.length) fail('no observed numbers; retain missing values in a table');
+  const bounds = explicit === undefined ? extent(values) : domain(explicit, name);
+  if (values.some(value => value < bounds[0] || value > bounds[1])) fail(`${name} must cover every observed value`);
+  return bounds;
+}
 
 function plot(m, left = 220, right = 140) {
   const top = m.plotTop || 115, bottom = m.plotBottom || m.h - 125;
@@ -109,23 +129,86 @@ function xAxis(p, lo, hi, unit) {
 // Categorical fill (fifth slot is the existing Other) and the label colour that keeps 4.5:1 on it.
 const catFill = index => index === 4 ? '#DDDDDD' : C.cat[index];
 const catText = index => index >= 2 ? C.ink : '#FFFFFF';
-const sum = values => values.reduce((total, value) => total + value, 0);
+// Add the input numbers' decimal representations before returning a JS number.
+// This avoids displaying 0.0001 + 0.0003 as 0.00039999999999999996 without dropping source digits.
+function sum(values) {
+  if (!values.length) return 0;
+  if (!values.every(finite)) fail('sum requires finite numbers');
+  const parts = values.map(value => {
+    const [mantissa, exponent = '0'] = String(value).split('e');
+    const places = (mantissa.split('.')[1]?.length || 0) - Number(exponent);
+    return { integer: BigInt(mantissa.replace('.', '')), places };
+  });
+  const places = Math.max(...parts.map(part => part.places));
+  const integer = parts.reduce((total, part) => total + part.integer * 10n ** BigInt(places - part.places), 0n);
+  return Number(`${integer}e${-places}`);
+}
+const percent = (value, total) => {
+  const result = value / total * 100;
+  if (!finite(result)) fail('percentage calculation overflowed; change the declared unit');
+  return result;
+};
+const derived = (value, places = 3) => {
+  if (!finite(value)) fail('derived value is not finite');
+  const rounded = Number(value.toFixed(places));
+  return num(value !== 0 && rounded === 0 ? Number(value.toPrecision(2)) : rounded);
+};
+const difference = (before, after) => {
+  const value = sum([after, -before]);
+  if (!finite(value)) fail('difference is not finite; change the declared unit');
+  return value;
+};
+const indexedData = data => data.map(row => ({
+  label: row.label,
+  values: row.values.map(value => value === null ? null : percent(value, row.values[0])),
+  originals: [...row.values],
+}));
+
+function categoryIndices(s, names) {
+  const values = s.categoryDomain === undefined ? names : s.categoryDomain;
+  const name = s.categoryDomain === undefined ? 'categories' : 'categoryDomain';
+  if (!Array.isArray(values) || values.length < 1 || values.length > 5 || values.some(value => typeof value !== 'string' || !value.trim()) || new Set(values).size !== values.length) fail(`${name} must contain unique nonempty names, at most four plus Other`);
+  if (values.length === 5 && !/^(other|其他)$/i.test(values[4].trim())) fail(`the fifth entry in ${name} must be the existing Other category`);
+  return names.map(name => {
+    const index = values.indexOf(name);
+    if (index < 0) fail(`categoryDomain does not include "${name}"`);
+    return index;
+  });
+}
 
 function categorySet(s) {
   if (!Array.isArray(s.categories) || s.categories.length < 2 || s.categories.length > 5 ||
       s.categories.some(value => typeof value !== 'string' || !value.trim()) ||
       new Set(s.categories).size !== s.categories.length) fail('categories must be 2–4 unique names; a fifth is allowed only for existing Other');
-  if (s.categories.length === 5 && !/^(other|其他)$/i.test(s.categories[4].trim())) fail('a fifth category must be the existing Other category');
+  categoryIndices(s, s.categories);
   return s.categories;
 }
 
 function composition(s, m, maxRows) {
   const categories = categorySet(s), data = rows(s, 2, maxRows), n = categories.length;
   if (data.some(row => !Array.isArray(row.values) || row.values.length !== n ||
-      row.values.some(value => !finite(value) || value < 0) || !finite(sum(row.values)) || sum(row.values) <= 0)) {
+      row.values.some(value => !finite(value) || value < 0))) {
     fail('composition rows need one nonnegative finite value per category and a positive row total');
   }
-  return { categories, data, n };
+  const totals = data.map(row => sum(row.values));
+  if (totals.some(total => !finite(total) || total <= 0)) fail('composition rows need a positive finite row total');
+  const shares = data.map((row, i) => row.values.map(value => percent(value, totals[i])));
+  return { categories, data, n, totals, shares };
+}
+
+const funnelRates = data => ({
+  stages: data.map((row, i) => i && data[i - 1].value ? percent(row.value, data[i - 1].value) : null),
+  completion: percent(data.at(-1).value, data[0].value),
+});
+
+function paretoData(s) {
+  const input = rows(s, 3, 10);
+  if (input.some(row => !Number.isSafeInteger(row.value) || row.value < 0)) fail('pareto needs nonnegative integer counts');
+  const total = sum(input.map(row => row.value));
+  if (!Number.isSafeInteger(total) || total <= 0) fail('pareto needs a positive safe-integer total count');
+  const data = [...input].sort((a, b) => b.value - a.value);
+  let count = 0;
+  return { data, total, cumulative: data.map(row => percent(count += row.value, total)) };
 }
 
 function columns(s, n) {
@@ -133,4 +216,39 @@ function columns(s, n) {
   return s.labels;
 }
 
-module.exports = { catFill, catText, sum, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, niceStep, scale, num, tick, ticks, plot, xAxis, columns };
+function waterfallData(s) {
+  const data = rows(s, 1, 10);
+  if (!finite(s.start)) fail('waterfall requires numeric start');
+  let total = s.start;
+  const parts = [{ label: s.startLabel || '期初', from: 0, to: total, total: true }];
+  for (const row of data) {
+    if (!finite(row.value)) fail('waterfall changes must be finite');
+    const from = total; total = sum([s.start, ...parts.slice(1).map(part => part.value), row.value]);
+    if (!finite(total)) fail('waterfall running balance is not finite');
+    parts.push({ ...row, from, to: total });
+  }
+  parts.push({ label: s.endLabel || '期末', from: 0, to: total, total: true });
+  if (new Set(parts.map(row => row.label)).size !== parts.length) fail('waterfall start/change/end labels must be unique');
+  const tolerance = Number.EPSILON * 16 * Math.max(1, Math.abs(total), Math.abs(s.start), ...data.map(row => Math.abs(row.value)));
+  if (s.end !== undefined && (!finite(s.end) || Math.abs(s.end - total) > tolerance)) fail('waterfall end does not equal start plus changes');
+  return parts;
+}
+
+function histogramData(s) {
+  const values = s.data;
+  if (!Array.isArray(values) || values.length < 10 || values.length > 100000 || values.some(v => !finite(v))) fail('histogram needs 10–100000 raw numeric observations in data; summaries belong in box or a table');
+  if (!finite(s.binWidth) || s.binWidth <= 0) fail('histogram requires a positive binWidth from the source or analysis plan');
+  const min = Math.min(...values), max = Math.max(...values), width = s.binWidth;
+  const start = s.binStart ?? Math.floor(min / width) * width;
+  if (!finite(start) || start > min) fail('binStart must be at or below the smallest observation');
+  // Half-open bins [a, a + width); tolerate decimal division noise at an edge.
+  const index = v => Math.floor((v - start) / width + 1e-9), n = index(max) + 1;
+  if (n < 3 || n > 30) fail('histogram needs 3–30 bins; choose a different binWidth');
+  const counts = Array(n).fill(0);
+  values.forEach(v => { counts[index(v)] += 1; });
+  const edges = Array.from({ length: n + 1 }, (_, i) => Number((start + i * width).toPrecision(12)));
+  if (edges.some((edge, i) => !finite(edge) || (i && edge <= edges[i - 1]))) fail('histogram bin edges are not distinguishable; change the declared unit or binWidth');
+  return { counts, edges };
+}
+
+module.exports = { catFill, catText, categoryIndices, sum, percent, derived, difference, indexedData, waterfallData, histogramData, funnelRates, paretoData, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, domain, observedDomain, niceStep, scale, num, tick, ticks, plot, xAxis, columns };

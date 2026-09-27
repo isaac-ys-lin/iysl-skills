@@ -1,5 +1,5 @@
 'use strict';
-const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, scale, num, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
+const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, observedDomain, categoryIndices, catFill, scale, num, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
 
 function bars(s, m, ordered = false) {
   const input = rows(s);
@@ -73,7 +73,8 @@ function heatmap(s, m) {
 function trend(s, m, tracking = false) {
   const data = rows(s, 1, tracking ? 4 : 6), n = data[0].values?.length;
   if (!Number.isInteger(n) || n < 2 || n > 20 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('trend needs equal series of 2–20 numbers/null');
-  const labels = columns(s, n), all = data.flatMap(r => r.values).filter(finite), [lo, hi] = extent(all);
+  const labels = columns(s, n), all = data.flatMap(r => r.values).filter(finite), [lo, hi] = observedDomain(all, s.yDomain);
+  const identities = tracking ? categoryIndices(s, data.map(r => r.label)) : data.map((_, i) => i);
   if (!tracking) namedFocus(s, data);
   const p = plot(m, 100, 260);
   // A fixed ordered-time grid is declared in the input guide. Irregular observations need explicit resampling with missing periods or another renderer.
@@ -94,25 +95,26 @@ function trend(s, m, tracking = false) {
   labels.forEach((v, i) => { out += label(X(i), p.y + p.h + 34, v, Math.min(step - 6, 90), { 'text-anchor': 'middle', fill: C.muted }); });
   if (m.unit) out += text(p.x, p.y - 14, m.unit, { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
-    const color = tracking ? C.cat[i] : r.label === s.focus ? C.blue : C.gray;
-    const dash = ['', '10 5', '3 5', '12 4 3 4', '2 4', '10 4 2 4'][i];
+    const identity = identities[i], color = tracking ? catFill(identity) : r.label === s.focus ? C.blue : C.gray;
+    const dash = ['', '10 5', '3 5', '12 4 3 4', '2 4', '10 4 2 4'][identity];
     let path = '', connected = false;
     r.values.forEach((v, j) => {
       if (v === null) { connected = false; return; }
       path += `${connected ? 'L' : 'M'}${pos(X(j))},${pos(Y(v))} `; connected = true;
     });
     // Dark outline retains graphical contrast for the light purple categorical series.
-    if (tracking && i === 3) out += el('path', { d: path, fill: 'none', stroke: C.muted, 'stroke-width': 6, 'stroke-dasharray': dash });
+    if (tracking && identity >= 3) out += el('path', { d: path, fill: 'none', stroke: C.muted, 'stroke-width': 6, 'stroke-dasharray': dash });
     out += el('path', { d: path, fill: 'none', stroke: color, 'stroke-width': 3, 'stroke-dasharray': dash, 'data-series': r.label });
     r.values.forEach((v, j) => {
       if (v === null) return;
       const attrs = { stroke: C.muted, 'stroke-width': .8, 'data-value': String(v), 'data-period': labels[j], 'data-series': r.label };
-      if (!tracking || i === 0) out += dot(X(j), Y(v), color, attrs);
-      else if (i === 1) out += rect(X(j) - 5, Y(v) - 5, 10, 10, color, attrs);
-      else out += el('polygon', { points: i === 2 ? `${X(j)},${Y(v)-7} ${X(j)-6},${Y(v)+5} ${X(j)+6},${Y(v)+5}` : `${X(j)},${Y(v)-7} ${X(j)-6},${Y(v)} ${X(j)},${Y(v)+7} ${X(j)+6},${Y(v)}`, fill: color, ...attrs });
+      if (!tracking || identity === 0) out += dot(X(j), Y(v), color, attrs);
+      else if (identity === 1) out += rect(X(j) - 5, Y(v) - 5, 10, 10, color, attrs);
+      else if (identity === 4) out += dot(X(j), Y(v), '#FFFFFF', { ...attrs, 'stroke-width': 2 });
+      else out += el('polygon', { points: identity === 2 ? `${X(j)},${Y(v)-7} ${X(j)-6},${Y(v)+5} ${X(j)+6},${Y(v)+5}` : `${X(j)},${Y(v)-7} ${X(j)-6},${Y(v)} ${X(j)},${Y(v)+7} ${X(j)+6},${Y(v)}`, fill: color, ...attrs });
     });
     const end = endpoints.find(end => end.i === i), x = p.x + p.w + 24;
-    if (end.j >= 0) out += line(X(end.j) + 7, end.y, x - 8, end.labelY - 5, { stroke: color, 'stroke-width': 1 });
+    if (end.j >= 0) out += line(X(end.j) + 7, end.y, x - 8, end.labelY - 5, { stroke: tracking && identity >= 3 ? C.muted : color, 'stroke-width': 1 });
     out += label(x, end.labelY, r.label, 225, { 'font-weight': r.label === s.focus ? 700 : 400 }, 1);
     out += label(x, end.labelY + 24, end.j < 0 ? '未提供' : `${num(r.values[end.j])}（${labels[end.j]}${end.j < n - 1 ? '，最後已知' : ''}）`, 225, { fill: C.muted, 'font-size': 18 }, 1);
   });

@@ -17,11 +17,18 @@ assert(stacked.includes('單位：件') && stacked.includes('70% · 7') && stack
 const narrowStack = charts.stacked({ categories: ['A', 'B', 'C'], data: [{ label: '甲', values: [98, 2, 0] }, { label: '乙', values: [70, 20, 10] }] }, frame);
 assert(narrowStack.includes('窄區塊：甲／B 2/100（2%）') && narrowStack.includes('甲／C 0/100（0%）'), 'small and zero stacked segments retain their row denominator');
 assert.throws(() => charts.stacked({ categories: ['A', 'B', 'C', 'D', 'E'], data: comp.data }, frame), /Other/);
+const preciseStack = charts.stacked({ categories: ['A', 'B'], data: [{ label: '甲', values: [0.0002, 0.0002] }, { label: '乙', values: [0.0001, 0.0003] }] }, frame);
+assert(preciseStack.includes('總量 0.0004') && preciseStack.includes('50% · 0.0002'), 'stacked renders raw nonzero values without rounding them to zero');
+const domainStack = charts.stacked({ categoryDomain: ['A', 'B'], categories: ['B', 'A'], data: [{ label: '甲', values: [7, 3] }, { label: '乙', values: [4, 6] }] }, frame);
+const domainCells = [...domainStack.matchAll(/<rect[^>]*fill="(#[0-9A-F]{6})"[^>]*data-category="([^"]+)"/g)].map(match => [match[1], match[2]]);
+assert(domainCells.some(([fill, category]) => fill === '#04696C' && category === 'B') && domainCells.some(([fill, category]) => fill === '#28317B' && category === 'A'), 'categoryDomain keeps category colours stable when observed order changes');
 
 const mekko = charts.mekko({ categories: ['A', 'B'], data: [{ label: '甲', values: [10, 0] }, { label: '乙', values: [10, 20] }] }, frame);
 const cells = [...mekko.matchAll(/<rect[^>]+data-value="([^"]+)"[^>]+data-share="([^"]+)"/g)].map(match => [Number(match[1]), Number(match[2])]);
 assert.equal(cells.reduce((area, [value, share]) => area + share, 0), 1, 'mekko cell areas sum to the grand-total share');
 assert(mekko.includes('單位：件') && mekko.includes('甲／B 0/10（0%）') && mekko.includes('data-value="0"'), 'mekko shares a unit and keeps zero cells explicit with their denominator');
+const preciseMekko = charts.mekko({ categories: ['A', 'B'], data: [{ label: '甲', values: [0.0002, 0.0002] }, { label: '乙', values: [0.0001, 0.0003] }] }, frame);
+assert(preciseMekko.includes('甲 0.0004') && preciseMekko.includes('50% · 0.0002'), 'mekko renders raw nonzero values without rounding them to zero');
 
 const paretoInput = { data: [{ label: '中', value: 2 }, { label: '大', value: 5 }, { label: '零', value: 0 }, { label: '小', value: 1 }] };
 const paretoBefore = JSON.stringify(paretoInput), pareto = charts.pareto(paretoInput, frame);
@@ -43,6 +50,8 @@ assert(focusedIndexed.includes('data-series="甲"') && focusedIndexed.includes('
 assert.throws(() => charts.indexed({ ...indexedSpec, focus: '不存在' }, frame), /focus must match/);
 const negativeIndexed = charts.indexed({ labels: ['Q1', 'Q2', 'Q3'], data: [{ label: '甲', values: [10, -2, 8] }, { label: '乙', values: [10, 5, 12] }] }, frame);
 assert(negativeIndexed.includes('>-'), 'regular indexed ticks retain negative observations when supplied');
+const scaledIndexed = charts.indexed({ labels: indexedSpec.labels, data: indexedSpec.data.map(row => ({ ...row, values: row.values.map(value => value === null ? null : value * 1000) })) }, frame);
+assert.deepEqual([...scaledIndexed.matchAll(/data-index="([^"]+)"/g)].map(match => match[1]), [...indexed.matchAll(/data-index="([^"]+)"/g)].map(match => match[1]), 'indexed values are invariant to a common positive scale factor');
 const documentFrame = { ...frame, w: 840, h: 720, plotTop: 110, plotBottom: 540 };
 assert.doesNotThrow(() => charts.stacked(comp, documentFrame));
 assert.doesNotThrow(() => charts.mekko({ categories: ['A', 'B'], data: [{ label: '甲', values: [10, 20] }, { label: '乙', values: [15, 15] }] }, documentFrame));

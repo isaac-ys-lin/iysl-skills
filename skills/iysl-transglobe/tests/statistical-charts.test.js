@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const { scatter, box, matrix } = require('../scripts/statistical-charts');
+const { render } = require('../scripts/render-chart');
 const m = { w: 900, h: 600, unit: '天', plotTop: 96, plotBottom: 445 };
 const copy = value => JSON.parse(JSON.stringify(value));
 
@@ -17,10 +18,16 @@ assert.throws(() => scatter({ ...scatterSpec, data: [...scatterSpec.data, { labe
 
 const boxSpec = { data: [{ label: '甲', low: 1, q1: 2, median: 3, q3: 4, high: 5, whiskerRule: '1.5IQR', outliers: [8] }, { label: '乙', low: 2, q1: 3, median: 4, q3: 5, high: 6, whiskerRule: '1.5IQR', outliers: [] }], focus: '甲' };
 const boxBefore = copy(boxSpec), boxSvg = box(boxSpec, m);
-assert(boxSvg.includes('data-median="3"') && boxSvg.includes('data-outlier="8"') && boxSvg.includes('Q1 2／中位 3／Q3 4') && boxSvg.includes('離群 8') && !boxSvg.includes('NaN'));
+assert(boxSvg.includes('data-baseline="0"') && boxSvg.includes('data-median="3"') && boxSvg.includes('data-outlier="8"') && boxSvg.includes('Q1 2／中位 3／Q3 4') && boxSvg.includes('離群 8') && !boxSvg.includes('NaN'));
 assert.deepStrictEqual(boxSpec, boxBefore);
+const boundedBox = box({ ...boxSpec, yDomain: [1, 10] }, m);
+assert(!boundedBox.includes('data-baseline="0"') && boundedBox.includes('data-outlier="8"'));
+assert.throws(() => box({ ...boxSpec, yDomain: [0, 5] }, m), /yDomain must cover every observed/);
+assert.throws(() => box({ ...boxSpec, yDomain: [4, 4] }, m), /yDomain/);
 assert.throws(() => box({ data: [{ label: '壞資料', low: 1, q1: 2, median: 3, q3: 4, high: 8, whiskerRule: '1.5IQR', outliers: [] }, boxSpec.data[1]] }, m), /violates/);
+assert.throws(() => box({ data: [{ ...boxSpec.data[0], q1: 4, median: 3 }, boxSpec.data[1]] }, m), /summary must be ordered/);
 assert.throws(() => box({ data: [{ ...boxSpec.data[0], outliers: [8, 9, 10, 11, 12] }, boxSpec.data[1]] }, m), /at most 4/);
+assert.throws(() => box({ data: [{ ...boxSpec.data[0], outliers: [3] }, boxSpec.data[1]] }, m), /violates/);
 
 const matrixSpec = { data: [{ label: '甲案', x: -2, y: 12 }, { label: '乙案', x: 6, y: 4 }], xLabel: '執行成本（百萬元）', yLabel: '預期影響（分）', xDomain: [-5, 10], yDomain: [0, 15], xThreshold: 3, yThreshold: 8, rubric: '成本與影響依 2026 年核定評分表。', focus: '甲案', quadrantLabels: ['可行高影響', '高影響高成本', '低成本低影響', '高成本低影響'], highlightedQuadrant: 'TL' };
 const matrixBefore = copy(matrixSpec), matrixSvg = matrix(matrixSpec, m);
@@ -29,5 +36,11 @@ assert.deepStrictEqual(matrixSpec, matrixBefore);
 assert.throws(() => matrix({ ...matrixSpec, xDomain: [5, 5] }, m), /xDomain/);
 assert.throws(() => matrix({ ...matrixSpec, xThreshold: -5 }, m), /strictly inside/);
 assert.throws(() => matrix({ ...matrixSpec, highlightedQuadrant: 'priority' }, m), /highlightedQuadrant/);
+assert.throws(() => matrix({ ...matrixSpec, focus: undefined, data: [{ label: '甲', x: -4.9, y: 14.9 }] }, m), /matrix labels overlap/);
+assert.throws(() => matrix({ ...matrixSpec, yThreshold: 0.5 }, m), /quadrant labels exceed their quadrant/);
+const renderedMatrix = { ...matrixSpec, chart: 'matrix', title: '矩陣測試', unit: '分', period: '2026', source: '測試資料', notes: [] };
+for (const [layout, placementWidthInches] of [['web'], ['document', 6.1], ['slide', 12]]) assert.doesNotThrow(() => render({ ...renderedMatrix, layout, ...(placementWidthInches ? { placementWidthInches } : {}) }), `matrix labels fit ${layout}`);
+const thresholdMatrix = { ...renderedMatrix, data: [{ label: '甲', x: 5.4, y: 4.6 }, { label: '乙', x: 5.2, y: 4.8 }], focus: '甲', xDomain: [0, 10], yDomain: [0, 10], xThreshold: 5, yThreshold: 5, quadrantLabels: ['左上', '右上', '左下', '右下'] };
+for (const [layout, placementWidthInches] of [['web'], ['document', 6.1], ['slide', 12]]) assert.doesNotThrow(() => render({ ...thresholdMatrix, layout, ...(placementWidthInches ? { placementWidthInches } : {}) }), `matrix threshold labels fit ${layout}`);
 
 console.log('statistical charts validated');

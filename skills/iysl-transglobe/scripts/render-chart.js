@@ -8,20 +8,7 @@ const U = require('./chart-utils');
 const { C, esc, finite, fail, el, text, line, rect, dot, label, wrap, rows, extent, scale, ticks, tick, num, plot, xAxis } = U;
 
 function waterfall(s, m) {
-  const data = rows(s, 1, 10);
-  if (!finite(s.start)) fail('waterfall requires numeric start');
-  let total = s.start;
-  const parts = [{ label: s.startLabel || '期初', from: 0, to: total, total: true }];
-  for (const r of data) {
-    if (!finite(r.value)) fail('waterfall changes must be finite');
-    const from = total; total += r.value;
-    if (!finite(total)) fail('waterfall running balance is not finite');
-    parts.push({ ...r, from, to: total });
-  }
-  parts.push({ label: s.endLabel || '期末', from: 0, to: total, total: true });
-  if (new Set(parts.map(r => r.label)).size !== parts.length) fail('waterfall start/change/end labels must be unique');
-  const tolerance = Number.EPSILON * 16 * Math.max(1, Math.abs(total), Math.abs(s.start), ...data.map(r => Math.abs(r.value)));
-  if (s.end !== undefined && (!finite(s.end) || Math.abs(s.end - total) > tolerance)) fail('waterfall end does not equal start plus changes');
+  const parts = U.waterfallData(s);
   const focus = s.focus || parts.at(-1).label;
   if (!parts.some(r => r.label === focus)) fail('waterfall focus must match a label');
   const [lo, hi] = extent(parts.flatMap(r => [r.from, r.to]));
@@ -52,7 +39,7 @@ function dumbbell(s, m) {
   out += label(p.x + p.w + 32, p.y - 18, `${beforeLabel} → ${afterLabel}（差值）`, 248, { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const y = p.y + (i + .5) * slot, color = !s.focus || r.label === s.focus ? C.blue : C.gray;
-    const delta = Number((r.after - r.before).toPrecision(12));
+    const delta = U.difference(r.before, r.after);
     out += label(p.x - 16, y - 4, r.label, p.x - 35, { 'text-anchor': 'end' });
     out += line(X(r.before), y, X(r.after), y, { stroke: C.gray, 'stroke-width': 3 });
     out += dot(X(r.before), y, 'white', { stroke: C.gray, 'stroke-width': 3, 'data-before': r.before });
@@ -74,17 +61,18 @@ function funnel(s, m) {
   });
   if (!data[0].value) fail('funnel starting cohort must be above zero');
   if (s.sameCohort !== true) fail('funnel requires confirmed sameCohort: true from source data');
+  const rates = U.funnelRates(data);
   const p = plot(m, 220, 210), slot = p.h / data.length, base = data[0].value;
   if (slot < 45) fail('funnel too dense; increase height or use a stage table');
   let out = text(p.x + p.w + 12, p.y - 18, '件數 / 階段完成率', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const height = Math.min(48, slot - 16), y = p.y + i * slot + (slot - height) / 2, width = p.w * r.value / base;
-    const rate = !i ? '起始母體' : !data[i - 1].value ? '不適用' : `${Number((r.value / data[i - 1].value * 100).toFixed(2))}%`;
+    const rate = !i ? '起始母體' : rates.stages[i] === null ? '不適用' : `${U.derived(rates.stages[i], 2)}%`;
     out += label(p.x - 16, y + 20, r.label, p.x - 40, { 'text-anchor': 'end' });
     out += rect(p.x + (p.w - width) / 2, y, width, height, i === data.length - 1 ? C.blue : C.gray, { 'data-count': r.value });
     out += label(p.x + p.w + 12, y + 20, `${num(r.value)} / ${rate}`, 180);
   });
-  return out + label(p.x, p.y + p.h + 36, `階段率以前一階段為分母；最終完成率 ${Number((data.at(-1).value / base * 100).toFixed(2))}%（起始母體 ${num(base)}）`, p.w + 100, { fill: C.muted, 'font-size': 18 });
+  return out + label(p.x, p.y + p.h + 36, `階段率以前一階段為分母；最終完成率 ${U.derived(rates.completion, 2)}%（起始母體 ${num(base)}）`, p.w + 100, { fill: C.muted, 'font-size': 18 });
 }
 
 function tornado(s, m) {
@@ -133,6 +121,51 @@ function table(s, m) {
 const renderers = { ...require('./basic-charts'), waterfall, dumbbell, funnel, tornado, table,
   ...require('./composition-charts'), ...require('./statistical-charts'), ...require('./extension-charts') };
 
+// Reader-facing facts use the same calculations and display precision as the marks.
+function derivedSummary(spec) {
+  if (['stacked', 'mekko', 'sharetrend'].includes(spec.chart)) {
+    const { data, categories, totals, shares } = U.composition(spec, null, spec.data.length);
+    const grand = U.sum(totals);
+    return data.map((row, i) => `${row.label} 總量 ${num(totals[i])}，${categories.map((name, j) => `${name} ${U.derived(shares[i][j], 1)}%`).join('、')}${spec.chart === 'mekko' ? `，市場占比 ${U.derived(U.percent(totals[i], grand), 1)}%` : ''}`).join('；');
+  }
+  if (spec.chart === 'indexed') return U.indexedData(spec.data).map(row => `${row.label} 指數：${row.values.map((value, i) => `${spec.labels[i]} ${value === null ? '未提供' : U.derived(value)}`).join('、')}`).join('；');
+  if (spec.chart === 'waterfall') return U.waterfallData(spec).map(row => `${row.label} 餘額 ${num(row.to)}`).join('；');
+  if (spec.chart === 'dumbbell') return spec.data.map(row => `${row.label} 差值 ${num(U.difference(row.before, row.after))}`).join('；');
+  if (spec.chart === 'funnel') {
+    const rates = U.funnelRates(spec.data);
+    return spec.data.map((row, i) => `${row.label} 階段率 ${!i ? '起始母體' : rates.stages[i] === null ? '不適用' : U.derived(rates.stages[i], 2) + '%'}`).join('；') + `；最終完成率 ${U.derived(rates.completion, 2)}%`;
+  }
+  if (spec.chart === 'pareto') {
+    const { data, cumulative } = U.paretoData(spec);
+    return data.map((row, i) => `${row.label} 累計 ${U.derived(cumulative[i])}%`).join('；');
+  }
+  if (spec.chart === 'histogram') {
+    const { counts, edges } = U.histogramData(spec);
+    return counts.map((count, i) => `[${num(edges[i])}, ${num(edges[i + 1])}) ${num(count)} 筆`).join('；');
+  }
+  return '';
+}
+
+function readingNotes(spec) {
+  const notes = [], data = Array.isArray(spec.data) ? spec.data : [];
+  if (['trend', 'tracking', 'indexed'].includes(spec.chart)) {
+    for (const row of data) {
+      if (!Array.isArray(row?.values)) continue;
+      const missing = row.values.flatMap((value, i) => value === null ? [spec.labels?.[i] ?? i + 1] : []);
+      if (missing.length) notes.push(`未提供：${row.label}／${missing.join('、')}（缺值斷線）`);
+    }
+  }
+  if (spec.chart === 'combo') for (const [key, name] of [['value', `柱（${spec.unit}）`], ['rate', spec.rateLabel]]) {
+    const missing = data.filter(row => row?.[key] === null).map(row => row.label);
+    if (missing.length) notes.push(`未提供：${name}／${missing.join('、')}${key === 'rate' ? '（缺值斷線）' : ''}`);
+  }
+  if (['trend', 'tracking', 'box'].includes(spec.chart) && spec.yDomain !== undefined) {
+    const [lo, hi] = U.domain(spec.yDomain, 'yDomain');
+    notes.push(`顯示範圍：${num(lo)}–${num(hi)} ${spec.unit}${lo > 0 || hi < 0 ? '；縱軸不含零' : ''}`);
+  }
+  return notes;
+}
+
 // Long description for screen readers and detached SVGs: the plotted values, not only the metadata.
 function dataSummary(spec) {
   const value = v => v === null ? '未提供' : num(v), data = Array.isArray(spec.data) ? spec.data : [];
@@ -153,6 +186,9 @@ function render(spec) {
   if (invalidXML(spec)) fail('input contains invalid XML control characters');
   const fn = renderers[spec.chart];
   if (typeof fn !== 'function' || !Object.hasOwn(renderers, spec.chart)) fail(`unknown chart; use ${Object.keys(renderers).join(', ')}`);
+  if (spec.categoryDomain !== undefined && !['waffle', 'stacked', 'mekko', 'sharetrend', 'grouped', 'tracking'].includes(spec.chart)) fail('categoryDomain is only supported by categorical charts');
+  if (spec.yDomain !== undefined && !['trend', 'tracking', 'box', 'scatter', 'matrix'].includes(spec.chart)) fail('yDomain is only supported by trend, tracking, box, scatter and matrix');
+  if (spec.xDomain !== undefined && !['scatter', 'matrix'].includes(spec.chart)) fail('xDomain is only supported by scatter and matrix');
   if (spec.subtitle !== undefined && (typeof spec.subtitle !== 'string' || !spec.subtitle.trim())) fail('subtitle must be a nonempty reading explanation');
   const layout = spec.layout ?? 'web';
   const size = { web: [1200, 800], document: [840, 720], slide: [960, 540] };
@@ -168,7 +204,7 @@ function render(spec) {
   const subtitleLines = spec.subtitle ? wrap(spec.subtitle, (w - 88) / 18) : [];
   if (subtitleLines.length > 3) fail('subtitle needs more than three lines; move supporting detail to notes');
   const subtitleTop = titleTop + titleLines.length * titleStep;
-  const extra = spec.chart === 'tornado' ? [`模型：${spec.model}；假設：${(spec.assumptions || []).join('；')}`] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : [];
+  const extra = [...(spec.chart === 'tornado' ? [`模型：${spec.model}；假設：${(spec.assumptions || []).join('；')}`] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : []), ...readingNotes(spec)];
   const footer = [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...spec.notes, ...extra].flatMap(v => wrap(v, (w - 88) / 16));
   const footerTop = h - 32 - (footer.length - 1) * 22;
   const bottomGap = { ranking: 70, ordered: 70, bullet: 90, heatmap: 100, trend: 75, tracking: 75, waterfall: 85, dumbbell: 120, funnel: 115, tornado: 70, table: 40, waffle: 40, stacked: 120, mekko: 145, pareto: 90, indexed: 110, scatter: 160, box: 110, matrix: 95, grouped: 70, combo: 95, histogram: 90, sharetrend: 130 }[spec.chart];
@@ -187,7 +223,7 @@ function render(spec) {
   }
   const id = 'tg-' + crypto.createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 12);
   return el('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-labelledby': `${id}-title ${id}-desc`, 'font-family': 'Arial, Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif', ...placement },
-    el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...spec.notes, ...extra, `數值：${dataSummary(spec)}`].filter(Boolean).join('；'))) +
+    el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...spec.notes, ...extra, `數值：${dataSummary(spec)}`, derivedSummary(spec)].filter(Boolean).join('；'))) +
     el('metadata', {}, esc(JSON.stringify(spec))) + rect(0, 0, w, h, '#FFFFFF') + titleLines.map((v, i) => text(44, titleTop + i * titleStep, v, { fill: '#000099', 'font-size': titleSize, 'font-weight': 700 })).join('') +
     subtitleLines.map((v, i) => text(44, subtitleTop + i * 24, v, { fill: C.muted, 'font-size': 18, 'data-reading-guide': true })).join('') + body + line(44, footerTop - 24, w - 44, footerTop - 24) +
     footer.map((v, i) => text(44, footerTop + i * 22, v, { fill: C.muted, 'font-size': 16 })).join(''));
