@@ -15,10 +15,12 @@
 
 - Preserve trigger nouns and keep each skill's responsibility boundary explicit.
 - When `SKILL.md` references `scripts/`, `references/`, `assets/`, templates, tests, or agent metadata, validate the companion files as part of the same change.
+- When the checkout already holds another task's uncommitted work, make your change in its own git worktree and branch, and land it on `main` through a PR, so each commit carries one task.
 
 ## Verification
 
 - Run the narrowest affected skill verifier first, then the relevant repository contract or package tests.
+- Run pytest directly as `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -p no:cacheprovider`; the `tools/verify-*.sh` scripts already disable bytecode, and the package-contract test rejects any `__pycache__` left under `skills/`.
 - Use `tools/verify-live-install.sh <skill-name>` only when live-install parity is in scope.
 - Distinguish repository tests, package validation, live-install visibility, and published plugin state.
 
