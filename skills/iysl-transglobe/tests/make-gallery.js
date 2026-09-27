@@ -3,7 +3,7 @@
 // Usage: node make-gallery.js /absolute/output-directory
 const fs = require('node:fs'), path = require('node:path');
 const { render, chartTypes } = require('../scripts/render-chart');
-const { esc } = require('../scripts/chart-utils');
+const { esc, composition: compositionFacts, num, derived, percent, sum } = require('../scripts/chart-utils');
 const out = process.argv[2];
 if (!out) throw Error('give an output directory');
 const examples = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/chart-examples.json'), 'utf8'));
@@ -18,25 +18,25 @@ if (chartTypes.some(chart => !charts[chart]) || Object.keys(charts).some(chart =
 fs.mkdirSync(out, { recursive: true });
 const composition = charts.stacked;
 if (JSON.stringify(charts.mekko.data) !== JSON.stringify(composition.data)) throw Error('stacked and mekko must retain the same composition source data');
-const number = value => Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
-const totals = composition.data.map(row => ({ label: row.label, value: row.values.reduce((sum, value) => sum + value, 0) }));
+const calculated = compositionFacts(composition, null, 6);
+const totals = composition.data.map((row, i) => ({ label: row.label, value: calculated.totals[i] }));
 const largest = totals.reduce((best, row) => row.value > best.value ? row : best);
-const grandTotal = totals.reduce((sum, row) => sum + row.value, 0);
-const largestSegment = composition.data.flatMap(row => row.values.map((value, index) => ({
-  channel: row.label, category: composition.categories[index], share: value / totals.find(total => total.label === row.label).value * 100
+const grandTotal = sum(calculated.totals);
+const largestSegment = composition.data.flatMap((row, i) => row.values.map((value, index) => ({
+  channel: row.label, category: composition.categories[index], share: calculated.shares[i][index]
 }))).reduce((best, cell) => cell.share > best.share ? cell : best);
 const story = [
   {
     id: 'same-data-total-size', question: '哪一個通路的總規模最大？', why: '先把每個通路的三種商品加總，再用排行比較總額。',
-    spec: { chart: 'ranking', title: `${largest.label}通路總規模最大，為 ${number(largest.value)} 萬元`, subtitle: '每條是同一通路三種商品的原始金額加總；比較的是總規模。', unit: composition.unit, period: composition.period, source: composition.source, notes: ['由同一份通路×商品原始金額加總；設計示意資料。'], focus: largest.label, data: totals }
+    spec: { chart: 'ranking', title: `${largest.label}通路總規模最大，為 ${num(largest.value)} 萬元`, subtitle: '每條是同一通路三種商品的原始金額加總；比較的是總規模。', unit: composition.unit, period: composition.period, source: composition.source, notes: ['由同一份通路×商品原始金額加總；設計示意資料。'], focus: largest.label, data: totals }
   },
   {
     id: 'same-data-within-channel', question: '每個通路內，哪種商品占比最高？', why: '各通路先各自除以總額，再用 100% 堆疊圖比較內部組成。',
-    spec: { ...composition, title: `${largestSegment.channel}的${largestSegment.category}占比 ${number(largestSegment.share)}%，三個通路中最高`, subtitle: '每列固定為 100%；比較的是各通路內的商品組成，不比較通路總規模。' }
+    spec: { ...composition, title: `${largestSegment.channel}的${largestSegment.category}占比 ${derived(largestSegment.share, 1)}%，三個通路中最高`, subtitle: '每列固定為 100%；比較的是各通路內的商品組成，不比較通路總規模。' }
   },
   {
     id: 'same-data-size-and-composition', question: '總規模與通路內組成要一起看時，誰占整體最大？', why: '矩形寬度保留通路總額、高度保留通路內組成，面積才代表整體份額。',
-    spec: { ...charts.mekko, title: `${largest.label}通路規模最大，占三通路總額約 ${number(largest.value / grandTotal * 100)}%`, subtitle: '寬度是通路總規模、高度是通路內組成；矩形面積才可比較整體份額。' }
+    spec: { ...charts.mekko, title: `${largest.label}通路規模最大，占三通路總額約 ${derived(percent(largest.value, grandTotal), 1)}%`, subtitle: '寬度是通路總規模、高度是通路內組成；矩形面積才可比較整體份額。' }
   }
 ];
 function readerSpec(spec) {

@@ -1,5 +1,6 @@
 """Dependency-free checks for every bundled SVG renderer and CLI contract."""
 import json
+from decimal import Decimal
 from pathlib import Path
 import subprocess
 import tempfile
@@ -31,7 +32,7 @@ def test_gallery_uses_the_same_composition_data_for_three_questions():
         subprocess.run(["node", str(ROOT / "tests" / "make-gallery.js"), directory], check=True, capture_output=True)
         specs = {name: json.loads((Path(directory) / f"same-data-{name}.json").read_text(encoding="utf-8"))
                  for name in ["total-size", "within-channel", "size-and-composition"]}
-        assert specs["total-size"]["data"] == [{"label": row["label"], "value": sum(row["values"])} for row in source["data"]]
+        assert specs["total-size"]["data"] == [{"label": row["label"], "value": float(sum(Decimal(str(v)) for v in row["values"]))} for row in source["data"]]
         for name in ["within-channel", "size-and-composition"]:
             assert specs[name]["data"] == source["data"]
             assert specs[name]["categories"] == source["categories"]

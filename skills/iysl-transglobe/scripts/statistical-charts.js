@@ -1,22 +1,13 @@
 'use strict';
 
-const { C, finite, fail, text, line, rect, dot, countWidth, rows, namedFocus, extent, scale, num, tick, ticks, plot, label } = require('./chart-utils');
+const { C, finite, fail, text, line, rect, dot, countWidth, rows, namedFocus, domain, observedDomain, scale, num, tick, ticks, plot, label } = require('./chart-utils');
 
 const caption = { fill: C.muted, 'font-size': 18 };
 const unitLabel = (value, name) => {
   if (typeof value !== 'string' || !value.trim() || !/[（(].+[）)]/.test(value)) fail(`${name} must state its unit, for example "處理時間（天）"`);
   return value;
 };
-const domain = (value, name) => {
-  if (!Array.isArray(value) || value.length !== 2 || !value.every(finite) || value[0] >= value[1]) fail(`${name} must be [min, max] with min < max`);
-  return value;
-};
-const placed = (items, what) => {
-  for (let i = 0; i < items.length; i++) for (let j = 0; j < i; j++) {
-    const a = items[i], b = items[j];
-    if (Math.abs(a.x - b.x) < (a.w + b.w) / 2 + 10 && Math.abs(a.y - b.y) < 24) fail(`${what} labels overlap; enlarge, split, or use a table`);
-  }
-};
+const overlaps = (a, b, gap = 6) => a.left < b.right + gap && a.right + gap > b.left && a.top < b.bottom + gap && a.bottom + gap > b.top;
 
 function axes(p, xDomain, yDomain, xLabel, yLabel, xLabelAbove = false) {
   let out = '';
@@ -48,9 +39,8 @@ function scatter(s, m) {
   data.forEach((r, i) => { if (!finite(r.x) || !finite(r.y)) fail(`row ${i + 1} needs finite x and y`); });
   const focus = s.focus === undefined ? null : namedFocus(s, data), p = plot(m, 105, 55);
   const explicitX = s.xDomain !== undefined, explicitY = s.yDomain !== undefined;
-  const xDomain = explicitX ? domain(s.xDomain, 'xDomain') : extent(data.map(r => r.x));
-  const yDomain = explicitY ? domain(s.yDomain, 'yDomain') : extent(data.map(r => r.y));
-  if (data.some(r => r.x < xDomain[0] || r.x > xDomain[1] || r.y < yDomain[0] || r.y > yDomain[1])) fail('scatter domains must cover every observed value');
+  const xDomain = observedDomain(data.map(r => r.x), s.xDomain, 'xDomain');
+  const yDomain = observedDomain(data.map(r => r.y), s.yDomain, 'yDomain');
   const marks = data.map(r => ({ ...r, cx: scale(r.x, ...xDomain, p.x, p.x + p.w), cy: scale(r.y, ...yDomain, p.y + p.h, p.y) }));
   for (let i = 0; i < marks.length; i++) for (let j = 0; j < i; j++) if (Math.hypot(marks[i].cx - marks[j].cx, marks[i].cy - marks[j].cy) < 34) fail('points or their index labels overlap; enlarge, split, or use a table');
   let out = axes(p, xDomain, yDomain, xLabel, yLabel, true);
@@ -92,7 +82,7 @@ function box(s, m) {
   });
   const focus = s.focus === undefined ? null : namedFocus(s, data), p = plot(m, 105, 55);
   if (p.w / data.length < 150) fail('box groups need at least 150px each for readable quartile labels; enlarge, split, or use a table');
-  const yDomain = extent(data.flatMap(r => [r.low, r.high, ...r.outliers]));
+  const yDomain = observedDomain(data.flatMap(r => [r.low, r.high, ...r.outliers]), s.yDomain, 'yDomain');
   let out = valueGrid(p, yDomain, m.unit);
   const outlierLabels = [];
   data.forEach((r, i) => {
@@ -122,15 +112,39 @@ function matrix(s, m) {
   data.forEach((r, i) => { if (!finite(r.x) || !finite(r.y) || r.x < xDomain[0] || r.x > xDomain[1] || r.y < yDomain[0] || r.y > yDomain[1]) fail(`row ${i + 1} must be inside the declared domains`); });
   const focus = s.focus === undefined ? null : namedFocus(s, data), p = plot(m, 105, 55);
   const marks = data.map(r => ({ ...r, cx: scale(r.x, ...xDomain, p.x, p.x + p.w), cy: scale(r.y, ...yDomain, p.y + p.h, p.y) }));
-  // Labels near an edge slide inward rather than failing; only labels wider than the plot are rejected.
-  const labels = marks.map(r => {
-    const value = `${r.label} ${num(r.x)}／${num(r.y)}`, w = countWidth(value) * 20;
-    return { value, w, x: Math.min(Math.max(r.cx, p.x + w / 2 + 4), p.x + p.w - w / 2 - 4), y: r.cy - 20 };
-  });
-  if (labels.some(r => r.w + 8 > p.w || r.y - 14 < p.y)) fail('matrix labels exceed the plot; enlarge, split, or use a table');
-  placed(labels, 'matrix');
   const tx = scale(s.xThreshold, ...xDomain, p.x, p.x + p.w), ty = scale(s.yThreshold, ...yDomain, p.y + p.h, p.y);
   const quadrants = [{ key: 'TL', x: p.x, y: p.y, w: tx - p.x, h: ty - p.y }, { key: 'TR', x: tx, y: p.y, w: p.x + p.w - tx, h: ty - p.y }, { key: 'BL', x: p.x, y: ty, w: tx - p.x, h: p.y + p.h - ty }, { key: 'BR', x: tx, y: ty, w: p.x + p.w - tx, h: p.y + p.h - ty }];
+  // ponytail: try four corners greedily; add backtracking if valid dense layouts are rejected.
+  const headers = (s.quadrantLabels || []).map((value, index) => {
+    const q = quadrants[index], width = countWidth(value) * 18;
+    if (width > q.w - 24 || q.h < 32) fail('matrix quadrant labels exceed their quadrant; enlarge, split, or use a table');
+    const corners = [
+      { x: q.x + 12, y: q.y + 22, anchor: 'start' },
+      { x: q.x + q.w - 12, y: q.y + 22, anchor: 'end' },
+      { x: q.x + 12, y: q.y + q.h - 10, anchor: 'start' },
+      { x: q.x + q.w - 12, y: q.y + q.h - 10, anchor: 'end' },
+    ];
+    const outer = index;
+    const candidates = [corners[outer], ...corners.filter((_, corner) => corner !== outer)].map(candidate => ({
+      ...candidate, value, q, left: candidate.anchor === 'end' ? candidate.x - width : candidate.x,
+      right: candidate.anchor === 'end' ? candidate.x : candidate.x + width, top: candidate.y - 18, bottom: candidate.y + 6,
+    }));
+    const placed = candidates.find(candidate => !marks.some(mark => mark.cx + 8 > candidate.left && mark.cx - 8 < candidate.right && mark.cy + 8 > candidate.top && mark.cy - 8 < candidate.bottom));
+    if (!placed) fail('matrix quadrant labels overlap points; enlarge, split, or use a table');
+    return placed;
+  });
+  for (let i = 0; i < headers.length; i++) for (let j = 0; j < i; j++) if (overlaps(headers[i], headers[j])) fail('matrix quadrant labels overlap; enlarge, split, or use a table');
+  const occupied = [...headers], labels = [];
+  for (const mark of marks) {
+    const value = `${mark.label} ${num(mark.x)}／${num(mark.y)}`, width = countWidth(value) * 20;
+    const candidates = [
+      { x: mark.cx, y: mark.cy - 16, anchor: 'middle' }, { x: mark.cx, y: mark.cy + 30, anchor: 'middle' },
+      { x: mark.cx - 12, y: mark.cy + 6, anchor: 'end' }, { x: mark.cx + 12, y: mark.cy + 6, anchor: 'start' },
+    ].map(candidate => ({ ...candidate, value, left: candidate.anchor === 'end' ? candidate.x - width : candidate.anchor === 'start' ? candidate.x : candidate.x - width / 2, right: candidate.anchor === 'end' ? candidate.x : candidate.anchor === 'start' ? candidate.x + width : candidate.x + width / 2, top: candidate.y - 22, bottom: candidate.y + 6 }));
+    const placed = candidates.find(candidate => candidate.left >= p.x && candidate.right <= p.x + p.w && candidate.top >= p.y && candidate.bottom <= p.y + p.h && !occupied.some(other => overlaps(candidate, other)) && !marks.some(other => other !== mark && candidate.left <= other.cx + 8 && candidate.right >= other.cx - 8 && candidate.top <= other.cy + 8 && candidate.bottom >= other.cy - 8));
+    if (!placed) fail('matrix labels overlap; enlarge, split, or use a table');
+    labels.push(placed); occupied.push(placed);
+  }
   let out = '';
   if (s.highlightedQuadrant) {
     const q = quadrants.find(item => item.key === s.highlightedQuadrant);
@@ -139,11 +153,10 @@ function matrix(s, m) {
   out += axes(p, xDomain, yDomain, xLabel, yLabel);
   out += line(tx, p.y, tx, p.y + p.h, { stroke: C.gray, 'stroke-dasharray': '5 5', 'data-x-threshold': s.xThreshold });
   out += line(p.x, ty, p.x + p.w, ty, { stroke: C.gray, 'stroke-dasharray': '5 5', 'data-y-threshold': s.yThreshold });
-  if (s.quadrantLabels) s.quadrantLabels.forEach((value, index) => {
-    const q = quadrants[index];
-    out += label(q.x + 12, q.y + 22, value, q.w - 24, { ...caption, fill: q.key === s.highlightedQuadrant ? C.blue : C.muted, 'font-weight': q.key === s.highlightedQuadrant ? 700 : 400 }, 1);
+  headers.forEach(({ value, q, x, y, anchor }) => {
+    out += label(x, y, value, q.w - 24, { ...caption, fill: q.key === s.highlightedQuadrant ? C.blue : C.muted, 'font-weight': q.key === s.highlightedQuadrant ? 700 : 400, 'text-anchor': anchor }, 1);
   });
-  marks.forEach(r => { const color = r.label === focus ? C.blue : C.gray, labelColor = r.label === focus ? C.blue : C.muted, placedLabel = labels[marks.indexOf(r)]; out += dot(r.cx, r.cy, color, { r: r.label === focus ? 8 : 6, 'data-label': r.label, 'data-x': r.x, 'data-y': r.y }) + text(placedLabel.x, r.cy - 16, placedLabel.value, { fill: labelColor, 'font-size': 20, 'text-anchor': 'middle' }); });
+  marks.forEach((r, i) => { const color = r.label === focus ? C.blue : C.gray, labelColor = r.label === focus ? C.blue : C.muted, placedLabel = labels[i]; out += dot(r.cx, r.cy, color, { r: r.label === focus ? 8 : 6, 'data-label': r.label, 'data-x': r.x, 'data-y': r.y }) + text(placedLabel.x, placedLabel.y, placedLabel.value, { fill: labelColor, 'font-size': 20, 'text-anchor': placedLabel.anchor }); });
   return out;
 }
 
