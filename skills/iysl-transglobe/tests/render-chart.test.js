@@ -132,7 +132,7 @@ for (const [value, places, expected] of [[1/1e9*100,1,'1e-7'],[100/3000,1,'0.033
 }
 assert.throws(() => U.categoryIndices({}, ['A','B','C','D','E']), error => /categories/.test(error.message) && !/categoryDomain/.test(error.message));
 assert.throws(() => U.categoryIndices({categoryDomain:['A','B','C','D','E']}, ['A']), /categoryDomain/);
-assert.deepStrictEqual(U.categoryIndices({categoryDomain:['其他','A']}, ['其他','A']), [0,1], 'ordinary small domains retain their input colour ordering');
+assert.deepStrictEqual(U.categoryIndices({categoryDomain:['其他','A']}, ['其他','A']), [4,1], 'Other takes the neutral slot by name; other categories keep their domain order');
 for (const [other, expected] of [[999999999,'1e-7'],[2999,'0.033']]) {
   const svg = render({...common, chart:'stacked', categories:['A','B'], data:[{label:'甲',values:[1,other]},{label:'乙',values:[1,other]}]});
   assert(svg.match(/<desc[^>]*>(.*?)<\/desc>/)[1].includes(`A ${expected}%`));

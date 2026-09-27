@@ -22,6 +22,8 @@ assert(preciseStack.includes('總量 0.0004') && preciseStack.includes('50% · 0
 const domainStack = charts.stacked({ categoryDomain: ['A', 'B'], categories: ['B', 'A'], data: [{ label: '甲', values: [7, 3] }, { label: '乙', values: [4, 6] }] }, frame);
 const domainCells = [...domainStack.matchAll(/<rect[^>]*fill="(#[0-9A-F]{6})"[^>]*data-category="([^"]+)"/g)].map(match => [match[1], match[2]]);
 assert(domainCells.some(([fill, category]) => fill === '#04696C' && category === 'B') && domainCells.some(([fill, category]) => fill === '#28317B' && category === 'A'), 'categoryDomain keeps category colours stable when observed order changes');
+const otherStack = charts.stacked({ categories: ['A', 'B', '其他'], data: [{ label: '甲', values: [5, 3, 2] }, { label: '乙', values: [4, 4, 2] }] }, frame);
+assert(/fill="#DDDDDD"[^>]*data-category="其他"/.test(otherStack) && !/fill="#4A8F5B"[^>]*data-category="其他"/.test(otherStack), 'Other is neutral gray by name, not only in the fifth position');
 
 const mekko = charts.mekko({ categories: ['A', 'B'], data: [{ label: '甲', values: [10, 0] }, { label: '乙', values: [10, 20] }] }, frame);
 const cells = [...mekko.matchAll(/<rect[^>]+data-value="([^"]+)"[^>]+data-share="([^"]+)"/g)].map(match => [Number(match[1]), Number(match[2])]);

@@ -169,10 +169,11 @@ function categoryIndices(s, names) {
   const name = s.categoryDomain === undefined ? 'categories' : 'categoryDomain';
   if (!Array.isArray(values) || values.length < 1 || values.length > 5 || values.some(value => typeof value !== 'string' || !value.trim()) || new Set(values).size !== values.length) fail(`${name} must contain unique nonempty names, at most four plus Other`);
   if (values.length === 5 && !/^(other|其他)$/i.test(values[4].trim())) fail(`the fifth entry in ${name} must be the existing Other category`);
+  // Other is identified by name, not position: it always takes the neutral fifth slot (#DDDDDD).
   return names.map(name => {
     const index = values.indexOf(name);
     if (index < 0) fail(`categoryDomain does not include "${name}"`);
-    return index;
+    return /^(other|其他)$/i.test(name.trim()) ? 4 : index;
   });
 }
 
