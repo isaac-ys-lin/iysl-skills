@@ -41,12 +41,12 @@ class EquityCouncilContractTest(unittest.TestCase):
         self.assertNotIn("pm_chair", self.template["artifact_bindings"])
         self.assertFalse((ROOT / "references" / "judgment-contract.md").exists())
 
-    def test_template_has_one_v4_authority_root(self):
-        self.assertEqual(self.template["schema_version"], 4)
+    def test_template_has_one_v5_authority_root(self):
+        self.assertEqual(self.template["schema_version"], 5)
         self.assertEqual(self.template["council_runtime"], "collaboration_available")
         self.assertEqual(set(self.template["council_input_pei_receipt"]), {"path", "sha256"})
         bindings = self.template["artifact_bindings"]
-        self.assertEqual(bindings["authority_version"], 3)
+        self.assertEqual(bindings["authority_version"], 4)
         self.assertEqual(set(bindings["seat_packets"]), {"damodaran", "soros", "mauboussin"})
         self.assertEqual(set(bindings["sealed_memos"]), {"damodaran", "soros", "mauboussin"})
         self.assertEqual(
@@ -70,12 +70,13 @@ class EquityCouncilContractTest(unittest.TestCase):
             self.assertIn("same PEI owner", body)
             self.assertNotIn("PM Chair", body)
 
-    def test_agent_interfaces_require_symmetric_calibration_and_market_right_case(self):
+    def test_agent_interfaces_dispatch_blind_estimates_and_symmetric_cases(self):
         for body in (self.interface, self.openai):
-            self.assertIn("too conservative", body)
-            self.assertIn("too aggressive", body)
-            self.assertIn("uncertain", body)
-            self.assertIn("market-right countercase", body)
+            self.assertIn("blind packet, never the owner values", body)
+            self.assertIn("own Base and range for every candidate assumption", body)
+            self.assertIn("strongest upside and downside cases", body)
+            self.assertIn("cost of a missed entry", body)
+            self.assertNotIn("market-right countercase", body)
 
 
 

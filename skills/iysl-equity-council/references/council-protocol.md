@@ -2,189 +2,211 @@
 
 ## Purpose
 
-Use three genuinely separate reasoning paths to improve a PEI owner's candidate
-assumptions before calculation. The agents challenge; the owner decides.
+Use three separate reasoning paths to challenge a PEI owner's candidate
+assumptions before calculation. Seats estimate blind; the owner decides after
+the sealed memos arrive.
 
 ## Dispatch
 
-Spawn exactly three parallel leaf agents. Give every agent only:
+Spawn exactly three parallel leaf agents in fresh contexts without inherited
+owner conversation (for collaboration agents, use `fork_turns="none"`). Give
+each seat only its public-method name, the common packet, and accepted local
+evidence named by that packet. It
+may independently search relevant original sources under the project
+browser/Exa policy, but discoveries remain candidates for Data admission.
 
-- its exact public-method seat name;
-- the same identity, evidence cutoff, current price, and decision horizon;
-- the preliminary underwrite's candidate assumptions;
-- the evidence IDs relevant to its method; and
-- authority to inspect the packet, accepted local evidence, and independently
-  search relevant original sources under the project browser/Exa policy.
+Each task says: no self-admitted evidence, other-seat output, owner private
+underwrite, root artifact, final model, stance, action, or further delegation.
+The packet is the only Council artifact a seat receives. Before hashing the
+underwrite, keep actual periods and units but remove embedded owner estimates:
+`million fully diluted shares; WACC 9.3% [8.5%,11.5%]` becomes
+`million fully diluted shares`, with WACC represented by its own candidate if
+material. Clean owner estimates from rationale, rejected alternatives, flip
+conditions, signal text, and instructions too; attributed source numbers may
+remain. The validator rejects structured leaks; the owner checks free-text
+meaning before dispatch. If collaboration is unavailable, return `BLOCKED`;
+one agent cannot imitate three independent seats.
 
-Every task must say: no self-admitted evidence, no other seat output, no final
-model or action, and no further delegation. It must also require the seat to test
-what may be too conservative, too aggressive, or uncertain and to state the
-strongest evidence-consistent market-right countercase. If collaboration is
-unavailable, return `BLOCKED`; one agent pretending to be three is not
-independent challenge.
-
-The packet instructions must also require each material challenge to trace its
-accepted evidence through a source-to-economic bridge to a proposed Base or
-range and an observable falsifier. A one-variable diagnostic may expose a
-question, but cannot arbitrarily freeze the final central case: the seat must
-say whether connected operating drivers should move together or why they should
-not. This is part of the same first-round instruction, not another review.
+Each seat estimates every `covered` candidate exactly once. It traces accepted
+evidence through an economic bridge to its estimate and observable falsifier.
+A one-variable diagnostic may expose a question, but the seat states whether
+connected operating drivers should move together or why they should not. This
+is the single first round; do not add a seat or restart Council.
 
 ## The three lenses
 
 ### Aswath Damodaran — Fundamental Committee Member
 
-Test whether the business story maps coherently to revenue growth, margins,
-reinvestment, cash conversion, capital structure, discount rate, terminal
-economics, and reverse-valuation implications. Identify assumptions that are
-unsupported, internally inconsistent, too conservative, or too aggressive.
+Test the mapping from the business story to growth, margins, reinvestment, cash
+conversion, capital structure, discount rate, terminal economics, and reverse
+valuation.
 
 ### George Soros — Reflexivity Committee Member
 
-Test whether expectations, marginal actors, financing conditions, narrative,
-liquidity, and price feedback can change the path or timing of fundamentals.
-Separate a durable operating effect from a temporary market loop. Do not turn a
-market signal into source truth.
+Test whether expectations, marginal actors, financing, narrative, liquidity,
+and price feedback can change the fundamental path or timing. Separate durable
+operating effects from temporary market loops; market signals are not source
+truth. Also provide the evidence-compatible most plausible repricing path that
+makes the horizon price materially above the price-implied path, and the
+qualitative cost of a missed entry without inventing a value.
 
 ### Michael Mauboussin — Expectations Committee Member
 
-Compare the proposed assumptions with expectations embedded in price,
-consensus revisions, relevant base rates, competitive economics, and payoff
-asymmetry. Use probabilities only when a defensible basis exists; otherwise
-describe uncertainty and the observations that would resolve it.
+Compare the candidate with price-implied expectations, estimate revisions,
+relevant base rates, competitive economics, and payoff asymmetry. Use
+probabilities only with a defensible basis.
 
-The names describe public analytical traditions only. They do not increase the
-quality of evidence and do not imply endorsement or private access.
+The names describe public analytical traditions only. They do not establish
+evidence quality or imply endorsement or private access.
 
 ## Packet contract
 
-Before dispatch, the preliminary underwrite must disposition these six
-load-bearing assumption families exactly once: revenue/orders/capex recognition;
-product mix and margins; reinvestment and FCFF; capital structure and WACC;
-duration/fade/terminal economics; and 12-month market expectations. Each family
-is either `covered` by named candidate assumption IDs or `not_material` with an
-explicit reason. Every candidate belongs to one family.
+The preliminary underwrite dispositions the six load-bearing families exactly
+once: `revenue_orders_capex_recognition`, `product_mix_and_margins`,
+`reinvestment_and_fcff`, `capital_structure_and_wacc`,
+`duration_fade_and_terminal`, and `twelve_month_market_expectations`. Each
+family is `covered` by named candidate IDs or `not_material` with an explicit
+reason; every candidate belongs to one family. A `covered` family and its
+candidates must agree exactly.
 
-Preserve the original investment question and horizon in the existing candidate
-rationale and packet instructions. For twelve-month market expectations, ask
-whether the proposed operating basis, target-date pricing mechanism, capital /
-distribution assumptions and probability reasoning can support that question.
-An annual revenue guide alone is not this bridge. `covered` means the relevant
-candidate relationships are available for challenge, not that the question is
-answered. Unresolved relationships stay explicit in candidate rationale and
-falsifiers; final prices, stance and owner model remain excluded from packets.
+Before dispatch, hash the complete preliminary underwrite. Preserve its original
+investment question and horizon in the blind candidate rationale and packet
+instructions. For twelve-month expectations, challenge the operating basis,
+target-date pricing mechanism, capital/distribution assumptions, and probability
+reasoning that support that question; an annual revenue guide alone is not the
+bridge. Each packet uses
+`council-premodel-seat-packet-v4` and contains only:
 
-The PEI owner must reconcile every evidence-gated material Ask SA, opened
-Analysis, and opened Transcript signal delivered by Equity Data. Record each
-one under the affected candidate's `challenge_signal_dispositions` with its
-signal and source IDs, evidence nature, finding, `adopt`／`reject`／`not_material`
-disposition, accepted supporting evidence IDs, reason, and flip condition. Ask
-SA is `provider_synthesis`; its source cannot support itself, and its supporting
-evidence must include non-synthesis accepted evidence. A candidate uses an
-empty list only when the Data handoff contains no eligible material signal for
-that assumption. Every packet's root `evidence_ids` must cover the supporting
-evidence of all included signals. Raw Ask SA does not enter a packet.
+- `schema_version`, `ticker`, `security_id`, `evidence_cutoff`, `seat`;
+- `preliminary_underwrite_sha256` (digest only, never a path) and
+  `dispatched_at`;
+- `candidate_assumptions`, `evidence_ids`, and `instructions`.
 
-Each packet is JSON with only:
+Each packet candidate contains exactly `assumption_id`, `family`, `period`,
+`unit`, `evidence_ids`, `flip_condition`, `rationale`,
+`rejected_alternative`, and `challenge_signal_dispositions`. It excludes
+`proposed_base`, `proposed_range`, and any owner-private numerical proposal.
+The PEI owner reconciles each evidence-gated material Ask SA, opened Analysis,
+and opened Transcript signal under the affected candidate's
+`challenge_signal_dispositions`, including its signal/source IDs, evidence
+nature, finding, `adopt`/`reject`/`not_material` disposition, accepted support,
+reason, and flip condition. The packet root evidence IDs cover all candidate
+evidence and accepted support. Ask SA is `provider_synthesis`; it cannot
+support itself and needs non-synthesis accepted support. An empty signal list
+means no eligible material signal was delivered for that candidate.
 
-- `schema_version`
-- `ticker`
-- `security_id`
-- `evidence_cutoff`
-- `seat`
-- `candidate_assumptions`
-- `evidence_ids`
-- `instructions`
+Initial receipt admission does not make private artifacts seat-visible. Model
+evidence IDs and IDs pointing to the bound underwrite, final model, adjudication,
+or sealed memos (including copies with the same hash) cannot enter packet or
+challenge evidence. Dispatch timestamps are no earlier than the initial cutoff
+and no later than the earliest sealed memo.
 
-The packet must not contain, even inside nested fields, a final fair value,
-target price, research stance, action, position size, execution instruction,
-final owner model, or another seat's memo.
+The packet never contains a final fair value, target price, stance, action,
+position size, execution instruction, final owner model, or another seat memo.
 
 ## Memo contract
 
-Each sealed memo contains:
+Each sealed memo uses `council-sealed-memo-v4` and contains its exact `seat`,
+`packet_sha256`, `sealed_at`, truthful `browsed`, `added_evidence_ids: []`,
+`source_candidates`, concise `summary`, `challenges`, both strongest cases,
+and `limitations`. `packet_sha256` binds the received packet. Every packet's
+`dispatched_at` cannot exceed the earliest memo `sealed_at`.
 
-- exact seat and `packet_sha256`;
-- schema `council-sealed-memo-v3`, `sealed_at`, truthful boolean `browsed`, and
-  `added_evidence_ids: []` (discovery is not evidence admission);
-- `source_candidates`: zero or more discoveries, with globally unique
-  `candidate_id`, original `url`, `source_locator`, `as_of` (ISO publication date or timestamp), `retrieved_at`,
-  affected `assumption_ids`, `finding`, and `evidence_nature`;
-- a concise `summary`;
-- zero or more assumption `challenges`;
-- the `strongest_countercase`; and
-- explicit `limitations`.
+Each source candidate has a globally unique `candidate_id`, original `url`,
+`source_locator`, publication `as_of`, `retrieved_at`, affected
+`assumption_ids`, `finding`, and `evidence_nature`. It is a discovery, never
+admitted evidence.
 
-Each challenge contains:
+Every memo has exactly one challenge for every packet candidate, with matching
+`assumption_id`, `period`, and `unit`. A challenge contains
+`estimation_status`, starting-receipt `evidence_ids`, provisional
+`candidate_source_ids`, `reasoning`, `decision_impact`, and `falsifier`.
+It has no `assessment` or self-declared direction.
 
-- `assumption_id`;
-- `assessment`: `supported`, `too_conservative`, `too_aggressive`, or
-  `uncertain`;
-- optional `proposed_base` and `proposed_range`;
-- starting-receipt `evidence_ids` and this seat's provisional `candidate_source_ids`;
-- `reasoning`;
-- `decision_impact`; and
-- `falsifier`.
+For `estimated`, `proposed_base` is finite numeric and `proposed_range` is an ordered
+finite numeric pair containing the Base, supported by at least one accepted
+evidence ID or this seat's provisional source candidate; `not_estimable_reason` and
+`missing_evidence` are null. For `not_estimable`, Base and range are null and
+both `not_estimable_reason` and `missing_evidence` state the estimation obstacle
+and the specific obtainable evidence that would resolve it. A
+seat does not use `uncertain` as a challenge outcome.
 
-Check for material issues omitted from the preliminary model using the starting
-evidence and independently found originals. Candidates remain provisional;
-search snippets alone cannot substantiate a challenge. State the causal link, the decision it could change, and the
-exact obtainable evidence that would resolve it in existing limitations or
-challenges. Do not build a per-formula question inventory or require another
-Council round merely because a catalogue field was not selected. Future
-uncertainty calls for bounded assumptions and falsifiers, not exhaustive data.
-
-A seat may say an assumption is supported. It must not manufacture a difference
-to appear useful. It must not issue the final investment stance.
+`strongest_upside_case` and `strongest_downside_case` are each an object with
+nonempty `mechanism` and `falsifier` strings, plus nonempty string lists
+`joint_conditions` and `observable_triggers`. Soros's upside object also has
+a nonempty qualitative `missed_entry_cost`; it may not fabricate a number.
 
 ## Owner adjudication
 
-After all three memos seal, Data checks material discoveries through the existing
-PEI receipt path. The schema v4 root binds `council_input_pei_receipt` to the
-unchanged initial packet evidence and `pei_input_receipt` to the final admitted
-inputs. The same security's final cutoff cannot precede its initial cutoff.
-This does not require another Council dispatch or a second evidence registry.
+After all three memos seal, Data checks material discoveries through the
+existing PEI receipt path. New Council roots use schema version 5 and
+`artifact_bindings.authority_version` 4. The root binds the original
+preliminary underwrite, all packets, memos, and adjudication by digest. The
+adjudication uses `pei-council-adjudication-v4` and repeats
+`preliminary_underwrite_sha256`; packet hashes bind to that underwrite and memo
+hashes bind to their packets. These hashes and timestamps make later changes
+detectable. Without external trust they cannot prevent an owner who can rewrite
+the complete artifact set from resealing it.
 
-Use root authority_version 3 and `pei-council-adjudication-v3`. Its
-`source_dispositions` maps each candidate exactly once to `candidate_id`,
-`disposition` (`accepted`, `rejected`, `not_material`), admitted `evidence_ids`,
-and `reason`. Only accepted candidates may name final-receipt evidence IDs;
-rejected/not-material rows use an empty list. Data acceptance establishes source
-identity and meaning; PEI still decides whether its claim changes an assumption.
-The original memo may cite a candidate that is later rejected without rewriting
-history. Each final assumption cites only final-receipt accepted evidence.
+`source_dispositions` maps each discovered candidate exactly once to its
+`candidate_id`, disposition (`accepted`, `rejected`, `not_material`), admitted
+`evidence_ids`, and reason. Only accepted candidates name final-receipt
+evidence; rejected and not-material rows use an empty list. Each final decision
+uses only final-receipt accepted evidence. For accepted dispositions, every
+evidence ID resolves through the final PEI registry to the same original URL,
+locator, publication date, and evidence nature; an unrelated ID cannot replace
+the candidate. A classification correction rejects the sealed candidate and is
+explained separately in the owner decision.
 
-The same PEI owner adjudicates every preliminary assumption exactly once.
-For each assumption, record:
+The owner adjudicates every preliminary assumption exactly once. A decision
+records the original `prior_base`/`prior_range`, final Base/range, decision,
+contributing seats, evidence IDs, reason, model input IDs, and
+`range_comparisons`. `range_comparisons` maps every seat to exactly one of
+`owner_below_range`, `owner_above_range`, `within_range`, or `not_estimable`.
+The validator recomputes this map from the preliminary Base and the seat memo;
+both range endpoints count as `within_range`. These are numeric comparisons,
+not economic upside/downside labels: a higher cost estimate can reduce value.
+The owner does not choose the comparison direction.
 
-- prior Base/range;
-- final Base/range;
-- `accept`, `conditional`, or `reject`;
-- contributing Council seats;
-- accepted evidence IDs;
-- reason; and
-- affected model input IDs.
+Each decision also has `retention_basis`: null, or an object with
+`omitted_evidence_ids` (final accepted IDs) and `omitted_mechanism`. The
+mechanism may be an empty string only when the evidence list is nonempty.
+When two or more estimated seats place the owner initial Base outside their
+ranges on the same side and the final Base equals the initial Base,
+`retention_basis` names at least one omitted accepted evidence ID or a specific
+omitted mechanism, and the decision reason explains why retention remains
+proper. Changing only the final range does not remove this requirement.
 
-In the existing decision reason, connect the accepted, conditional or rejected
-assumption back to the original question: does it support a horizon conclusion,
-or leave a specific relationship unresolved? The PEI owner then follows the
-project formal workflow's investment-question completion check before writing;
-sealing three memos or retaining a company guide does not itself answer it.
+Run `validate_council_run.py --compare-ranges --plugin-root <plugin-root>
+--artifact-root <artifact-root> <run.json>` before adjudication. Its stdout is
+JSON shaped `{assumption_id: {seat: comparison}}`; copy every comparison to the
+matching `decision.range_comparisons`. It does not change sealed artifacts.
+Then run the normal full validator separately.
+The comparison command validates the root, receipts, underwrite, packets and
+memos; final model/adjudication/freeze descriptors may still be placeholders.
+It is not a completed-run verdict. Keep the output in the run and seal the
+completed adjudication only after incorporating it.
 
-The adjudication is the final assumption authority. It is not a vote: repeated
-claims from correlated evidence do not gain weight, and the owner may reject a
-fluent challenge that is not supported.
+The adjudication is final assumption authority, not a vote. Repeated claims
+from correlated evidence do not gain weight. The owner then completes the
+formal workflow's investment-question check before writing.
 
 ## Stop rule
 
 Do one targeted refill only for a remaining gap that can materially change the
-judgment or break essential computation. Then retain a defensible estimate,
-conditional scenarios, or an explicit inability to select a central value;
-never fill uncertainty with an arbitrary haircut. Do not restart Council.
-Check changed decision-critical calculations and their consistency with the
-paper, then stop. Schema v3 historical runs retain their evidence-closed memo
-and adjudication contracts; do not migrate or reseal their artifacts.
+judgment or break essential computation. Retain a defensible estimate,
+conditional scenario, or explicit inability to select a central value; do not
+fill uncertainty with an arbitrary haircut. Check changed decision-critical
+calculations and stop.
 
-For v4 accepted source dispositions, each evidence ID must resolve to the same original URL, document/claim locator, publication date and evidence nature through the final PEI registry primary/public provenance. An unrelated accepted ID cannot stand in for a candidate. If Data corrects the candidate classification, reject that candidate as stated and explain the corrected evidence separately in the owner decision; do not relabel a sealed memo.
+Historical v3 and v4 runs retain their original packet, memo, and adjudication
+contracts. They are read-only: do not migrate, reseal, or apply this v5/v4
+blind-round contract to them.
 
-Use the Data taxonomy for candidates: opened public analyst articles are `corroborating_context` with `public_provenance`; label their estimates and inference in the finding and owner reason. They can influence the central assumption without becoming company facts. This discovery route uses original articles, not untraceable provider target summaries.
+The v4 admission chain remains in force: `council_input_pei_receipt` binds the
+initial packet evidence and `pei_input_receipt` the final admitted inputs. They
+must identify the same security and the final cutoff cannot precede the initial
+cutoff. Opened public analyst articles are `corroborating_context` with
+`public_provenance`; identify their estimates and inference in the finding and
+owner reason. They may influence a central assumption without becoming company
+facts, and must be original articles rather than provider target summaries.

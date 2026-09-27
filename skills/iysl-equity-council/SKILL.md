@@ -17,7 +17,9 @@ trade overlays, or implementation work.
 Before dispatch, the PEI owner must have a preliminary underwrite with valid
 security identity, current price and timestamp, decision horizon, candidate
 assumptions, evidence anchors, proposed Base values or ranges, and flip
-conditions. Council is supporting analysis, not a separate package authority.
+conditions. Hash it before dispatch; seats receive only the blind packet and
+accepted evidence, never the owner values. Council is supporting analysis, not
+a separate package authority.
 
 If collaboration is unavailable for a Council-required run, disclose the
 limitation and leave the affected material assumption unresolved. Do not emulate
@@ -50,9 +52,12 @@ restart Council or add a review round.
 
 Complete Council support when all three first-round memos are sealed, their
 decision-material candidates have dispositions through the existing receipt,
-the owner has adjudicated the preliminary assumptions, and changed
-decision-critical calculations are checked. Save the memos and adjudication as
-supporting artifacts; the PEI-owned research paper is the deliverable.
+the owner has adjudicated the preliminary assumptions with validator-derived
+range comparisons, and changed decision-critical calculations are checked.
+Save the memos and adjudication as supporting artifacts; the PEI-owned research
+paper is the deliverable.
 
-Keep internal receipts out of the investor-facing paper. Historical schema v3
-runs remain evidence-closed and read-only.
+Keep internal receipts out of the investor-facing paper. New blind runs use
+root schema v5 / authority v4, packet v4, memo v4, and adjudication v4.
+Historical schema v3 and v4 runs retain their original contracts and remain
+read-only.

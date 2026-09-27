@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "council_runtime": "collaboration_available",
   "ticker": "",
   "security_identity": {
@@ -23,7 +23,7 @@
   },
   "research_admission": "PASS",
   "artifact_bindings": {
-    "authority_version": 3,
+    "authority_version": 4,
     "validator_sha256": "",
     "preliminary_underwrite": {
       "path": "",

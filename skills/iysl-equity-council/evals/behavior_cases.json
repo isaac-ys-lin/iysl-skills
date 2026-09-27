@@ -9,13 +9,14 @@
         "max_subagents": 3,
         "must_do": [
           "run exactly three isolated named public-method agents",
-          "keep all agents evidence-closed and pre-model",
-          "let each agent identify supported, too conservative, too aggressive, or uncertain assumptions",
-          "require each agent to state the strongest evidence-consistent market-right countercase",
+          "keep all agents pre-model, with discoveries left as candidates for Equity Data",
+          "give each agent a blind packet without the owner's values",
+          "let each agent estimate its own Base and range for every candidate, or mark it not estimable with the missing evidence",
+          "require each agent to state its strongest upside and downside cases, with the Soros agent arguing the missed-entry cost",
           "return sealed memos to the same PEI owner for adjudication"
         ],
         "must_not_do": [
-          "browse",
+          "self-admit discovered sources as evidence",
           "issue the final investment stance",
           "calculate a second model",
           "require a probability matrix",

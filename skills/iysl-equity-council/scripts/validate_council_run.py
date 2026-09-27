@@ -1015,7 +1015,7 @@ def _validate_current_artifact_bindings(
         )
 
 
-def _contains_forbidden_agent_output(value: Any) -> str | None:
+def _contains_forbidden_agent_output(value: Any, *, blind_packet: bool = False) -> str | None:
     forbidden = {
         "action",
         "final_model",
@@ -1028,28 +1028,60 @@ def _contains_forbidden_agent_output(value: Any) -> str | None:
         "target_price",
         "trade_instruction",
     }
+    if blind_packet:
+        forbidden |= {
+            "proposed_base", "proposed_range", "prior_base", "prior_range",
+            "owner_base", "owner_range", "fair_value", "final_fair_value",
+            "stance", "execution_instruction", "final_owner_model",
+            "other_seat_outputs", "other_seat_memo", "sealed_memos",
+        }
     if isinstance(value, dict):
         for key, child in value.items():
             if key.lower() in forbidden:
                 return key
-            found = _contains_forbidden_agent_output(child)
+            found = _contains_forbidden_agent_output(child, blind_packet=blind_packet)
             if found:
                 return found
     elif isinstance(value, list):
         for child in value:
-            found = _contains_forbidden_agent_output(child)
+            found = _contains_forbidden_agent_output(child, blind_packet=blind_packet)
             if found:
                 return found
     return None
 
 
+def _ordered_range(value: Any) -> bool:
+    return (
+        isinstance(value, list) and len(value) == 2
+        and all(_number(item) for item in value) and value[0] <= value[1]
+    )
+
+
+def _validate_blind_case(value: Any, label: str, errors: list[str], *, soros_upside: bool = False) -> None:
+    if not isinstance(value, dict):
+        errors.append(f"{label} must be an object")
+        return
+    fields = {"mechanism", "joint_conditions", "observable_triggers", "falsifier"}
+    if soros_upside:
+        fields.add("missed_entry_cost")
+    _expect_keys(value, fields, label, errors)
+    for field in fields - {"joint_conditions", "observable_triggers"}:
+        if not _nonempty_string(value.get(field)):
+            errors.append(f"{label}.{field} must be non-empty")
+    for field in ("joint_conditions", "observable_triggers"):
+        if not _string_list(value.get(field)) or not value[field]:
+            errors.append(f"{label}.{field} must be a non-empty string list")
+
+
 def _validate_agent_council_v3(
-    payload: dict[str, Any], *, artifact_dir: Path
+    payload: dict[str, Any], *, artifact_dir: Path,
+    comparison_output: dict[str, dict[str, str]] | None = None,
 ) -> list[str]:
     """Validate only durable mechanics; investment judgment stays with PEI."""
 
     errors: list[str] = []
-    discovery = payload.get("schema_version") == 4
+    blind = payload.get("schema_version") == 5
+    discovery = payload.get("schema_version") in {4, 5}
     root_fields = {
         "schema_version",
         "council_runtime",
@@ -1257,6 +1289,7 @@ def _validate_agent_council_v3(
     input_evidence = accepted_evidence
     input_natures = accepted_evidence_natures
     input_identity = owner_model_identity
+    input_registry: list[Any] = []
     if discovery:
         initial, _ = _descriptor_payload(artifact_dir, payload.get("council_input_pei_receipt"), "council_input_pei_receipt", errors)
         input_evidence, input_natures = set(), {}
@@ -1274,6 +1307,7 @@ def _validate_agent_council_v3(
                 registry = []
             input_natures = {row["id"]: row.get("evidence_nature", "") for row in registry if isinstance(row, dict) and _nonempty_string(row.get("id"))}
             input_evidence = set(input_natures)
+            input_registry = registry
     source_candidates: dict[str, dict[str, Any]] = {}
 
     bindings = payload.get("artifact_bindings")
@@ -1295,16 +1329,46 @@ def _validate_agent_council_v3(
         "artifact_bindings",
         errors,
     )
-    if bindings.get("authority_version") != (3 if discovery else AGENT_COUNCIL_AUTHORITY_VERSION):
+    authority_version = 4 if blind else (3 if discovery else AGENT_COUNCIL_AUTHORITY_VERSION)
+    if bindings.get("authority_version") != authority_version:
         errors.append(
-            f"artifact_bindings.authority_version must be {3 if discovery else AGENT_COUNCIL_AUTHORITY_VERSION}"
+            f"artifact_bindings.authority_version must be {authority_version}"
         )
     if _normalized_sha(bindings.get("validator_sha256")) != _sha256(
         Path(__file__).resolve()
     ):
         errors.append("artifact_bindings.validator_sha256 does not match this validator")
 
-    underwrite, _ = _descriptor_payload(
+    if blind:
+        # Admission is not permission to show a model artifact to a blind seat.
+        private_refs = [bindings.get(key) for key in (
+            "preliminary_underwrite", "final_model_spec", "owner_adjudication",
+        )]
+        if isinstance(bindings.get("sealed_memos"), dict):
+            private_refs.extend(bindings["sealed_memos"].values())
+        private_paths = {
+            (artifact_dir / ref["path"]).resolve() for ref in private_refs
+            if isinstance(ref, dict) and _nonempty_string(ref.get("path"))
+        }
+        private_hashes = {
+            ref["sha256"] for ref in private_refs
+            if isinstance(ref, dict) and _normalized_sha(ref.get("sha256"))
+        }
+        private_ids = {
+            row["id"] for row in input_registry
+            if isinstance(row, dict) and _nonempty_string(row.get("id")) and (
+                row.get("source_kind") == "model" or row.get("requirement_class") == "model"
+                or (_normalized_sha(row.get("sha256")) in private_hashes)
+                or any(
+                    _nonempty_string(row.get(field)) and (artifact_dir / row[field]).resolve() in private_paths
+                    for field in ("artifact", "path")
+                )
+            )
+        }
+        input_evidence = input_evidence - private_ids
+        input_natures = {key: value for key, value in input_natures.items() if key not in private_ids}
+
+    underwrite, underwrite_sha = _descriptor_payload(
         artifact_dir,
         bindings.get("preliminary_underwrite"),
         "artifact_bindings.preliminary_underwrite",
@@ -1343,6 +1407,9 @@ def _validate_agent_council_v3(
                     )
                 if not _number(assumption.get("proposed_base")):
                     errors.append(f"{label}.proposed_base must be numeric")
+                if blind and _ordered_range(assumption.get("proposed_range")) and _number(assumption.get("proposed_base")):
+                    if not assumption["proposed_range"][0] <= assumption["proposed_base"] <= assumption["proposed_range"][1]:
+                        errors.append(f"{label}.proposed_base must fall within proposed_range")
                 proposed_range = assumption.get("proposed_range")
                 if (
                     not isinstance(proposed_range, list)
@@ -1475,6 +1542,10 @@ def _validate_agent_council_v3(
                     if duplicate_ids or not set(family_assumptions) <= assumption_ids:
                         errors.append(f"{label}.assumption_ids must map once to candidates")
                     disposition_assumptions.update(family_assumptions)
+                    if blind:
+                        for assumption_id in family_assumptions:
+                            if assumptions_by_id.get(assumption_id, {}).get("family") != family:
+                                errors.append(f"{label} candidate family must equal its disposition family")
             elif status == "not_material":
                 if family_assumptions != []:
                     errors.append(f"{label}.assumption_ids must be empty when not_material")
@@ -1503,6 +1574,15 @@ def _validate_agent_council_v3(
     packet_hashes: dict[str, str] = {}
     memo_hashes: dict[str, str] = {}
     memo_times: list[datetime] = []
+    dispatch_times: list[datetime] = []
+    range_comparisons: dict[str, dict[str, str]] = {key: {} for key in assumption_ids}
+    blind_fields = {
+        "assumption_id", "family", "period", "unit", "evidence_ids",
+        "flip_condition", "rationale", "rejected_alternative", "challenge_signal_dispositions",
+    }
+    blind_assumptions = [
+        {key: row.get(key) for key in blind_fields} for row in assumptions
+    ]
     for seat in sorted(SEATS):
         packet, packet_sha = _descriptor_payload(
             artifact_dir,
@@ -1524,18 +1604,27 @@ def _validate_agent_council_v3(
                     "candidate_assumptions",
                     "evidence_ids",
                     "instructions",
-                },
+                } | ({"preliminary_underwrite_sha256", "dispatched_at"} if blind else set()),
                 f"{seat} packet",
                 errors,
             )
             if (
-                packet.get("schema_version") != "council-premodel-seat-packet-v2"
+                packet.get("schema_version") != ("council-premodel-seat-packet-v4" if blind else "council-premodel-seat-packet-v2")
                 or _identity_values(packet) != input_identity
                 or packet.get("seat") != seat
             ):
                 errors.append(f"{seat} packet identity/schema must equal Council owner model")
-            if assumptions and packet.get("candidate_assumptions") != assumptions:
-                errors.append(f"{seat} packet candidate assumptions must equal preliminary underwrite")
+            if assumptions and packet.get("candidate_assumptions") != (blind_assumptions if blind else assumptions):
+                errors.append(f"{seat} packet candidate assumptions must equal {'blind projection of ' if blind else ''}preliminary underwrite")
+            if blind:
+                if _normalized_sha(packet.get("preliminary_underwrite_sha256")) != underwrite_sha:
+                    errors.append(f"{seat} packet must bind the original preliminary underwrite hash")
+                dispatched_at = _parse_time(packet.get("dispatched_at"), f"{seat} packet dispatched_at", errors)
+                if dispatched_at:
+                    dispatch_times.append(dispatched_at)
+                    input_cutoff = _parse_time(input_identity[2], "Council input cutoff", errors)
+                    if input_cutoff and dispatched_at < input_cutoff:
+                        errors.append(f"{seat} packet dispatched_at cannot precede Council input cutoff")
             evidence_ids = packet.get("evidence_ids")
             if not _string_list(evidence_ids):
                 errors.append(f"{seat} packet evidence_ids must be a string list")
@@ -1545,9 +1634,13 @@ def _validate_agent_council_v3(
                 errors.append(
                     f"{seat} packet evidence_ids omit preliminary challenge-signal evidence"
                 )
+            if blind and _string_list(evidence_ids):
+                candidate_evidence = _collect_evidence_ids(blind_assumptions)
+                if not candidate_evidence <= set(evidence_ids):
+                    errors.append(f"{seat} packet evidence_ids must cover all candidate evidence")
             if not _nonempty_string(packet.get("instructions")):
                 errors.append(f"{seat} packet instructions must be non-empty")
-            else:
+            elif not blind:
                 normalized_instructions = re.sub(
                     r"[_\s]+", "-", packet["instructions"].casefold()
                 )
@@ -1563,7 +1656,7 @@ def _validate_agent_council_v3(
                     errors.append(
                         f"{seat} packet instructions must test conservative, aggressive, uncertain, and market-right cases"
                     )
-            leaked = _contains_forbidden_agent_output(packet)
+            leaked = _contains_forbidden_agent_output(packet, blind_packet=blind)
             if leaked:
                 errors.append(f"{seat} packet leaks forbidden field {leaked}")
 
@@ -1588,14 +1681,14 @@ def _validate_agent_council_v3(
                 "added_evidence_ids",
                 "summary",
                 "challenges",
-                "strongest_countercase",
                 "limitations",
-            } | ({"source_candidates"} if discovery else set()),
+            } | ({"source_candidates"} if discovery else set())
+            | ({"strongest_upside_case", "strongest_downside_case"} if blind else {"strongest_countercase"}),
             f"{seat} memo",
             errors,
         )
         if (
-            memo.get("schema_version") != ("council-sealed-memo-v3" if discovery else "council-sealed-memo-v2")
+            memo.get("schema_version") != ("council-sealed-memo-v4" if blind else ("council-sealed-memo-v3" if discovery else "council-sealed-memo-v2"))
             or memo.get("seat") != seat
             or _normalized_sha(memo.get("packet_sha256")) != packet_sha
         ):
@@ -1606,7 +1699,11 @@ def _validate_agent_council_v3(
             errors.append(f"{seat} memo browsed must be boolean")
         if not _nonempty_string(memo.get("summary")):
             errors.append(f"{seat} memo summary must be non-empty")
-        if not _nonempty_string(memo.get("strongest_countercase")):
+        if blind:
+            for case in ("strongest_upside_case", "strongest_downside_case"):
+                _validate_blind_case(memo.get(case), f"{seat} memo {case}", errors,
+                                     soros_upside=seat == "soros" and case == "strongest_upside_case")
+        elif not _nonempty_string(memo.get("strongest_countercase")):
             errors.append(f"{seat} memo strongest_countercase must be non-empty")
         if not isinstance(memo.get("limitations"), list) or any(
             not _nonempty_string(item) for item in memo.get("limitations", [])
@@ -1653,6 +1750,7 @@ def _validate_agent_council_v3(
         if not isinstance(challenges, list):
             errors.append(f"{seat} memo challenges must be a list")
             challenges = []
+        challenged_ids: set[str] = set()
         for index, challenge in enumerate(challenges):
             label = f"{seat} memo challenges[{index}]"
             if not isinstance(challenge, dict):
@@ -1662,20 +1760,25 @@ def _validate_agent_council_v3(
                 challenge,
                 {
                     "assumption_id",
-                    "assessment",
                     "proposed_base",
                     "proposed_range",
                     "evidence_ids",
                     "reasoning",
                     "decision_impact",
                     "falsifier",
-                } | ({"candidate_source_ids"} if discovery else set()),
+                } | ({"candidate_source_ids"} if discovery else set())
+                | ({"estimation_status", "period", "unit", "not_estimable_reason", "missing_evidence"} if blind else {"assessment"}),
                 label,
                 errors,
             )
-            if challenge.get("assumption_id") not in assumption_ids:
+            assumption_id = challenge.get("assumption_id")
+            if not _nonempty_string(assumption_id) or assumption_id not in assumption_ids:
                 errors.append(f"{label}.assumption_id is not in preliminary underwrite")
-            if challenge.get("assessment") not in {
+                continue
+            if blind and assumption_id in challenged_ids:
+                errors.append(f"{label}.assumption_id must be covered exactly once per seat")
+            challenged_ids.add(assumption_id)
+            if not blind and challenge.get("assessment") not in {
                 "supported",
                 "too_conservative",
                 "too_aggressive",
@@ -1693,6 +1796,36 @@ def _validate_agent_council_v3(
                 or proposed_range[0] > proposed_range[1]
             ):
                 errors.append(f"{label}.proposed_range must be an ordered numeric pair or null")
+            if blind:
+                preliminary = assumptions_by_id[assumption_id]
+                for field in ("period", "unit"):
+                    if challenge.get(field) != preliminary.get(field):
+                        errors.append(f"{label}.{field} must equal the candidate {field}")
+                if challenge.get("estimation_status") == "estimated":
+                    if not _number(proposed_base) or not _ordered_range(proposed_range):
+                        errors.append(f"{label} estimated requires numeric proposed_base and ordered proposed_range")
+                    elif not proposed_range[0] <= proposed_base <= proposed_range[1]:
+                        errors.append(f"{label}.proposed_base must fall within proposed_range")
+                    elif _number(preliminary.get("proposed_base")):
+                        owner_base = preliminary["proposed_base"]
+                        range_comparisons[assumption_id][seat] = (
+                            "owner_below_range" if owner_base < proposed_range[0]
+                            else "owner_above_range" if owner_base > proposed_range[1]
+                            else "within_range"
+                        )
+                    if challenge.get("not_estimable_reason") is not None or challenge.get("missing_evidence") is not None:
+                        errors.append(f"{label} estimated must use null not_estimable_reason and missing_evidence")
+                    if not challenge.get("evidence_ids") and not challenge.get("candidate_source_ids"):
+                        errors.append(f"{label} estimated requires evidence or source candidates")
+                elif challenge.get("estimation_status") == "not_estimable":
+                    if proposed_base is not None or proposed_range is not None:
+                        errors.append(f"{label} not_estimable must use null proposed_base and proposed_range")
+                    for field in ("not_estimable_reason", "missing_evidence"):
+                        if not _nonempty_string(challenge.get(field)):
+                            errors.append(f"{label} not_estimable requires concrete {field}")
+                    range_comparisons[assumption_id][seat] = "not_estimable"
+                else:
+                    errors.append(f"{label}.estimation_status must be estimated or not_estimable")
             challenge_evidence = challenge.get("evidence_ids")
             if not _string_list(challenge_evidence) or not set(challenge_evidence) <= input_evidence:
                 errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
@@ -1705,9 +1838,17 @@ def _validate_agent_council_v3(
             for field in ("reasoning", "decision_impact", "falsifier"):
                 if not _nonempty_string(challenge.get(field)):
                     errors.append(f"{label}.{field} must be non-empty")
+        if blind and challenged_ids != assumption_ids:
+            errors.append(f"{seat} memo must cover every candidate assumption exactly once")
         leaked = _contains_forbidden_agent_output(memo)
         if leaked:
             errors.append(f"{seat} memo leaks forbidden field {leaked}")
+
+    if blind and dispatch_times and memo_times and max(dispatch_times) > min(memo_times):
+        errors.append("all blind packets must be dispatched before the first sealed memo")
+    if comparison_output is not None:
+        comparison_output.update(range_comparisons)
+        return errors
 
     final_spec, final_spec_sha = _descriptor_payload(
         artifact_dir,
@@ -1751,15 +1892,18 @@ def _validate_agent_council_v3(
                 "memo_hashes",
                 "decisions",
                 "final_model_spec_sha256",
-            } | ({"source_dispositions"} if discovery else set()),
+            } | ({"source_dispositions"} if discovery else set())
+            | ({"preliminary_underwrite_sha256"} if blind else set()),
             "owner adjudication",
             errors,
         )
         if (
-            adjudication.get("schema_version") != ("pei-council-adjudication-v3" if discovery else "pei-council-adjudication-v2")
+            adjudication.get("schema_version") != ("pei-council-adjudication-v4" if blind else ("pei-council-adjudication-v3" if discovery else "pei-council-adjudication-v2"))
             or _identity_values(adjudication) != owner_model_identity
         ):
             errors.append("owner adjudication identity/schema must equal Council owner model")
+        if blind and _normalized_sha(adjudication.get("preliminary_underwrite_sha256")) != underwrite_sha:
+            errors.append("owner adjudication must bind the original preliminary underwrite hash")
         if adjudication.get("packet_hashes") != packet_hashes:
             errors.append("owner adjudication packet_hashes must equal bound packets")
         if adjudication.get("memo_hashes") != memo_hashes:
@@ -1836,13 +1980,14 @@ def _validate_agent_council_v3(
                     "evidence_ids",
                     "reason",
                     "model_input_ids",
-                },
+                } | ({"range_comparisons", "retention_basis"} if blind else set()),
                 label,
                 errors,
             )
             assumption_id = decision.get("assumption_id")
-            if assumption_id in decision_ids or assumption_id not in assumption_ids:
+            if not _nonempty_string(assumption_id) or assumption_id in decision_ids or assumption_id not in assumption_ids:
                 errors.append(f"{label}.assumption_id must map once to the preliminary underwrite")
+                continue
             if _nonempty_string(assumption_id):
                 decision_ids.add(assumption_id)
             preliminary = assumptions_by_id.get(assumption_id, {})
@@ -1886,6 +2031,31 @@ def _validate_agent_council_v3(
                 errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
             if not _nonempty_string(decision.get("reason")):
                 errors.append(f"{label}.reason must be non-empty")
+            if blind:
+                comparisons = range_comparisons.get(assumption_id, {})
+                if decision.get("range_comparisons") != comparisons:
+                    errors.append(f"{label}.range_comparisons must equal validator-derived comparisons")
+                same_side = any(
+                    list(comparisons.values()).count(direction) >= 2
+                    for direction in ("owner_below_range", "owner_above_range")
+                )
+                retention_basis = decision.get("retention_basis")
+                needs_basis = same_side and final_base == prior_base
+                if needs_basis and not isinstance(retention_basis, dict):
+                    errors.append(f"{label} retaining the original Base outside two same-side seat ranges requires retention_basis")
+                elif retention_basis is not None:
+                    if not isinstance(retention_basis, dict):
+                        errors.append(f"{label}.retention_basis must be an object or null")
+                    else:
+                        _expect_keys(retention_basis, {"omitted_evidence_ids", "omitted_mechanism"}, f"{label}.retention_basis", errors)
+                        omitted_ids = retention_basis.get("omitted_evidence_ids")
+                        mechanism = retention_basis.get("omitted_mechanism")
+                        if not _string_list(omitted_ids) or not set(omitted_ids) <= accepted_evidence:
+                            errors.append(f"{label}.retention_basis evidence must be final-receipt accepted evidence")
+                        if not isinstance(mechanism, str):
+                            errors.append(f"{label}.retention_basis omitted_mechanism must be a string")
+                        if not omitted_ids and not _nonempty_string(mechanism):
+                            errors.append(f"{label}.retention_basis must identify omitted evidence or mechanism")
             model_input_ids = decision.get("model_input_ids")
             if (
                 not _string_list(model_input_ids)
@@ -3751,7 +3921,7 @@ def validate(
     _ = plugin_root
     if not isinstance(payload, dict):
         return ["root must be a JSON object"]
-    if payload.get("schema_version") in {AGENT_COUNCIL_SCHEMA_VERSION, 4}:
+    if payload.get("schema_version") in {AGENT_COUNCIL_SCHEMA_VERSION, 4, 5}:
         return _validate_agent_council_v3(payload, artifact_dir=Path(artifact_dir))
     errors: list[str] = []
     expected_root_fields = ROOT_FIELDS | (
@@ -4634,6 +4804,10 @@ def main() -> int:
     )
     parser.add_argument("--owner-model-pei-input", type=Path)
     parser.add_argument("--preliminary-underwrite", type=Path)
+    parser.add_argument(
+        "--compare-ranges", action="store_true",
+        help="validate v5 bound inputs, packets and memos, then print range comparisons as JSON before adjudication",
+    )
     parser.add_argument("council_run", nargs="?", type=Path)
     args = parser.parse_args()
 
@@ -4643,6 +4817,7 @@ def main() -> int:
             or args.owner_model_pei_input is None
             or args.preliminary_underwrite is None
             or args.council_run is not None
+            or args.compare_ranges
         ):
             parser.error(
                 "--pre-dispatch requires --artifact-root, --owner-model-pei-input, and --preliminary-underwrite only"
@@ -4669,6 +4844,21 @@ def main() -> int:
         for error in load_errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
+    if args.compare_ranges:
+        if payload.get("schema_version") != 5:
+            parser.error("--compare-ranges requires Council schema_version 5")
+        comparisons: dict[str, dict[str, str]] = {}
+        errors = _validate_agent_council_v3(
+            payload,
+            artifact_dir=args.artifact_root or _default_artifact_root(args.council_run),
+            comparison_output=comparisons,
+        )
+        if errors:
+            for error in errors:
+                print(f"FAIL: {error}", file=sys.stderr)
+            return 1
+        print(json.dumps(comparisons, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
     errors = validate(
         payload,
         plugin_root=args.plugin_root,
