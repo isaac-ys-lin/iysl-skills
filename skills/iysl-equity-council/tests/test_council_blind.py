@@ -190,6 +190,54 @@ def test_v5_accepts_blind_packet_numeric_memos_and_symmetric_cases(tmp_path):
     assert _errors(council, plugin, root) == []
 
 
+def test_v5_withdrawn_assumption_has_no_compatibility_value_or_model_input(tmp_path):
+    plugin, root, council = _v5_fixture(tmp_path)
+    bindings = council["artifact_bindings"]
+    spec_path = root / bindings["final_model_spec"]["path"]
+    spec = json.loads(spec_path.read_text())
+    spec["assumption_ids"].remove("revenue_growth")
+    LEGACY._write_json(spec_path, spec)
+    bindings["final_model_spec"] = LEGACY._descriptor(spec_path, root)
+    freeze_path = root / bindings["fv_freeze_receipt"]["path"]
+    freeze = json.loads(freeze_path.read_text())
+    freeze["model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
+    LEGACY._write_json(freeze_path, freeze)
+    bindings["fv_freeze_receipt"] = LEGACY._descriptor(freeze_path, root)
+    adjudication = json.loads(_adjudication(root, council).read_text())
+    decision = adjudication["decisions"][0]
+    decision.update(decision="reject", final_base=None, final_range=None, model_input_ids=[],
+                    reason="The acquisition-only EBIT estimate was withdrawn; the consolidated model supersedes it.")
+    adjudication["final_model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
+    _write_adjudication(root, council, adjudication)
+    assert _errors(council, plugin, root) == []
+
+
+@pytest.mark.parametrize("changes, expected", [
+    ({"decision": "reject", "final_base": None}, "final_base must be numeric"),
+    ({"decision": "reject", "final_range": None}, "final_range must be an ordered numeric pair"),
+    ({"decision": "accept", "final_base": None, "final_range": None}, "final_base must be numeric"),
+    ({"decision": "reject", "final_base": None, "final_range": None}, "model_input_ids must be empty"),
+    ({"final_base": True}, "final_base must be numeric"),
+    ({"final_base": float("nan")}, "final_base must be numeric"),
+])
+def test_v5_rejects_ambiguous_withdrawal_or_invalid_scalar(tmp_path, changes, expected):
+    plugin, root, council = _v5_fixture(tmp_path)
+    adjudication = json.loads(_adjudication(root, council).read_text())
+    adjudication["decisions"][0].update(changes)
+    _write_adjudication(root, council, adjudication)
+    assert any(expected in error for error in _errors(council, plugin, root))
+
+
+@pytest.mark.parametrize("fixture", [LEGACY._v3_fixture, LEGACY._v4_fixture])
+def test_legacy_adjudication_still_requires_numeric_final_value(tmp_path, fixture):
+    plugin, root, council = fixture(tmp_path)
+    assert _errors(council, plugin, root) == []
+    adjudication = json.loads(_adjudication(root, council).read_text())
+    adjudication["decisions"][0].update(decision="reject", final_base=None, final_range=None, model_input_ids=[])
+    _write_adjudication(root, council, adjudication)
+    assert any("final_base must be numeric" in error for error in _errors(council, plugin, root))
+
+
 @pytest.mark.parametrize(
     ("mutate", "expected"),
     [
@@ -276,6 +324,72 @@ def test_v5_not_estimable_requires_concrete_reason_and_missing_evidence(tmp_path
         ),
     )
     assert any("not_estimable" in error for error in _errors(council, plugin, root))
+
+
+def test_v5_search_required_needs_source_checks_for_not_estimable(tmp_path):
+    plugin, root, council = _v5_fixture(tmp_path)
+    _rebind_packet(root, council, "damodaran", lambda packet: packet.update(search_required=True))
+    _rebind_memo(root, council, "damodaran", lambda memo: [
+        challenge.update(source_checks=[]) for challenge in memo["challenges"]
+    ])
+    _rebind_memo(root, council, "damodaran", lambda memo: memo["challenges"][0].update(
+        estimation_status="not_estimable", proposed_base=None, proposed_range=None,
+        not_estimable_reason="The filings do not isolate this driver.",
+        missing_evidence="A segment bridge is needed.",
+    ))
+    adjudication = json.loads(_adjudication(root, council).read_text())
+    adjudication["decisions"][0]["range_comparisons"]["damodaran"] = "not_estimable"
+    _write_adjudication(root, council, adjudication)
+    assert any("source_checks" in error for error in _errors(council, plugin, root))
+
+    _rebind_memo(root, council, "damodaran", lambda memo: memo["challenges"][0]["source_checks"].append({
+        "tool": "WebFetch", "query_or_url": "https://www.sec.gov/Archives/example",
+        "result": "The filing has aggregate revenue but no segment bridge.",
+        "still_insufficient_reason": "The missing segment bridge prevents a standalone estimate.",
+    }))
+    assert _errors(council, plugin, root) == []
+
+
+def test_v5_search_required_rejects_disallowed_source_tool(tmp_path):
+    plugin, root, council = _v5_fixture(tmp_path)
+    _rebind_packet(root, council, "soros", lambda packet: packet.update(search_required=True))
+    _rebind_memo(root, council, "soros", lambda memo: [
+        challenge.update(source_checks=[]) for challenge in memo["challenges"]
+    ])
+    _rebind_memo(root, council, "soros", lambda memo: memo["challenges"][0]["source_checks"].append({
+        "tool": "curl", "query_or_url": "https://example.com", "result": "blocked",
+        "still_insufficient_reason": "The source was unavailable.",
+    }))
+    assert any("source_checks" in error for error in _errors(council, plugin, root))
+
+
+def test_source_check_only_cli_binds_opt_in_packet(tmp_path):
+    packet_path = tmp_path / "packet.json"
+    memo_path = tmp_path / "memo.json"
+    packet = {"schema_version": "council-premodel-seat-packet-v4", "search_required": True, "seat": "soros", "candidate_assumptions": [{"assumption_id": "A1"}], "instructions": "Estimate each candidate independently."}
+    packet_path.write_text(json.dumps(packet))
+    memo = {
+        "seat": "soros", "packet_sha256": LEGACY._sha256(packet_path),
+        "challenges": [{"assumption_id": "A1", "estimation_status": "not_estimable", "source_checks": [{
+            "tool": "mcp__codex_apps__exa_web_search_exa", "query_or_url": "ONDS backlog disclosure",
+            "result": "No quarterly conversion bridge found.",
+            "still_insufficient_reason": "The target-period conversion remains unknown.",
+        }]}],
+    }
+    memo_path.write_text(json.dumps(memo))
+    script = ROOT / "scripts" / "validate_council_source_checks.py"
+    command = [sys.executable, str(script), str(packet_path), str(memo_path)]
+    assert subprocess.run(command, capture_output=True, text=True).returncode == 0
+    memo["packet_sha256"] = "0" * 64
+    memo_path.write_text(json.dumps(memo))
+    assert "exact packet bytes" in subprocess.run(command, capture_output=True, text=True).stdout
+    assert subprocess.run(command[:-1], capture_output=True, text=True).returncode == 0
+    packet_path.write_text(json.dumps({**packet, "instructions": ["Estimate each candidate independently."]}))
+    assert "packet.instructions must be a non-empty string" in subprocess.run(command[:-1], capture_output=True, text=True).stdout
+    packet_path.write_text(json.dumps(packet))
+    for missing in ("schema_version", "search_required"):
+        packet_path.write_text(json.dumps({key: value for key, value in packet.items() if key != missing}))
+        assert subprocess.run(command[:-1], capture_output=True, text=True).returncode == 1
 
 
 def test_v5_accepts_source_only_challenge_candidate(tmp_path):

@@ -2745,6 +2745,23 @@ def _v4_fixture(tmp_path):
     return plugin_root, root, council
 
 
+def test_v4_split_cutoff_checks_new_accepted_source_against_final_receipt(tmp_path):
+    plugin, root, council = _v4_fixture(tmp_path)
+    _bind_v3_split_cutoff_wrapper(root, council)
+    owner_path = root / council['owner_model_pei_input_receipt']['path']
+    initial_path = root / council['council_input_pei_receipt']['path']
+    _write_json(owner_path, json.loads(initial_path.read_text(encoding='utf-8')))
+    council['owner_model_pei_input_receipt'] = _descriptor(owner_path, root)
+
+    assert VALIDATOR.validate(council, plugin_root=plugin, artifact_dir=root) == []
+    final_path = root / council['pei_input_receipt']['path']
+    final_receipt = json.loads(final_path.read_text(encoding='utf-8'))
+    final_receipt['evidence_registry'][-1]['primary_provenance']['source_url'] = 'https://example.com/ir/unrelated-release'
+    _write_json(final_path, final_receipt)
+    council['pei_input_receipt'] = _descriptor(final_path, root)
+    assert any('candidate source provenance' in error for error in VALIDATOR.validate(council, plugin_root=plugin, artifact_dir=root))
+
+
 def _rebind_v4_memo(root, council, seat, mutate):
     bindings = council['artifact_bindings']
     path = root / bindings['sealed_memos'][seat]['path']

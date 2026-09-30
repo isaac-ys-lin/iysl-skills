@@ -15,6 +15,15 @@ evidence named by that packet. It
 may independently search relevant original sources under the project
 browser/Exa policy, but discoveries remain candidates for Data admission.
 
+For a new search-required blind run, set `search_required: true` in each packet
+before hashing or dispatch. First verify that the target seat session actually
+has a permitted source channel: Codex in-app browser or the Exa search/fetch
+app; Claude WebSearch/WebFetch for a Claude-hosted seat. An offline-only
+`codex exec --ignore-user-config` seat is not a search-capable dispatch. Codex
+CLI `--search` and shell HTTP clients are not substitutes under Equity's
+source policy. If none of the permitted channels is available, stop this seat
+before a memo is sealed and report the capability block to the owner.
+
 Each task says: no self-admitted evidence, other-seat output, owner private
 underwrite, root artifact, final model, stance, action, or further delegation.
 The packet is the only Council artifact a seat receives. Before hashing the
@@ -82,6 +91,10 @@ bridge. Each packet uses
   `dispatched_at`;
 - `candidate_assumptions`, `evidence_ids`, and `instructions`.
 
+New search-required packets add `search_required: true`. Absence of that field
+preserves the already sealed v5 packet/memo contract; do not rewrite an old
+packet to opt it in.
+
 Each packet candidate contains exactly `assumption_id`, `family`, `period`,
 `unit`, `evidence_ids`, `flip_condition`, `rationale`,
 `rejected_alternative`, and `challenge_signal_dispositions`. It excludes
@@ -131,6 +144,19 @@ both `not_estimable_reason` and `missing_evidence` state the estimation obstacle
 and the specific obtainable evidence that would resolve it. A
 seat does not use `uncertain` as a challenge outcome.
 
+With `search_required: true`, every challenge adds `source_checks` (an empty
+list is allowed for `estimated`). Before `not_estimable`, search or fetch a
+relevant public original or specific disclosure question. Each
+`not_estimable` has at least one check with exactly `tool`, `query_or_url`,
+`result`, and `still_insufficient_reason`, all nonempty. `tool` is one of
+`codex-in-app-browser`, `mcp__codex_apps__exa_web_search_exa`,
+`mcp__codex_apps__exa_web_fetch_exa`, `WebSearch`, or `WebFetch`; the last two
+apply to Claude-hosted seats. Record a failed or blocked call as such in
+`result`, and keep `browsed: false` when no source was successfully opened.
+`source_candidates` remain separate provisional evidence. The validator
+checks the fields and permitted channel names; the owner checks the host/tool
+trace against the claimed calls because memo text cannot prove a tool ran.
+
 `strongest_upside_case` and `strongest_downside_case` are each an object with
 nonempty `mechanism` and `falsifier` strings, plus nonempty string lists
 `joint_conditions` and `observable_triggers`. Soros's upside object also has
@@ -167,6 +193,12 @@ The validator recomputes this map from the preliminary Base and the seat memo;
 both range endpoints count as `within_range`. These are numeric comparisons,
 not economic upside/downside labels: a higher cost estimate can reduce value.
 The owner does not choose the comparison direction.
+
+For a v5 run, a withdrawn assumption uses `decision: "reject"`,
+`final_base: null`, `final_range: null`, and `model_input_ids: []`. Its reason
+names the replacement calculation or remaining gap. The two final value fields
+must be null together; a retained estimate keeps numeric Base/range and
+nonempty model input IDs. Earlier v3/v4 contracts still require numeric values.
 
 Each decision also has `retention_basis`: null, or an object with
 `omitted_evidence_ids` (final accepted IDs) and `omitted_mechanism`. The

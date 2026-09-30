@@ -329,6 +329,58 @@ def _expect_keys(
         errors.append(f"{label} has unexpected fields: {', '.join(extra)}")
 
 
+SOURCE_CHECK_TOOLS = {
+    "codex-in-app-browser",
+    "mcp__codex_apps__exa_web_search_exa",
+    "mcp__codex_apps__exa_web_fetch_exa",
+    "WebSearch", "WebFetch",
+}
+
+
+def validate_source_checks(packet: Any, memo: Any) -> list[str]:
+    """Check an opt-in packet/memo pair before the full Council root exists.
+
+    This checks declarations, not whether the host actually made the tool calls.
+    """
+    errors: list[str] = []
+    if not isinstance(packet, dict) or packet.get("search_required") is not True:
+        return ["packet.search_required must be true for source-check validation"]
+    if not isinstance(memo, dict) or not isinstance(memo.get("challenges"), list):
+        return ["memo.challenges must be a list"]
+    candidates = packet.get("candidate_assumptions")
+    if not isinstance(candidates, list) or any(not isinstance(row, dict) or not _nonempty_string(row.get("assumption_id")) for row in candidates):
+        return ["packet.candidate_assumptions must name assumption IDs"]
+    expected_ids = [row["assumption_id"] for row in candidates]
+    seen_ids: list[str] = []
+    for index, challenge in enumerate(memo["challenges"]):
+        label = f"memo.challenges[{index}]"
+        if not isinstance(challenge, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        seen_ids.append(challenge.get("assumption_id"))
+        checks = challenge.get("source_checks")
+        if not isinstance(checks, list):
+            errors.append(f"{label}.source_checks must be a list")
+            continue
+        if challenge.get("estimation_status") == "not_estimable" and not checks:
+            errors.append(f"{label} not_estimable requires source_checks")
+        for check_index, check in enumerate(checks):
+            check_label = f"{label}.source_checks[{check_index}]"
+            if not isinstance(check, dict):
+                errors.append(f"{check_label} must be an object")
+                continue
+            _expect_keys(check, {"tool", "query_or_url", "result", "still_insufficient_reason"}, check_label, errors)
+            tool = check.get("tool")
+            if not isinstance(tool, str) or tool not in SOURCE_CHECK_TOOLS:
+                errors.append(f"{check_label}.tool is not an allowed source channel")
+            for field in ("query_or_url", "result", "still_insufficient_reason"):
+                if not _nonempty_string(check.get(field)):
+                    errors.append(f"{check_label}.{field} must be non-empty")
+    if sorted(seen_ids, key=str) != sorted(expected_ids):
+        errors.append("memo.challenges must cover each packet assumption exactly once")
+    return errors
+
+
 def _reject_unexpected_keys(
     value: dict[str, Any], allowed: set[str], label: str, errors: list[str]
 ) -> None:
@@ -1220,6 +1272,7 @@ def _validate_agent_council_v3(
                     )
                 else:
                     accepted_evidence_natures[item["id"]] = nature
+    final_accepted_evidence = set(accepted_evidence)
     if present_split_cutoff_fields == split_cutoff_fields:
         owner_receipt, _ = _descriptor_payload(
             artifact_dir,
@@ -1267,7 +1320,7 @@ def _validate_agent_council_v3(
             reference_price=price.get("value"),
             errors=errors,
         )
-        overlap = correction_ids & accepted_evidence
+        overlap = correction_ids & (accepted_evidence | final_accepted_evidence)
         if overlap:
             errors.append(
                 "correction evidence must be additive to PEI evidence: "
@@ -1275,9 +1328,9 @@ def _validate_agent_council_v3(
             )
         else:
             accepted_evidence.update(correction_ids)
+            final_accepted_evidence.update(correction_ids)
 
-    final_receipt = owner_receipt if present_split_cutoff_fields == split_cutoff_fields else receipt
-    final_registry = (final_receipt or {}).get("evidence_registry", [])
+    final_registry = (receipt or {}).get("evidence_registry", [])
     admitted_sources = {
         row["id"]: row
         for row in (final_registry if isinstance(final_registry, list) else [])
@@ -1592,7 +1645,9 @@ def _validate_agent_council_v3(
         )
         if packet_sha:
             packet_hashes[seat] = packet_sha
+        search_required = False
         if packet is not None:
+            search_required = blind and packet.get("search_required") is True
             _expect_keys(
                 packet,
                 {
@@ -1604,10 +1659,13 @@ def _validate_agent_council_v3(
                     "candidate_assumptions",
                     "evidence_ids",
                     "instructions",
-                } | ({"preliminary_underwrite_sha256", "dispatched_at"} if blind else set()),
+                } | ({"preliminary_underwrite_sha256", "dispatched_at"} if blind else set())
+                | ({"search_required"} if "search_required" in packet else set()),
                 f"{seat} packet",
                 errors,
             )
+            if "search_required" in packet and not search_required:
+                errors.append(f"{seat} packet search_required must be true on a blind packet")
             if (
                 packet.get("schema_version") != ("council-premodel-seat-packet-v4" if blind else "council-premodel-seat-packet-v2")
                 or _identity_values(packet) != input_identity
@@ -1726,7 +1784,7 @@ def _validate_agent_council_v3(
                     continue
                 _expect_keys(candidate, {"candidate_id", "url", "source_locator", "as_of", "retrieved_at", "assumption_ids", "finding", "evidence_nature"}, f"{seat} source candidate", errors)
                 candidate_id = candidate.get("candidate_id")
-                if not _nonempty_string(candidate_id) or candidate_id in source_candidates or candidate_id in accepted_evidence or candidate_id in input_evidence:
+                if not _nonempty_string(candidate_id) or candidate_id in source_candidates or candidate_id in final_accepted_evidence or candidate_id in input_evidence:
                     errors.append(f"{seat} candidate_id must be unique and distinct from evidence IDs")
                     continue
                 if not isinstance(candidate.get("url"), str) or not re.match(r"https?://[^/\s]+", candidate["url"]):
@@ -1750,6 +1808,8 @@ def _validate_agent_council_v3(
         if not isinstance(challenges, list):
             errors.append(f"{seat} memo challenges must be a list")
             challenges = []
+        if search_required:
+            errors.extend(f"{seat} {error}" for error in validate_source_checks(packet, memo))
         challenged_ids: set[str] = set()
         for index, challenge in enumerate(challenges):
             label = f"{seat} memo challenges[{index}]"
@@ -1767,7 +1827,8 @@ def _validate_agent_council_v3(
                     "decision_impact",
                     "falsifier",
                 } | ({"candidate_source_ids"} if discovery else set())
-                | ({"estimation_status", "period", "unit", "not_estimable_reason", "missing_evidence"} if blind else {"assessment"}),
+                | ({"estimation_status", "period", "unit", "not_estimable_reason", "missing_evidence"} if blind else {"assessment"})
+                | ({"source_checks"} if search_required else set()),
                 label,
                 errors,
             )
@@ -1928,7 +1989,7 @@ def _validate_agent_council_v3(
                 disposed.add(candidate_id)
                 evidence_ids = row.get("evidence_ids")
                 if row.get("disposition") == "accepted":
-                    if not _string_list(evidence_ids) or not evidence_ids or not set(evidence_ids) <= accepted_evidence:
+                    if not _string_list(evidence_ids) or not evidence_ids or not set(evidence_ids) <= final_accepted_evidence:
                         errors.append("accepted source requires evidence admitted in the final PEI receipt")
                     else:
                         candidate = source_candidates[candidate_id]
@@ -2007,10 +2068,12 @@ def _validate_agent_council_v3(
             elif prior_range != preliminary.get("proposed_range"):
                 errors.append(f"{label}.prior_range must equal the preliminary range")
             final_base = decision.get("final_base")
-            if not _number(final_base):
-                errors.append(f"{label}.final_base must be numeric")
             final_range = decision.get("final_range")
-            if (
+            withdrawn = (blind and decision.get("decision") == "reject"
+                         and final_base is None and final_range is None)
+            if not withdrawn and not _number(final_base):
+                errors.append(f"{label}.final_base must be numeric")
+            if not withdrawn and (
                 not isinstance(final_range, list)
                 or len(final_range) != 2
                 or not all(_number(item) for item in final_range)
@@ -2027,7 +2090,7 @@ def _validate_agent_council_v3(
                 errors.append(f"{label}.council_sources are invalid")
             if not _string_list(decision.get("evidence_ids")) or not set(
                 decision.get("evidence_ids", [])
-            ) <= accepted_evidence:
+            ) <= final_accepted_evidence:
                 errors.append(f"{label}.evidence_ids exceed accepted PEI evidence")
             if not _nonempty_string(decision.get("reason")):
                 errors.append(f"{label}.reason must be non-empty")
@@ -2041,6 +2104,8 @@ def _validate_agent_council_v3(
                 )
                 retention_basis = decision.get("retention_basis")
                 needs_basis = same_side and final_base == prior_base
+                if withdrawn and retention_basis is not None:
+                    errors.append(f"{label}.retention_basis must be null for a withdrawn assumption")
                 if needs_basis and not isinstance(retention_basis, dict):
                     errors.append(f"{label} retaining the original Base outside two same-side seat ranges requires retention_basis")
                 elif retention_basis is not None:
@@ -2050,14 +2115,16 @@ def _validate_agent_council_v3(
                         _expect_keys(retention_basis, {"omitted_evidence_ids", "omitted_mechanism"}, f"{label}.retention_basis", errors)
                         omitted_ids = retention_basis.get("omitted_evidence_ids")
                         mechanism = retention_basis.get("omitted_mechanism")
-                        if not _string_list(omitted_ids) or not set(omitted_ids) <= accepted_evidence:
+                        if not _string_list(omitted_ids) or not set(omitted_ids) <= final_accepted_evidence:
                             errors.append(f"{label}.retention_basis evidence must be final-receipt accepted evidence")
                         if not isinstance(mechanism, str):
                             errors.append(f"{label}.retention_basis omitted_mechanism must be a string")
                         if not omitted_ids and not _nonempty_string(mechanism):
                             errors.append(f"{label}.retention_basis must identify omitted evidence or mechanism")
             model_input_ids = decision.get("model_input_ids")
-            if (
+            if withdrawn and model_input_ids != []:
+                errors.append(f"{label}.model_input_ids must be empty for a withdrawn assumption")
+            elif not withdrawn and (
                 not _string_list(model_input_ids)
                 or not model_input_ids
                 or len(set(model_input_ids)) != len(model_input_ids)
@@ -2065,7 +2132,7 @@ def _validate_agent_council_v3(
                 errors.append(
                     f"{label}.model_input_ids must be a unique non-empty string list"
                 )
-            else:
+            elif not withdrawn:
                 duplicate_inputs = adjudicated_model_inputs & set(model_input_ids)
                 if duplicate_inputs and not (final_spec or {}).get('dependency_graph'):
                     errors.append(

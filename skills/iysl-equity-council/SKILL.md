@@ -48,6 +48,19 @@ the owner adjudicates them once. Do one targeted refill only when a remaining
 gap can materially change the judgment or break essential computation. Do not
 restart Council or add a review round.
 
+For new blind packets, use the protocol's `search_required: true` opt-in and
+verify a permitted browser/Exa (or Claude WebSearch/WebFetch) channel is
+available in the actual seat session before dispatch. Run
+`python3 scripts/validate_council_source_checks.py <packet>` before dispatch,
+then repeat with `<packet> <memo>` before sealing. These gates check policy
+declarations and require packet instructions to be a non-empty string. They
+are not a full memo validator: check `not_estimable` fields against the
+protocol before sealing, including a concrete string `missing_evidence`.
+A seat must document source checks before `not_estimable`; the owner compares
+these declarations with the host tool trace. These gates do not prove tool
+availability or source content. Historical sealed packets keep their original
+contract.
+
 ## Complete
 
 Complete Council support when all three first-round memos are sealed, their
