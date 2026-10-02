@@ -73,4 +73,4 @@ paper is the deliverable.
 Keep internal receipts out of the investor-facing paper. New blind runs use
 root schema v5 / authority v4, packet v4, memo v4, and adjudication v4.
 Historical schema v3 and v4 runs retain their original contracts and remain
-read-only.
+read-only; schema 2 and older runs are read-only and not revalidated.
