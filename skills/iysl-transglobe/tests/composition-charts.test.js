@@ -38,7 +38,7 @@ assert.equal(JSON.stringify(paretoInput), paretoBefore, 'pareto sorting does not
 assert(pareto.includes('data-cumulative-line="true"') && pareto.includes('data-cumulative="100"'), 'pareto has connected cumulative line ending at 100%');
 assert(pareto.indexOf('data-label="大"') < pareto.indexOf('data-label="中"'), 'pareto bars sort descending');
 assert(pareto.includes('x="1107" y="500"') && pareto.includes('>0%</text>'), 'pareto right axis rises from 0% at the bottom');
-assert.throws(() => charts.pareto({ data: [{ label: 'A', value: 1.5 }, { label: 'B', value: 1 }, { label: 'C', value: 1 }] }, frame), /integer/);
+assert.doesNotThrow(() => charts.pareto({ data: [{ label: 'A', value: 1.5 }, { label: 'B', value: 1 }] }, frame), 'pareto also ranks amounts, not only integer counts');
 
 const indexedSpec = { labels: ['Q1', 'Q2', 'Q3', 'Q4'], data: [{ label: '甲', values: [10, 12, null, 15] }, { label: '乙', values: [20, 18, 22, 24] }] };
 const indexed = charts.indexed(indexedSpec, frame);
@@ -57,5 +57,5 @@ assert.deepEqual([...scaledIndexed.matchAll(/data-index="([^"]+)"/g)].map(match 
 const documentFrame = { ...frame, w: 840, h: 720, plotTop: 110, plotBottom: 540 };
 assert.doesNotThrow(() => charts.stacked(comp, documentFrame));
 assert.doesNotThrow(() => charts.mekko({ categories: ['A', 'B'], data: [{ label: '甲', values: [10, 20] }, { label: '乙', values: [15, 15] }] }, documentFrame));
-assert.throws(() => charts.indexed({ labels: ['A', 'B', 'C'], data: [{ label: '甲', values: [0, 1, 2] }, { label: '乙', values: [1, 2, 3] }] }, frame), /positive base/);
+assert.throws(() => charts.indexed({ labels: ['A', 'B', 'C'], data: [{ label: '甲', values: [0, 1, 2] }, { label: '乙', values: [1, 2, 3] }] }, frame), /positive first value/);
 console.log('composition charts preserve data, area, cumulative and missing-value semantics');

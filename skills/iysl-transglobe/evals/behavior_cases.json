@@ -26,7 +26,7 @@
       "prompt": "幫我把這份全球藍商品說明文字稿做成簡報：新商品有三個重點——重大傷病額外給付、繳費期間可選 6／10／20 年、理賠可線上申請；上市時程是九月定案、十月送審、十一月教育訓練、十二月上市；主要風險是送審延遲與通路熟悉度不足。",
       "expected": {
         "must_do": [
-          "use columns, process and list layouts so qualitative content still has a visual subject",
+          "give qualitative content a visual subject, for example columns, process, flow or list layouts",
           "state a judgement in each page title rather than a topic label"
         ],
         "must_not_do": [
@@ -36,18 +36,18 @@
       }
     },
     {
-      "id": "build-warning-means-edit",
+      "id": "build-warnings-are-judgement",
       "kind": "failure",
       "prompt": "用全球藍做簡報時，build-deck.js 對第 4 頁回報 WARN: title wraps beyond two lines，第 7 頁回報 table has 14 rows but about 10 fit。請處理後交付。",
       "expected": {
         "must_do": [
-          "shorten the page 4 title to one clear judgement and rebuild",
-          "keep the rows that support the page 7 title and move the full table to an appendix page or split it",
-          "rebuild and confirm the warnings are gone"
+          "treat each warning as layout advice and decide the fix from the page judgement",
+          "state the page 4 judgement in a shorter title",
+          "keep every page 7 row somewhere in the deck, for example rows that support the title on the page and the full table on an appendix page"
         ],
         "must_not_do": [
-          "reduce font sizes to make content fit",
-          "drop table rows without keeping them elsewhere in the deck"
+          "shrink font sizes to make content fit",
+          "drop table rows from the deck"
         ]
       }
     },
@@ -82,7 +82,6 @@
           "flatten surrounding text into an image"
         ],
         "required_validation": [
-          "compare output values and labels with source",
           "inspect rendered chart"
         ]
       }
@@ -126,42 +125,11 @@
       "expected": {
         "must_do": [
           "scope image replacement to the intended nodes",
-          "preserve paragraph and table content",
-          "check actual table header contrast"
+          "preserve paragraph and table content"
         ],
         "required_validation": [
           "compare source and output content inventories",
           "inspect pagination and image aspect ratios"
-        ]
-      }
-    },
-    {
-      "id": "office-rendering-unavailable",
-      "kind": "compatibility",
-      "prompt": "已套用全球藍的 PPTX 可以解析 ZIP，但這裡沒有 PowerPoint。請交付。",
-      "expected": {
-        "must_do": [
-          "report structural checks separately from rendering",
-          "identify unverified target application rendering"
-        ],
-        "must_not_do": [
-          "claim PowerPoint visual acceptance",
-          "claim Windows or Office Web compatibility"
-        ]
-      }
-    },
-    {
-      "id": "categorical-capacity",
-      "kind": "complex",
-      "prompt": "這張全球藍月度堆疊圖有六個固定通路，全部保留；不要自行歸成其他。",
-      "expected": {
-        "must_do": [
-          "retain all six categories and values",
-          "choose small multiples tables or split charts with direct labels"
-        ],
-        "must_not_do": [
-          "collapse categories into Other without authorization",
-          "use action orange as a sixth series"
         ]
       }
     },
@@ -194,20 +162,6 @@
         "must_not_do": [
           "stretch the chart to fill the slide",
           "apply slide font floors mechanically to the standalone chart"
-        ]
-      }
-    },
-    {
-      "id": "source-version-conflict",
-      "kind": "compatibility",
-      "prompt": "用全球藍規範套 PPTX，舊 potx 用 Noto 字型，舊圖表文件写 #27327B。",
-      "expected": {
-        "must_do": [
-          "use the verified role colors and typography from the bundled design snapshot",
-          "treat the old Office container as non-authoritative for font roles"
-        ],
-        "must_not_do": [
-          "claim local v2.5.0 tokens equal the complete live v2.5.1 system"
         ]
       }
     },

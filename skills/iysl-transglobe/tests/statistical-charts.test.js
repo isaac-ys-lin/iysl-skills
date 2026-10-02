@@ -3,6 +3,9 @@
 const assert = require('assert');
 const { scatter, box, matrix } = require('../scripts/statistical-charts');
 const { render } = require('../scripts/render-chart');
+const { warnings } = require('../scripts/chart-utils');
+// Legibility problems render with a warning instead of refusing.
+const warns = (draw, pattern) => { warnings.length = 0; assert.doesNotThrow(draw); assert(warnings.some(w => pattern.test(w)), `expected a warning matching ${pattern}`); };
 const m = { w: 900, h: 600, unit: '天', plotTop: 96, plotBottom: 445 };
 const copy = value => JSON.parse(JSON.stringify(value));
 
@@ -13,8 +16,8 @@ assert.deepStrictEqual(scatterSpec, scatterBefore);
 const boundedScatter = scatter({ ...scatterSpec, xDomain: [-5, 10], yDomain: [-10, 10] }, m);
 assert(boundedScatter.includes('顯示範圍：投入（小時） -5–10；滿意度（分） -10–10'));
 assert.throws(() => scatter({ ...scatterSpec, xDomain: [0, 10] }, m), /cover every observed/);
-assert.throws(() => scatter({ ...scatterSpec, data: [{ label: '甲', x: 1, y: 1 }, { label: '乙', x: 1, y: 1 }, { label: '丙', x: 2, y: 2 }] }, m), /overlap/);
-assert.throws(() => scatter({ ...scatterSpec, data: [...scatterSpec.data, { label: '丁', x: 10, y: 10 }, { label: '戊', x: 12, y: 12 }, { label: '己', x: 14, y: 14 }, { label: '庚', x: 16, y: 16 }] }, m), /3–6 rows/);
+warns(() => scatter({ ...scatterSpec, data: [{ label: '甲', x: 1, y: 1 }, { label: '乙', x: 1, y: 1 }, { label: '丙', x: 2, y: 2 }] }, m), /overlap/);
+warns(() => scatter({ ...scatterSpec, data: [...scatterSpec.data, { label: '丁', x: 10, y: 10 }, { label: '戊', x: 12, y: 12 }, { label: '己', x: 14, y: 14 }, { label: '庚', x: 16, y: 16 }] }, m), /dense/);
 
 const boxSpec = { data: [{ label: '甲', low: 1, q1: 2, median: 3, q3: 4, high: 5, whiskerRule: '1.5IQR', outliers: [8] }, { label: '乙', low: 2, q1: 3, median: 4, q3: 5, high: 6, whiskerRule: '1.5IQR', outliers: [] }], focus: '甲' };
 const boxBefore = copy(boxSpec), boxSvg = box(boxSpec, m);
@@ -24,10 +27,8 @@ const boundedBox = box({ ...boxSpec, yDomain: [1, 10] }, m);
 assert(!boundedBox.includes('data-baseline="0"') && boundedBox.includes('data-outlier="8"'));
 assert.throws(() => box({ ...boxSpec, yDomain: [0, 5] }, m), /yDomain must cover every observed/);
 assert.throws(() => box({ ...boxSpec, yDomain: [4, 4] }, m), /yDomain/);
-assert.throws(() => box({ data: [{ label: '壞資料', low: 1, q1: 2, median: 3, q3: 4, high: 8, whiskerRule: '1.5IQR', outliers: [] }, boxSpec.data[1]] }, m), /violates/);
+assert.doesNotThrow(() => box({ data: [{ label: '甲', low: 1, q1: 2, median: 3, q3: 4, high: 8 }] }, m), 'quartiles alone are enough; whisker rule and outliers are optional');
 assert.throws(() => box({ data: [{ ...boxSpec.data[0], q1: 4, median: 3 }, boxSpec.data[1]] }, m), /summary must be ordered/);
-assert.throws(() => box({ data: [{ ...boxSpec.data[0], outliers: [8, 9, 10, 11, 12] }, boxSpec.data[1]] }, m), /at most 4/);
-assert.throws(() => box({ data: [{ ...boxSpec.data[0], outliers: [3] }, boxSpec.data[1]] }, m), /violates/);
 
 const matrixSpec = { data: [{ label: '甲案', x: -2, y: 12 }, { label: '乙案', x: 6, y: 4 }], xLabel: '執行成本（百萬元）', yLabel: '預期影響（分）', xDomain: [-5, 10], yDomain: [0, 15], xThreshold: 3, yThreshold: 8, rubric: '成本與影響依 2026 年核定評分表。', focus: '甲案', quadrantLabels: ['可行高影響', '高影響高成本', '低成本低影響', '高成本低影響'], highlightedQuadrant: 'TL' };
 const matrixBefore = copy(matrixSpec), matrixSvg = matrix(matrixSpec, m);
@@ -36,8 +37,9 @@ assert.deepStrictEqual(matrixSpec, matrixBefore);
 assert.throws(() => matrix({ ...matrixSpec, xDomain: [5, 5] }, m), /xDomain/);
 assert.throws(() => matrix({ ...matrixSpec, xThreshold: -5 }, m), /strictly inside/);
 assert.throws(() => matrix({ ...matrixSpec, highlightedQuadrant: 'priority' }, m), /highlightedQuadrant/);
-assert.throws(() => matrix({ ...matrixSpec, focus: undefined, data: [{ label: '甲', x: -4.9, y: 14.9 }] }, m), /matrix labels overlap/);
-assert.throws(() => matrix({ ...matrixSpec, yThreshold: 0.5 }, m), /quadrant labels exceed their quadrant/);
+warns(() => matrix({ ...matrixSpec, focus: undefined, data: [{ label: '甲', x: -4.9, y: 14.9 }] }, m), /matrix labels overlap/);
+warns(() => matrix({ ...matrixSpec, yThreshold: 0.5 }, m), /quadrant labels exceed their quadrant/);
+assert.doesNotThrow(() => matrix({ ...matrixSpec, rubric: undefined }, m), 'rubric is optional');
 const renderedMatrix = { ...matrixSpec, chart: 'matrix', title: '矩陣測試', unit: '分', period: '2026', source: '測試資料', notes: [] };
 for (const [layout, placementWidthInches] of [['web'], ['document', 6.1], ['slide', 12]]) assert.doesNotThrow(() => render({ ...renderedMatrix, layout, ...(placementWidthInches ? { placementWidthInches } : {}) }), `matrix labels fit ${layout}`);
 const thresholdMatrix = { ...renderedMatrix, data: [{ label: '甲', x: 5.4, y: 4.6 }, { label: '乙', x: 5.2, y: 4.8 }], focus: '甲', xDomain: [0, 10], yDomain: [0, 10], xThreshold: 5, yThreshold: 5, quadrantLabels: ['左上', '右上', '左下', '右下'] };

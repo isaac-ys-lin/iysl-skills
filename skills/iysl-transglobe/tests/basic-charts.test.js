@@ -39,5 +39,5 @@ assert.equal((main.match(/M/g) || []).length, 2, 'null breaks the path');
 assert.equal((main.match(/L/g) || []).length, 0, 'no connecting line across missing time');
 const tracking = charts.tracking(series, frame);
 assert(tracking.includes('#04696C') && tracking.includes('stroke-dasharray="10 5"'), 'identity uses both categorical colors and line styles');
-assert.throws(() => charts.tracking({ ...series, data: Array.from({ length: 5 }, (_, i) => ({ label: String(i), values: [1, 2, 3] })) }, frame), /1–4/);
+assert.throws(() => charts.tracking({ ...series, data: Array.from({ length: 5 }, (_, i) => ({ label: String(i), values: [1, 2, 3] })) }, frame), /categor/, 'the four-colour palette still caps tracked series');
 console.log('basic chart data, encoding, and missing-value checks passed');

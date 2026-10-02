@@ -28,6 +28,11 @@ let current = '';
 const warn = message => warnings.push(`${current}: ${message}`);
 const fail = message => { throw new Error(`${current}: ${message}`); };
 const str = v => typeof v === 'string' && v.trim() !== '';
+// Empty means nothing to draw; outside the usual range still draws, with advice.
+function count(items, lo, hi, what) {
+  if (!items.length) fail(`needs at least one ${what}`);
+  if (items.length < lo || items.length > hi) warn(`${items.length} ${what}s; ${lo}–${hi} usually read best`);
+}
 const lineCount = (value, widthIn, pt) => String(value ?? '').split('\n')
   .reduce((n, part) => n + Math.max(1, Math.ceil(U.countWidth(part) * pt / 72 / widthIn - 0.02)), 0);
 const lineHeight = (pt, k = 1.5) => pt * k / 72;
@@ -150,7 +155,8 @@ function chapter(slide, page, ctx) {
 function summary(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const t = page.thesis || {}, ev = Array.isArray(page.evidence) ? page.evidence : [];
-  if (!str(t.heading) || ev.length < 1 || ev.length > 4) fail('summary needs thesis.heading and 1–4 evidence rows');
+  if (!str(t.heading)) fail('summary needs thesis.heading');
+  count(ev, 1, 4, 'evidence row');
   const lw = (CW - 0.667) * 5 / 12, rx = ML + lw + 0.667, rw = CW - lw - 0.667;
   const hh = lineCount(t.heading, lw, PT.title) * lineHeight(PT.title, 1.4), bh = str(t.body) ? lineCount(t.body, lw, PT.body) * lineHeight(PT.body) : 0;
   const lh = (str(t.label) ? 0.3 + 0.167 : 0) + hh + 0.167 + bh;
@@ -179,7 +185,7 @@ function kpi(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const m = page.main || {}, sec = Array.isArray(page.secondary) ? page.secondary : [], bm = Array.isArray(m.benchmarks) ? m.benchmarks : [];
   if (!str(String(m.value ?? ''))) fail('kpi needs main.value');
-  if (sec.length > 4 || bm.length > 3) warn('keep at most 3 benchmarks and 4 secondary metrics');
+  if (sec.length > 4 || bm.length > 3) warn('more than 3 benchmarks or 4 secondary metrics may crowd the page');
   const lw = (CW - 0.667) * 1.05 / 2.05, inner = lw - 0.5, rx = ML + lw + 0.667, rw = CW - lw - 0.667;
   const mainH = 0.3 + 0.125 + PT.kpi * 1.05 / 72 + 0.25 + bm.length * 0.5;
   let y = centre(a, mainH);
@@ -206,9 +212,10 @@ function chartPage(slide, page, ctx, pptx) {
   const spec0 = page.chart;
   if (!spec0 || typeof spec0 !== 'object' || !str(spec0.chart)) fail('chart page needs chart with a chart type');
   // Slide chrome carries title and source; fill the renderer's required fields from the page.
-  const spec = { notes: [], ...spec0, title: spec0.title || page.title, source: spec0.source || page.source || ctx.source };
+  const spec = { ...spec0, title: spec0.title || page.title, source: spec0.source || page.source || ctx.source };
   for (const f of ['unit', 'period', 'source']) if (!str(spec[f])) fail(`chart needs ${f}`);
   const top = header(slide, { ...page, lede: page.lede ?? spec.subtitle }, ctx);
+  U.warnings.length = 0;
   const plan = page.svg === true ? null : planNativeChart(spec);
   const bottom = footer(slide, page.footer ? page.footer : [...footerLines(spec), ...(plan ? plan.extraFooter : [])], ctx);
   const aside = page.aside, a = area(top, bottom);
@@ -225,6 +232,7 @@ function chartPage(slide, page, ctx, pptx) {
     const h = Math.min(b.h, b.w * height / width);
     slide.addImage({ data: 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'), x: b.x, y: b.y + (b.h - h) / 2, w: h * width / height, h, altText: `${page.title}；${spec.unit}；${spec.period}` });
   }
+  for (const w of U.warnings) warn(`${w} (chart ${spec.chart})`);
   if (aside) {
     const x = b.x + b.w + 0.5, w = 2.57 - 0.333;
     const bh = (str(aside.label) ? 0.35 : 0) + (str(String(aside.value ?? '')) ? 0.7 : 0) + (str(aside.body) ? lineCount(aside.body, w, PT.label) * lineHeight(PT.label) + 0.25 : 0);
@@ -239,7 +247,7 @@ function chartPage(slide, page, ctx, pptx) {
 function list(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const items = Array.isArray(page.items) ? page.items : [];
-  if (items.length < 2 || items.length > 5) fail('list needs 2–5 items');
+  count(items, 2, 5, 'list item');
   const hasTag = items.some(i => str(i.tag)), hasNote = items.some(i => str(i.note));
   const tagW = hasTag ? 1.53 : 0, noteW = hasNote ? 3.125 : 0, gap = 0.333;
   const midX = ML + (hasTag ? tagW + gap : 0), midW = CW - (hasTag ? tagW + gap : 0) - (hasNote ? noteW + gap : 0);
@@ -264,7 +272,7 @@ function list(slide, page, ctx) {
 function columns(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const items = Array.isArray(page.items) ? page.items : [];
-  if (items.length < 2 || items.length > 4) fail('columns needs 2–4 items');
+  count(items, 2, 4, 'column');
   const gap = 0.5, cw = (CW - gap * (items.length - 1)) / items.length;
   const hasValue = items.some(i => str(String(i.value ?? ''))), hasKicker = items.some(i => str(i.kicker));
   const blockH = it => 0.25 + (hasKicker ? 0.35 : 0) + (hasValue ? 0.75 : 0) + lineCount(it.heading, cw, PT.body) * lineHeight(PT.body, 1.4) + (str(it.body) ? 0.125 + lineCount(it.body, cw, PT.label) * lineHeight(PT.label) : 0);
@@ -287,7 +295,7 @@ function columns(slide, page, ctx) {
 function processPage(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const steps = Array.isArray(page.steps) ? page.steps : [];
-  if (steps.length < 3 || steps.length > 6) fail('process needs 3–6 steps');
+  count(steps, 3, 6, 'step');
   const colW = CW / steps.length, tw = colW - 0.3, r = 0.11;
   const textH = Math.max(...steps.map(s => lineCount(s.heading, tw, PT.body) * lineHeight(PT.body, 1.4) + (str(s.body) ? 0.125 + lineCount(s.body, tw, PT.label) * lineHeight(PT.label) : 0)));
   const total = 0.35 + 0.2 + r * 2 + 0.3 + textH;
@@ -308,7 +316,7 @@ function processPage(slide, page, ctx) {
 function flow(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const nodes = Array.isArray(page.nodes) ? page.nodes : [];
-  if (nodes.length < 2 || nodes.length > 5) fail('flow needs 2–5 nodes');
+  count(nodes, 2, 5, 'flow node');
   const joins = nodes.slice(1).map((_, i) => (Array.isArray(page.connectors) && page.connectors[i]) || '→');
   const gap = 0.5, w = (CW - gap * (nodes.length - 1)) / nodes.length, inner = w - 0.4;
   const focus = page.focus ?? nodes.length - 1;
@@ -364,7 +372,8 @@ function table(slide, page, ctx) {
 function compare(slide, page, ctx) {
   const a = area(header(slide, page, ctx), footer(slide, page.footer, ctx));
   const opts = page.options, rows = page.rows;
-  if (!Array.isArray(opts) || opts.length < 2 || opts.length > 4) fail('compare needs 2–4 options');
+  if (!Array.isArray(opts)) fail('compare needs options');
+  count(opts, 2, 4, 'option');
   if (!Array.isArray(rows) || !rows.length || rows.some(r => !str(r.label) || !Array.isArray(r.values) || r.values.length !== opts.length)) fail('every compare row needs a label and one value per option');
   const rec = page.recommended, labelW = 1.83, optW = (CW - labelW) / opts.length;
   const head = [cell(page.rowHeader || '比較項目', { bold: true, fontSize: PT.body, valign: 'top', border: border(true) }),
@@ -385,7 +394,7 @@ function decisions(slide, page, ctx) {
   slide.background = { color: C.dark };
   const a = area(header(slide, page, ctx, true), footer(slide, page.footer, ctx, true));
   const items = Array.isArray(page.items) ? page.items : [];
-  if (items.length < 1 || items.length > 5) fail('decisions needs 1–5 items');
+  count(items, 1, 5, 'decision');
   const idxW = 0.5, ownW = 2.92, gap = 0.25, hw = CW - idxW - ownW - gap * 2;
   const heights = items.map(it => 0.5 + Math.max(lineCount(it.heading, hw, PT.body) * lineHeight(PT.body, 1.4), (lineCount(it.owner, ownW, PT.label) + (str(it.deadline) ? 1 : 0)) * lineHeight(PT.label) + 0.083));
   const total = heights.reduce((s, v) => s + v, 0);

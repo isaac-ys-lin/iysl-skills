@@ -2,7 +2,7 @@
 
 // Composition and relative-change encodings.  The caller supplies the SVG frame and metadata.
 const U = require('./chart-utils');
-const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, scale, tick, plot, columns, sum, composition, categoryIndices, indexedData, percent, derived } = U;
+const { C, finite, fail, warn, pos, el, text, line, rect, dot, label, rows, scale, tick, plot, columns, sum, composition, categoryIndices, indexedData, percent, derived } = U;
 const raw = U.num;
 const pct = value => derived(value, 1);
 const cat = U.catFill, labelFill = U.catText;
@@ -12,7 +12,7 @@ function waffle(s, m) {
   if (values.some(value => !Number.isInteger(value) || value < 0) || sum(values) !== 100) fail('waffle values must be nonnegative whole percentages totaling 100');
   const indices = categoryIndices(s, data.map(row => row.label));
   const p = plot(m, 90, 260), size = Math.min(Math.floor(p.h / 10), Math.floor(p.w / 10));
-  if (size < 18) fail('waffle grid is too small; enlarge the canvas or use a table');
+  if (size < 18) warn('waffle grid is small; enlarge the canvas or use a table');
   const gridWidth = size * 10, x = p.x + (p.w - gridWidth) / 2, y = p.y + (p.h - size * 10) / 2;
   let out = '', unit = 0;
   data.forEach((row, index) => {
@@ -30,7 +30,7 @@ function waffle(s, m) {
 
 function stacked(s, m) {
   const { categories, data, totals, shares } = composition(s, m, 6), indices = categoryIndices(s, categories), p = plot(m, 210, 60), rowHeight = p.h / data.length;
-  if (rowHeight < 42) fail('stacked rows are too dense; enlarge, split, or use a table');
+  if (rowHeight < 42) warn('stacked rows are dense; enlarge, split, or use a table');
   let out = '', smallNotes = [];
   out += text(p.x + p.w, p.y - 60, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   categories.forEach((name, index) => {
@@ -60,7 +60,7 @@ function stacked(s, m) {
   });
   out += text(p.x, p.y + p.h + 28, '每列＝100%；比較組成，非總規模', { fill: C.muted, 'font-size': 18 });
   if (smallNotes.length) {
-    if (smallNotes.length > 4) fail('stacked has too many narrow segments for companion labels; split or use a table');
+    if (smallNotes.length > 4) warn('stacked has many narrow segments; split or use a table');
     out += label(p.x, p.y + p.h + 57, `窄區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 18 }, 2);
   }
   return out;
@@ -70,7 +70,7 @@ function mekko(s, m) {
   const { categories, data, totals, shares } = composition(s, m, 5), indices = categoryIndices(s, categories), p = plot(m, 100, 45);
   const grand = sum(totals), minWidth = 75;
   if (!finite(grand) || grand <= 0) fail('mekko grand total must be finite and positive');
-  if (Math.min(...totals) / grand * p.w < minWidth) fail('mekko has a group too narrow to label; split it or use a table');
+  if (Math.min(...totals) / grand * p.w < minWidth) warn('mekko has a group too narrow to label; split it or use a table');
   let out = '', x = p.x, smallNotes = [];
   out += text(p.x + p.w, p.y - 60, `單位：${m.unit || '原始值'}`, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   data.forEach((row, r) => {
@@ -98,7 +98,7 @@ function mekko(s, m) {
     out += label(x0 + 19, p.y - 22, name, p.w / categories.length - 24, { fill: C.muted, 'font-size': 18 }, 1);
   });
   if (smallNotes.length) {
-    if (smallNotes.length > 4) fail('mekko has too many small cells for companion labels; split or use a table');
+    if (smallNotes.length > 4) warn('mekko has many small cells; split or use a table');
     out += label(p.x, p.y + p.h + 79, `小區塊：${smallNotes.join('；')}`, p.w, { fill: C.muted, 'font-size': 18 }, 2);
   }
   return out;
@@ -106,7 +106,7 @@ function mekko(s, m) {
 
 function pareto(s, m) {
   const { data, total, cumulative } = U.paretoData(s), p = plot(m, 100, 105), slot = p.w / data.length;
-  if (slot < 68) fail('pareto labels are too dense; split or use a table');
+  if (slot < 68) warn('pareto labels are dense; split or use a table');
   // Counts share the cumulative scale (total = 100%), so a bar top never reads as a cumulative share.
   const Y = value => p.y + p.h - value / total * p.h;
   let out = '', points = [];
@@ -138,11 +138,12 @@ function pareto(s, m) {
 }
 
 function indexed(s, m) {
-  const data = rows(s, 2, 5), n = data[0]?.values?.length;
-  if (!Number.isInteger(n) || n < 3 || n > 12 || data.some(row => !Array.isArray(row.values) || row.values.length !== n ||
+  const data = rows(s, 1, 5), n = data[0]?.values?.length;
+  if (!Number.isInteger(n) || n < 2 || data.some(row => !Array.isArray(row.values) || row.values.length !== n ||
       !finite(row.values[0]) || row.values[0] <= 0 || row.values.some(value => value !== null && !finite(value)))) {
-    fail('indexed needs 2–5 equal series with 3–12 finite numbers/null and a positive base');
+    fail('indexed needs equal series of at least 2 numbers/null and a positive first value');
   }
+  if (n > 12) warn(`${n} periods is dense for indexed panels`);
   const periods = columns(s, n), indexData = indexedData(data);
   if (indexData.some(row => row.values.some(value => value !== null && !finite(value)))) fail('indexed calculation overflowed; change the declared unit');
   const focus = s.focus === undefined ? null : (typeof s.focus === 'string' && data.some(row => row.label === s.focus) ? s.focus : fail('indexed focus must match a series label'));
@@ -153,14 +154,14 @@ function indexed(s, m) {
   const lo = Math.floor(paddedLo / step) * step, hi = Math.ceil(paddedHi / step) * step;
   const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, index) => lo + index * step);
   const p = plot(m, 68, 34), panelWidth = p.w / data.length;
-  if (panelWidth < 165) fail('indexed panels are too narrow; split the chart or use a table');
+  if (panelWidth < 165) warn('indexed panels are narrow; split the chart or use a table');
   const Y = value => scale(value, lo, hi, p.y + p.h, p.y);
   let out = '';
   indexData.forEach((row, panel) => {
     const mark = focus && row.label !== focus ? C.gray : C.blue;
     const valueFill = focus && row.label !== focus ? C.muted : C.blue;
     const left = p.x + panel * panelWidth + 40, right = p.x + (panel + 1) * panelWidth - 28, width = right - left;
-    if (width / (n - 1) < 32) fail('indexed period labels are too dense; split the chart or use a table');
+    if (width / (n - 1) < 32) warn('indexed period labels are dense; split the chart or use a table');
     ticks.forEach(value => {
       const y = Y(value);
       out += line(left, y, right, y);

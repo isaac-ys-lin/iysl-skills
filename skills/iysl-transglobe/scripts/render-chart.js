@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const U = require('./chart-utils');
-const { C, esc, finite, fail, el, text, line, rect, dot, label, wrap, rows, extent, scale, ticks, tick, num, plot, xAxis } = U;
+const { C, esc, finite, fail, warn, el, text, line, rect, dot, label, wrap, rows, extent, scale, ticks, tick, num, plot, xAxis } = U;
 
 function waterfall(s, m) {
   const parts = U.waterfallData(s);
@@ -13,7 +13,7 @@ function waterfall(s, m) {
   if (!parts.some(r => r.label === focus)) fail('waterfall focus must match a label');
   const [lo, hi] = extent(parts.flatMap(r => [r.from, r.to]));
   const p = plot(m, 125, 45), Y = v => scale(v, lo, hi, p.y + p.h, p.y), step = p.w / parts.length;
-  if (step < 75) fail('waterfall labels too dense; widen canvas or use a table');
+  if (step < 75) warn('waterfall labels are dense; widen the canvas or use a table');
   let out = '';
   for (const v of ticks(lo, hi)) out += line(p.x, Y(v), p.x + p.w, Y(v)) + text(p.x - 12, Y(v) + 5, tick(v), { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 });
   out += line(p.x, Y(0), p.x + p.w, Y(0), { stroke: C.gray, 'data-baseline': 0 });
@@ -32,7 +32,7 @@ function dumbbell(s, m) {
   const data = rows(s, 1, 10);
   if (data.some(r => !finite(r.before) || !finite(r.after))) fail('dumbbell needs numeric before and after');
   const [lo, hi] = extent(data.flatMap(r => [r.before, r.after])), p = plot(m, 220, 280), X = v => scale(v, lo, hi, p.x, p.x + p.w), slot = p.h / data.length;
-  if (slot < 46) fail('dumbbell rows too dense; increase height or split');
+  if (slot < 46) warn('dumbbell rows are dense; increase height or split');
   if (s.focus !== undefined) U.namedFocus(s, data);
   const beforeLabel = s.beforeLabel || '前', afterLabel = s.afterLabel || '後';
   let out = xAxis(p, lo, hi, m.unit);
@@ -55,18 +55,14 @@ function dumbbell(s, m) {
 
 function funnel(s, m) {
   const data = rows(s, 2, 8);
-  data.forEach((r, i) => {
-    if (!Number.isSafeInteger(r.value) || r.value < 0) fail('funnel counts must be nonnegative integers');
-    if (i && r.value > data[i - 1].value) fail('funnel stages must not increase; verify same cohort');
-  });
-  if (!data[0].value) fail('funnel starting cohort must be above zero');
-  if (s.sameCohort !== true) fail('funnel requires confirmed sameCohort: true from source data');
+  if (data.some(r => !finite(r.value) || r.value < 0)) fail('funnel values must be nonnegative numbers');
+  if (!data[0].value) fail('funnel first stage must be above zero');
   const rates = U.funnelRates(data);
-  const p = plot(m, 220, 210), slot = p.h / data.length, base = data[0].value;
-  if (slot < 45) fail('funnel too dense; increase height or use a stage table');
+  const p = plot(m, 220, 210), slot = p.h / data.length, base = data[0].value, widest = Math.max(...data.map(r => r.value));
+  if (slot < 45) warn('funnel stages are dense; increase height or use a stage table');
   let out = text(p.x + p.w + 12, p.y - 18, '件數 / 階段完成率', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
-    const height = Math.min(48, slot - 16), y = p.y + i * slot + (slot - height) / 2, width = p.w * r.value / base;
+    const height = Math.min(48, slot - 16), y = p.y + i * slot + (slot - height) / 2, width = p.w * r.value / widest;
     const rate = !i ? '起始母體' : rates.stages[i] === null ? '不適用' : `${U.derived(rates.stages[i], 2)}%`;
     out += label(p.x - 16, y + 20, r.label, p.x - 40, { 'text-anchor': 'end' });
     out += rect(p.x + (p.w - width) / 2, y, width, height, i === data.length - 1 ? C.blue : C.gray, { 'data-count': r.value });
@@ -78,21 +74,20 @@ function funnel(s, m) {
 function tornado(s, m) {
   const input = rows(s, 2, 8);
   if (!finite(s.baseline)) fail('tornado requires numeric baseline outcome');
-  if (typeof s.model !== 'string' || !s.model.trim() || !Array.isArray(s.assumptions) || !s.assumptions.length || s.assumptions.some(v => typeof v !== 'string' || !v.trim())) fail('tornado requires model and assumptions');
   if (input.some(r => !finite(r.low) || !finite(r.high) || r.low > s.baseline || r.high < s.baseline)) fail('each tornado outcome must bracket baseline; use a range plot/table for non-bracketing scenarios');
-  if (input.some(r => (r.lowLabel !== undefined || r.highLabel !== undefined) && [r.lowLabel, r.highLabel].some(v => typeof v !== 'string' || !v.trim()))) fail('tornado lowLabel and highLabel must both describe source assumptions');
+  const range = r => [r.lowLabel, r.highLabel].filter(Boolean).join(' ／ ');
   const data = [...input].sort((a, b) => (b.high - b.low) - (a.high - a.low));
   const span = Math.max(...data.flatMap(r => [s.baseline - r.low, r.high - s.baseline])) * 1.2 || 1;
   const lo = s.baseline - span, hi = s.baseline + span, p = plot(m, 300, 220), X = v => scale(v, lo, hi, p.x, p.x + p.w), slot = p.h / data.length;
   // Two-line factor labels (name + tested range) span ~41px; single-line rows need 40px.
-  if (slot < (data.some(r => r.lowLabel) ? 50 : 40)) fail('tornado rows too dense; increase height or split');
+  if (slot < (data.some(range) ? 50 : 40)) warn('tornado rows are dense; increase height or split');
   const focus = s.focus === undefined ? null : U.namedFocus(s, data);
   let out = xAxis(p, lo, hi, m.unit) + line(X(s.baseline), p.y, X(s.baseline), p.y + p.h, { stroke: C.ink, 'stroke-width': 2, 'data-baseline': s.baseline });
   out += text(p.x + p.w + 32, p.y - 18, '下界 / 上界結果', { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
     const y = p.y + (i + .5) * slot;
-    out += label(p.x - 16, y - (r.lowLabel ? 6 : 4), r.label, p.x - 40, { 'text-anchor': 'end' }, 1);
-    if (r.lowLabel) out += label(p.x - 16, y + 15, `${r.lowLabel} ／ ${r.highLabel}`, p.x - 40, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 }, 1);
+    out += label(p.x - 16, y - (range(r) ? 6 : 4), r.label, p.x - 40, { 'text-anchor': 'end' }, 1);
+    if (range(r)) out += label(p.x - 16, y + 15, range(r), p.x - 40, { 'text-anchor': 'end', fill: C.muted, 'font-size': 18 }, 1);
     // Focus semantics: the titled factor is blue, others gray; low/high are read from their side of the baseline.
     const color = !focus || r.label === focus ? C.blue : C.gray;
     out += rect(X(r.low), y - 12, X(s.baseline) - X(r.low), 24, color, { 'data-low': r.low });
@@ -105,7 +100,7 @@ function tornado(s, m) {
 function table(s, m) {
   const data = rows(s, 1, 30), p = plot(m, 60, 60), rowHeight = p.h / (data.length + 1);
   if (data.some(r => r.value !== null && !finite(r.value))) fail('table values must be numbers or null');
-  if (rowHeight < 34) fail('table too dense; increase height or use a native paginated table');
+  if (rowHeight < 34) warn('table rows are dense; increase height or use a native table');
   if (s.focus !== undefined) U.namedFocus(s, data);
   let out = rect(p.x, p.y, p.w, rowHeight, '#F1F3F7') + text(p.x + 12, p.y + 26, s.labelHeader || '項目', { 'font-weight': 700 }) + text(p.x + p.w - 12, p.y + 26, m.unit, { 'text-anchor': 'end', 'font-weight': 700 });
   data.forEach((r, i) => {
@@ -167,12 +162,13 @@ function readingNotes(spec) {
 }
 
 function extraNotes(spec) {
-  return [...(spec.chart === 'tornado' ? [`模型：${spec.model}；假設：${(spec.assumptions || []).join('；')}`] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : []), ...readingNotes(spec)];
+  const model = spec.chart === 'tornado' ? [spec.model && `模型：${spec.model}`, spec.assumptions?.length && `假設：${spec.assumptions.join('；')}`].filter(Boolean).join('；') : '';
+  return [...(model ? [model] : []), ...(spec.chart === 'matrix' && spec.rubric ? [`評分：${spec.rubric}`] : []), ...readingNotes(spec)];
 }
 
 // Everything a reader needs beside the plot: unit, period, source, notes and generated reading notes.
 function footerLines(spec) {
-  return [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...spec.notes, ...extraNotes(spec)];
+  return [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...(spec.notes || []), ...extraNotes(spec)];
 }
 
 // Long description for screen readers and detached SVGs: the plotted values, not only the metadata.
@@ -191,30 +187,25 @@ function dataSummary(spec) {
 // The caller must then show footerLines(spec) next to the chart so unit, period, source and notes stay visible.
 function render(spec, options = {}) {
   const bare = options.bare === true;
+  U.warnings.length = 0;
   if (!spec || typeof spec !== 'object') fail('spec must be an object');
   for (const field of ['chart', 'title', 'unit', 'period', 'source']) if (typeof spec[field] !== 'string' || !spec[field].trim()) fail(`requires nonempty ${field}`);
-  if (!Array.isArray(spec.notes) || spec.notes.some(v => typeof v !== 'string')) fail('notes must be an array of strings');
+  if (spec.notes !== undefined && (!Array.isArray(spec.notes) || spec.notes.some(v => typeof v !== 'string'))) fail('notes must be an array of strings');
   const invalidXML = value => typeof value === 'string' ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value) : Array.isArray(value) ? value.some(invalidXML) : value && typeof value === 'object' ? Object.values(value).some(invalidXML) : false;
   if (invalidXML(spec)) fail('input contains invalid XML control characters');
   const fn = renderers[spec.chart];
   if (typeof fn !== 'function' || !Object.hasOwn(renderers, spec.chart)) fail(`unknown chart; use ${Object.keys(renderers).join(', ')}`);
-  if (spec.categoryDomain !== undefined && !['waffle', 'stacked', 'mekko', 'sharetrend', 'grouped', 'tracking'].includes(spec.chart)) fail('categoryDomain is only supported by categorical charts');
-  if (spec.yDomain !== undefined && !['trend', 'tracking', 'box', 'scatter', 'matrix'].includes(spec.chart)) fail('yDomain is only supported by trend, tracking, box, scatter and matrix');
-  if (spec.xDomain !== undefined && !['scatter', 'matrix'].includes(spec.chart)) fail('xDomain is only supported by scatter and matrix');
-  if (spec.subtitle !== undefined && (typeof spec.subtitle !== 'string' || !spec.subtitle.trim())) fail('subtitle must be a nonempty reading explanation');
   const layout = spec.layout ?? 'web';
   const size = { web: [1200, 800], document: [840, 720], slide: [960, 540] };
   if (typeof layout !== 'string' || !Object.hasOwn(size, layout)) fail('layout must be web, document, or slide');
   const w = spec.width ?? size[layout][0], h = spec.height ?? size[layout][1];
   if (!Number.isInteger(w) || !Number.isInteger(h) || w < 500 || h < 350 || w > 10000 || h > 20000) fail('canvas must be 500–10000 wide and 350–20000 high');
-  if (layout !== 'web' && (!finite(spec.placementWidthInches) || spec.placementWidthInches <= 0)) fail('Office layout requires the actual placementWidthInches');
-  if (layout === 'web' && spec.placementWidthInches !== undefined) fail('placementWidthInches requires document or slide layout');
   // Slide titles follow design-rules: 36px on the 1280 base × 0.75 = 27pt on a 960pt slide.
   const titleSize = layout === 'slide' ? 27 : 34, titleTop = 18 + titleSize, titleStep = Math.round(titleSize * 1.24);
   const titleLines = bare ? [] : wrap(spec.title, (w - 88) / titleSize);
-  if (titleLines.length > 2) fail('title needs more than two lines; increase width or revise title without changing meaning');
+  if (titleLines.length > 2) warn('title wraps past two lines; shorten it to one clear judgement');
   const subtitleLines = spec.subtitle && !bare ? wrap(spec.subtitle, (w - 88) / 18) : [];
-  if (subtitleLines.length > 3) fail('subtitle needs more than three lines; move supporting detail to notes');
+  if (subtitleLines.length > 3) warn('subtitle wraps past three lines; move detail to notes');
   const subtitleTop = bare ? 0 : titleTop + titleLines.length * titleStep;
   const extra = extraNotes(spec);
   const footer = bare ? [] : footerLines(spec).flatMap(v => wrap(v, (w - 88) / 16));
@@ -223,20 +214,19 @@ function render(spec, options = {}) {
   const bottomGap = { ranking: 70, ordered: 70, bullet: 90, heatmap: 100, trend: 75, tracking: 75, waterfall: 85, dumbbell: 120, funnel: 115, tornado: 70, table: 40, waffle: 40, stacked: 120, mekko: 145, pareto: 90, indexed: 110, scatter: 160, box: 110, matrix: 95, grouped: 70, combo: 95, histogram: 90, sharetrend: 130 }[spec.chart];
   const topGap = { heatmap: 60, stacked: 72, mekko: 72, grouped: 60, combo: 60, sharetrend: 60 }[spec.chart] || 40;
   const m = { w, h, unit: spec.unit, plotTop: subtitleTop + subtitleLines.length * 24 + topGap, plotBottom: footerTop - bottomGap };
-  if (m.plotBottom - m.plotTop < 100) fail('metadata and chart need more height; enlarge canvas or split content');
   const body = fn(spec, m);
   const placement = { 'data-layout': layout };
-  if (layout !== 'web') {
+  if (layout !== 'web' && finite(spec.placementWidthInches) && spec.placementWidthInches > 0) {
     const scaleToPoints = spec.placementWidthInches * 72 / w;
     const bodyPoints = Math.min(18, ...[...body.matchAll(/font-size="([\d.]+)"/g)].map(match => Number(match[1]))) * scaleToPoints;
     const footerPoints = 16 * scaleToPoints;
     const [minBody, minFooter] = bare ? [12, 0] : layout === 'document' ? [9, 8] : [16, 12];
-    if (bodyPoints < minBody || (!bare && footerPoints < minFooter)) fail(`text would be too small at ${spec.placementWidthInches} inches; reflow with a narrower canvas, enlarge the placement, or split the chart`);
+    if (bodyPoints < minBody || (!bare && footerPoints < minFooter)) warn(`text renders below ${minBody} pt at ${spec.placementWidthInches} inches; use a narrower canvas, a wider placement, or split the chart`);
     Object.assign(placement, { 'data-placement-width-inches': spec.placementWidthInches, 'data-body-size-pt': bodyPoints, 'data-footer-size-pt': footerPoints });
   }
   const id = 'tg-' + crypto.createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 12);
   return el('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-labelledby': `${id}-title ${id}-desc`, 'font-family': 'Arial, Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif', ...placement },
-    el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...spec.notes, ...extra, `數值：${dataSummary(spec)}`, derivedSummary(spec)].filter(Boolean).join('；'))) +
+    el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...(spec.notes || []), ...extra, `數值：${dataSummary(spec)}`, derivedSummary(spec)].filter(Boolean).join('；'))) +
     el('metadata', {}, esc(JSON.stringify(spec))) + rect(0, 0, w, h, '#FFFFFF') + titleLines.map((v, i) => text(44, titleTop + i * titleStep, v, { fill: '#000099', 'font-size': titleSize, 'font-weight': 700 })).join('') +
     subtitleLines.map((v, i) => text(44, subtitleTop + i * 24, v, { fill: C.muted, 'font-size': 18, 'data-reading-guide': true })).join('') + body + (bare ? '' : line(44, footerTop - 24, w - 44, footerTop - 24)) +
     footer.map((v, i) => text(44, footerTop + i * 22, v, { fill: C.muted, 'font-size': 16 })).join(''));
@@ -250,5 +240,6 @@ if (require.main === module) {
     if (path.resolve(input) === path.resolve(output)) fail('input and output paths must differ');
     const svg = render(JSON.parse(fs.readFileSync(input, 'utf8')));
     fs.writeFileSync(output, svg);
+    for (const w of U.warnings) console.error(`WARN ${w}`);
   } catch (error) { console.error(error.message); process.exit(1); }
 }

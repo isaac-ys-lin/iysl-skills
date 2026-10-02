@@ -20,42 +20,41 @@ node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg
 }
 ```
 
-獨立 SVG 必填 `chart`、`title`、`unit`、`period`、`source`、`notes`（無註解時 `[]`）與 `data`；
-放在 chart 頁時 `title`、`source`、`notes` 可省略。數字寫成數字、保留原始精度，千分位由工具加。
-完整例子在 [chart-examples.json](../assets/chart-examples.json)（示意資料，只參考格式）。
+必填 `chart`、`unit`、`period`、`data`；獨立 SVG 另需 `title` 與 `source`（放在 chart 頁時會沿用頁面標題與 deck 的來源）。
+`subtitle` 是一行讀圖說明，`notes` 是頁尾補充，兩者可省略。數字寫成數字、保留原始精度，千分位由工具加。
+每種圖的完整例子在 [chart-examples.json](../assets/chart-examples.json)（示意資料，只參考格式）。
 
 ## 圖型與資料形狀
 
 前八種在簡報中產生 PowerPoint 原生圖表，其餘嵌入 SVG。
 
-| `chart` | 回答的問題 | `data` 每列 | 備註 |
-| --- | --- | --- | --- |
-| `ranking` | 誰高誰低 | `{label, value}` | 依數值排序；`focus` 可選，指定時主角藍、其他灰 |
-| `ordered` | 有順序的等級或區間 | `{label, value}` | 保留輸入順序，藍階上色 |
-| `trend` | 一條主線隨時間的變化 | `{label, values}`，另有 `labels` | `focus` 指定主角序列；只有一條時可省略 |
-| `tracking` | 2–4 個固定類別各期變化 | 同 `trend` | 類別色固定 |
-| `grouped` | 項目在 2–4 個序列（年度、情境）下的大小 | `{label, values}`，另有 `series` | |
-| `stacked` | 各群的內部組成 | `{label, values}`，另有 `categories` | 2–4 類，第五類只能是既有的「其他」；值非負 |
-| `sharetrend` | 組成隨期間變化 | 同 `stacked`，每列一期 | |
-| `combo` | 金額與比率一起看 | `{label, value, rate}`，另有 `rateLabel`（含單位） | 兩軸獨立 |
-| `waterfall` | 期初加減到期末 | `{label, value}`，另有 `start`、可選 `end`、`focus` | 各項可加總 |
-| `dumbbell` | 同一項目前後差多少 | `{label, before, after}` | 可設 `beforeLabel`／`afterLabel` |
-| `bullet` | 實際與目標 | `{label, actual, target}` | |
-| `heatmap` | 兩個維度交叉的強弱 | `{label, values}`，另有 `labels` | 最多 10×12 |
-| `funnel` | 同一批對象在哪一階段流失 | `{label, value}`，另有 `sameCohort: true` | 數值不可增加 |
-| `waffle` | 單一整體的占比 | `{label, value}` | 整數百分點，合計 100 |
-| `mekko` | 規模與組成同時比較 | 同 `stacked` | |
-| `pareto` | 少數原因是否占多數 | `{label, value}` | 原因互斥 |
-| `indexed` | 起點不同的相對成長 | 同 `trend` | 首期須大於 0 |
-| `tornado` | 哪個假設最影響結果 | `{label, low, high}`，另有 `baseline`、`model`、`assumptions` | 來自已算好的模型 |
-| `scatter` | 兩個指標的關係 | `{label, x, y}`，另有 `xLabel`、`yLabel` | 3–6 點 |
-| `box` | 分布與中位數 | `{label, low, q1, median, q3, high, whiskerRule: "1.5IQR", outliers}` | 需要真實分位數 |
-| `histogram` | 原始觀察值的分布 | `data` 為數字陣列，另有 `binWidth` | 10 筆以上 |
-| `matrix` | 兩個評分維度的優先序 | `{label, x, y}`，另有 `xLabel`、`yLabel`、`xDomain`、`yDomain`、`xThreshold`、`yThreshold`、`rubric` | 評分定義來自來源 |
-| `table` | 單欄數值清單 | `{label, value}` | 簡報中改用 `table` 版型 |
+| `chart` | `data` 每列 | 其他欄位 |
+| --- | --- | --- |
+| `ranking` | `{label, value}` | 可選 `focus`：主角藍、其他灰；依數值排序 |
+| `ordered` | `{label, value}` | 保留輸入順序，藍階上色 |
+| `trend` | `{label, values}` | `labels`（各期名稱）；多條線時用 `focus` 指定主角 |
+| `tracking` | 同 `trend` | 2–4 條，類別色固定 |
+| `grouped` | `{label, values}` | `series`（1–4 個序列名） |
+| `stacked` | `{label, values}` | `categories`（2–4 類，可再加來源既有的「其他」）；值非負 |
+| `sharetrend` | 同 `stacked`，每列一期 | 同 `stacked` |
+| `combo` | `{label, value, rate}` | `rateLabel`（比率名稱與單位）；兩軸獨立 |
+| `bullet` | `{label, actual, target}` | |
+| `waterfall` | `{label, value}` | `start`；可選 `end`（會核對加總）、`focus`、`startLabel`、`endLabel` |
+| `dumbbell` | `{label, before, after}` | 可選 `beforeLabel`、`afterLabel` |
+| `heatmap` | `{label, values}` | `labels`（各欄名稱） |
+| `funnel` | `{label, value}` | 首段大於 0 |
+| `waffle` | `{label, value}` | 整數百分點，合計 100 |
+| `mekko` | 同 `stacked` | 同 `stacked` |
+| `pareto` | `{label, value}` | 非負件數 |
+| `indexed` | 同 `trend` | 各序列首期大於 0 |
+| `tornado` | `{label, low, high}`，可選 `lowLabel`、`highLabel` | `baseline`（每列的 low ≤ baseline ≤ high）；可選 `model`、`assumptions` 寫進頁尾 |
+| `scatter` | `{label, x, y}` | `xLabel`、`yLabel` |
+| `box` | `{label, low, q1, median, q3, high}`，可選 `outliers` | |
+| `histogram` | `data` 是原始觀察值的數字陣列 | `binWidth`，可選 `binStart` |
+| `matrix` | `{label, x, y}` | `xLabel`、`yLabel`、`xDomain`、`yDomain`、`xThreshold`、`yThreshold`；可選 `rubric`、`quadrantLabels`、`highlightedQuadrant` |
+| `table` | `{label, value}` | 簡報中改用 `table` 版型 |
 
-缺值寫 `null`：長條保留該列並註明，折線斷開並在頁尾列出缺的期間。
-零是觀察值，不是缺值。
+缺值寫 `null`：長條保留該列並註明，折線斷開並在頁尾列出缺的期間。零照實寫 `0`。
 
 ## 跨圖一致
 
@@ -66,7 +65,7 @@ node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg
 
 ## 獨立 SVG 的尺寸
 
-預設畫布 1200×800。放進 Word 或簡報時填 `layout: "document"`（840×720）或 `"slide"`（960×540），
-並填實際置入寬度 `placementWidthInches`；工具會檢查換算後的字級（文件 9 pt、簡報 16 pt 以上），
-太小時改排版或拆圖，不要縮字。`width`、`height` 可調整比例。
+預設畫布 1200×800。放進 Word 或簡報時填 `layout: "document"`（840×720）或 `"slide"`（960×540）；
+`width`、`height` 可調整比例。再填實際置入寬度 `placementWidthInches`，工具會換算字級，
+換算後太小（文件 9 pt、簡報 16 pt 以下）時 `WARN`。
 每張圖交付輸入 JSON 與 SVG；重製需要完整的 `scripts` 目錄。

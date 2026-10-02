@@ -73,6 +73,10 @@ async function unpack(deck) {
   await assert.rejects(build({ pages: [{ layout: 'chart', title: '缺來源', chart: { chart: 'ranking', unit: '%', period: '2026', data: [{ label: 'A', value: 1 }] } }] }), /chart needs source/);
   const long = await build({ source: 's', pages: [{ layout: 'columns', title: '這是一個非常非常長的標題，' .repeat(6), items: [{ heading: 'A' }, { heading: 'B' }] }] });
   assert.ok(long.warnings.some(w => w.includes('title wraps')), 'long titles are flagged');
+  const many = await build({ pages: [{ layout: 'process', title: 't', steps: Array.from({ length: 7 }, (_, i) => ({ heading: `S${i}` })) }] });
+  assert.ok(many.warnings.some(w => w.includes('7 steps')), 'item counts outside the usual range warn instead of refusing');
+  const dense = await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'ranking', unit: '%', period: 'p', data: Array.from({ length: 16 }, (_, i) => ({ label: `L${i}`, value: i })) } }] });
+  assert.ok(dense.warnings.some(w => w.includes('dense') && w.includes('ranking')), 'chart legibility warnings reach the build output');
   // Native ranking does not require a focus; without one all bars share the focus blue.
   const nofocus = await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'ranking', unit: '%', period: 'p', data: [{ label: 'A', value: 2 }, { label: 'B', value: 1 }] } }] });
   assert.deepEqual(nofocus.warnings, []);

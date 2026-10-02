@@ -11,6 +11,9 @@ const esc = value => String(value).replace(/[&<>"']/g, c => ({
 }[c]));
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const fail = message => { throw new Error(`iysl-transglobe chart: ${message}`); };
+// Legibility problems are advice, not refusals: render() clears this list, callers print it as WARN.
+const warnings = [];
+const warn = message => { warnings.push(message); };
 const pos = n => Number(n.toFixed(3));
 const el = (tag, attrs, body = '') => `<${tag}${Object.entries(attrs).map(([k, v]) => {
   if (typeof v === 'number' && !finite(v)) fail(`nonfinite SVG attribute ${k}`);
@@ -40,12 +43,13 @@ function wrap(value, width) {
 
 function label(x, y, value, width, attrs = {}, maxLines = 2) {
   const fontSize = attrs['font-size'] || 20, lines = wrap(value, width / fontSize);
-  if (lines.length > maxLines) fail(`label "${value}" needs more room; enlarge or split the chart, or use a table`);
+  if (lines.length > maxLines) warn(`label "${value}" wraps past ${maxLines} line(s)`);
   return lines.map((s, i) => text(x, y + i * fontSize * 1.25, s, attrs)).join('');
 }
 
 function rows(s, min = 1, max = 12) {
-  if (!Array.isArray(s.data) || s.data.length < min || s.data.length > max) fail(`needs ${min}–${max} rows; split or use a table`);
+  if (!Array.isArray(s.data) || s.data.length < min) fail(`needs at least ${min} row(s)`);
+  if (s.data.length > max) warn(`${s.data.length} rows is dense for this chart (about ${max} read well)`);
   const names = new Set();
   for (const r of s.data) {
     if (!r || typeof r.label !== 'string' || !r.label.trim() || names.has(r.label)) fail('row labels must be unique nonempty strings');
@@ -110,7 +114,8 @@ function observedDomain(values, explicit, name = 'yDomain') {
 function plot(m, left = 220, right = 140) {
   const top = m.plotTop || 115, bottom = m.plotBottom || m.h - 125;
   const width = m.w - left - right, height = bottom - top;
-  if (width < 260 || height < 100) fail('canvas too small; enlarge it or use a table');
+  if (width <= 0 || height <= 0) fail('no room left to plot; enlarge the canvas');
+  if (width < 260 || height < 100) warn('plot area is small; enlarge the canvas or split the chart');
   return { x: left, y: top, w: width, h: height };
 }
 
@@ -203,10 +208,10 @@ const funnelRates = data => ({
 });
 
 function paretoData(s) {
-  const input = rows(s, 3, 10);
-  if (input.some(row => !Number.isSafeInteger(row.value) || row.value < 0)) fail('pareto needs nonnegative integer counts');
+  const input = rows(s, 2, 10);
+  if (input.some(row => !finite(row.value) || row.value < 0)) fail('pareto needs nonnegative values');
   const total = sum(input.map(row => row.value));
-  if (!Number.isSafeInteger(total) || total <= 0) fail('pareto needs a positive safe-integer total count');
+  if (!finite(total) || total <= 0) fail('pareto needs a positive total');
   const data = [...input].sort((a, b) => b.value - a.value);
   let count = 0;
   return { data, total, cumulative: data.map(row => percent(count += row.value, total)) };
@@ -237,14 +242,14 @@ function waterfallData(s) {
 
 function histogramData(s) {
   const values = s.data;
-  if (!Array.isArray(values) || values.length < 10 || values.length > 100000 || values.some(v => !finite(v))) fail('histogram needs 10–100000 raw numeric observations in data; summaries belong in box or a table');
-  if (!finite(s.binWidth) || s.binWidth <= 0) fail('histogram requires a positive binWidth from the source or analysis plan');
+  if (!Array.isArray(values) || !values.length || values.length > 100000 || values.some(v => !finite(v))) fail('histogram needs up to 100000 raw numeric observations in data');
+  if (!finite(s.binWidth) || s.binWidth <= 0) fail('histogram requires a positive binWidth');
   const min = Math.min(...values), max = Math.max(...values), width = s.binWidth;
   const start = s.binStart ?? Math.floor(min / width) * width;
   if (!finite(start) || start > min) fail('binStart must be at or below the smallest observation');
   // Half-open bins [a, a + width); tolerate decimal division noise at an edge.
   const index = v => Math.floor((v - start) / width + 1e-9), n = index(max) + 1;
-  if (n < 3 || n > 30) fail('histogram needs 3–30 bins; choose a different binWidth');
+  if (n > 30) warn(`${n} bins is dense; a wider binWidth reads better`);
   const counts = Array(n).fill(0);
   values.forEach(v => { counts[index(v)] += 1; });
   const edges = Array.from({ length: n + 1 }, (_, i) => Number((start + i * width).toPrecision(12)));
@@ -252,4 +257,4 @@ function histogramData(s) {
   return { counts, edges };
 }
 
-module.exports = { catFill, catText, categoryIndices, sum, percent, derived, difference, indexedData, waterfallData, histogramData, funnelRates, paretoData, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, domain, observedDomain, niceStep, scale, num, tick, ticks, plot, xAxis, columns };
+module.exports = { warnings, warn, catFill, catText, categoryIndices, sum, percent, derived, difference, indexedData, waterfallData, histogramData, funnelRates, paretoData, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, domain, observedDomain, niceStep, scale, num, tick, ticks, plot, xAxis, columns };

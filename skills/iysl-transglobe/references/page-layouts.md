@@ -2,7 +2,7 @@
 
 `build-deck.js` 讀一份 `deck.json`，依原型簡報（簡報樣板，1920×1080）的版面產生 16:9 PPTX。
 完整可建置的例子是 [`assets/example-deck.json`](../assets/example-deck.json)，九頁對應原型的九頁正式內容；
-寫新簡報時先看它，照同樣的密度寫。
+寫新簡報時先看它的密度。
 
 ## 結構
 
@@ -36,15 +36,14 @@
 
 **summary**：`thesis` = `{label, heading, body}`，左欄的建議；`evidence` 是 1–4 列
 `{value, unit, heading, body}`，右欄的支撐數字。每列的 `body` 寫一行。
-`evidence` 放稿子裡真正支撐建議的數字；稿子沒有這類數字時，摘要頁改用 `columns` 或 `flow`，
-不要用「3 項」「12 月」這類計數或日期湊數字。
+`evidence` 放稿子裡真正支撐建議的數字；稿子沒有這類數字時，摘要頁改用 `columns` 或 `flow`。
 
 **kpi**：`main` = `{label, value, unit, benchmarks: [{label, value, unit}]}`，左側大數字與 1–3 個對照；
 `secondary` 是 0–4 個 `{label, value, unit}` 次要指標。數字用字串寫出要顯示的樣子（`"+2.4"`、`"−7.8"`）。
 
 **chart**：`chart` 是圖表 spec（見[圖表輸入](chart-inputs.md)）。`title` 與 `source` 可省略，
 會用頁面標題與 deck 的 `source`；`unit`、`period`、`data` 必填。`lede` 沒填時用 `chart.subtitle`。
-`footer` 沒填時自動列出單位、期間、來源、`notes` 與缺值說明；自己填 `footer` 時要包含這些。
+`footer` 沒填時自動列出單位、期間、來源、`notes` 與缺值說明；自己填 `footer` 時記得放進這些。
 `aside` = `{label, value, unit, body}` 在圖右側放一個重點數字與兩三行解讀。
 `"svg": true` 讓原生圖型改用 SVG 嵌入。
 
@@ -71,20 +70,4 @@
 
 **decisions**：深色結尾頁。`items` 是 1–5 個 `{heading, owner, deadline}`。
 
-**chapter**：深色章節頁，`number`、`title`、`summary`。只在 15 頁以上、有多個章節時使用。
-
-## 從稿子到版型
-
-| 稿子裡的內容 | 版型 |
-| --- | --- |
-| 一段話的建議與理由 | `summary`：建議放 `thesis`，理由裡的數字放 `evidence` |
-| 一個核心數字和它的對照（同業、目標、去年） | `kpi` |
-| 幾個項目的高低、時間變化、組成 | `chart`（依[選圖指南](chart-selection.md)） |
-| 排名或需要逐項查的數字 | `table` |
-| 「方案一、方案二」「A 案、B 案」 | `compare` |
-| 「原因有三」「風險包括」「下一步要」 | `list`（有順序）或 `columns`（並列） |
-| 時程、流程、上線步驟 | `process` |
-| 「因為…所以…」、問題與解法 | `flow` |
-| 需要聽眾決定或核准的事 | `decisions` |
-
-一頁只承載一個判斷。稿子裡的口語鋪陳、例子與轉場留在 `speakerNotes`，頁面上只放結論與證據。
+**chapter**：深色章節頁，`number`、`title`、`summary`。適合 15 頁以上、分成幾個章節的簡報。

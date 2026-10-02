@@ -29,7 +29,8 @@ function numberFormat(values, signed = values.some(v => isNum(v) && v < 0)) {
 
 function rowsOf(spec, min = 1, max = 12) {
   const data = spec.data;
-  if (!Array.isArray(data) || data.length < min || data.length > max) fail(`${spec.chart} needs ${min}–${max} rows`);
+  if (!Array.isArray(data) || data.length < min) fail(`${spec.chart} needs at least ${min} row(s)`);
+  if (data.length > max) U.warn(`${data.length} rows is dense for ${spec.chart} (about ${max} read well)`);
   if (data.some(r => !r || !text(r.label))) fail('every row needs a label');
   if (new Set(data.map(r => r.label)).size !== data.length) fail('row labels must be unique');
   return data;
@@ -111,7 +112,7 @@ function lines(spec, box) {
 
 function grouped(spec, box) {
   const series = spec.series, data = rowsOf(spec, 1, 8);
-  if (!Array.isArray(series) || series.length < 2 || series.length > 4 || new Set(series).size !== series.length) fail('grouped needs 2–4 unique series names');
+  if (!Array.isArray(series) || series.length < 1 || series.length > 4 || new Set(series).size !== series.length) fail('grouped needs 1–4 unique series names (the palette has four colours)');
   if (data.some(r => !Array.isArray(r.values) || r.values.length !== series.length || r.values.some(v => v !== null && !isNum(v)))) fail('grouped rows need one number or null per series');
   const colors = categoryColors(spec, series), all = data.flatMap(r => r.values);
   const opts = {

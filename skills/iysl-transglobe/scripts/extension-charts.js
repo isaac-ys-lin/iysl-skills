@@ -4,13 +4,13 @@
 // data-eligibility style: grouped (multi-series magnitude), combo (amount + rate), histogram (raw
 // distribution) and sharetrend (composition over ordered periods).
 const U = require('./chart-utils');
-const { C, finite, fail, el, text, line, rect, dot, label, rows, extent, scale, num, tick, ticks, plot, xAxis, composition, catFill, catText, countWidth } = U;
+const { C, finite, fail, warn, el, text, line, rect, dot, label, rows, extent, scale, num, tick, ticks, plot, xAxis, composition, catFill, catText, countWidth } = U;
 
 const caption = { fill: C.muted, 'font-size': 18 };
 // Derived shares show one decimal; raw values stay exact in data-* attributes and metadata.
 const pct = value => U.derived(value, 1);
 const unitLabel = (value, name) => {
-  if (typeof value !== 'string' || !value.trim() || !/[（(].+[）)]/.test(value)) fail(`${name} must state its unit, for example "年增率（%）"`);
+  if (typeof value !== 'string' || !value.trim()) fail(`${name} must name the rate and its unit, for example "年增率（%）"`);
   return value;
 };
 function legend(p, names, identities, y = p.y - 34) {
@@ -21,7 +21,7 @@ function legend(p, names, identities, y = p.y - 34) {
 }
 
 function grouped(s, m) {
-  if (!Array.isArray(s.series) || s.series.length < 2 || s.series.length > 4 || s.series.some(v => typeof v !== 'string' || !v.trim()) || new Set(s.series).size !== s.series.length) fail('grouped needs 2–4 unique series names');
+  if (!Array.isArray(s.series) || s.series.length < 1 || s.series.length > 4 || s.series.some(v => typeof v !== 'string' || !v.trim()) || new Set(s.series).size !== s.series.length) fail('grouped needs 1–4 unique series names (the palette has four colours)');
   const k = s.series.length, data = rows(s, 1, 8);
   const identities = U.categoryIndices(s, s.series);
   if (data.some(r => !Array.isArray(r.values) || r.values.length !== k || r.values.some(v => v !== null && !finite(v)))) fail('grouped rows need one number or null per series');
@@ -30,7 +30,7 @@ function grouped(s, m) {
   const negativeGap = Math.max(0, ...observed.filter(v => v < 0).map(v => countWidth(num(v)) * 18 + 12));
   const p = plot(m, 220 + negativeGap, 110), slot = p.h / data.length;
   const bar = Math.min(22, (slot - 16) / k);
-  if (bar < 17) fail('grouped rows too dense for readable value labels; increase height, split, or use a table');
+  if (bar < 17) warn('grouped bars are thin for value labels; increase height, split, or use a table');
   const X = v => scale(v, lo, hi, p.x, p.x + p.w), zero = X(0);
   let out = xAxis(p, lo, hi, m.unit) + legend(p, s.series, identities, p.y - 50);
   data.forEach((r, i) => {
@@ -59,7 +59,7 @@ function combo(s, m) {
   // Pad the shared precision without exposing binary toFixed noise or rounding tiny rates to zero.
   const rateFormat = places <= 100 ? new Intl.NumberFormat('en-US', { minimumFractionDigits: places, maximumFractionDigits: places }) : null;
   const [lo, hi] = extent(values), [rlo, rhi] = extent(rates), p = plot(m, 100, 110), slot = p.w / data.length;
-  if (slot < 58) fail('combo periods too dense; split the chart or use a table');
+  if (slot < 58) warn('combo periods are dense; split the chart or use a table');
   const padRates = rateFormat && rates.every(rate => countWidth(rateFormat.format(rate)) * 18 <= slot - 8);
   const Y = v => scale(v, lo, hi, p.y + p.h, p.y), R = v => scale(v, rlo, rhi, p.y + p.h, p.y), cx = i => p.x + (i + .5) * slot;
   let out = '';
@@ -96,7 +96,7 @@ function histogram(s, m) {
   const { counts, edges } = U.histogramData(s), values = s.data, w = s.binWidth;
   const n = counts.length, edge = i => edges[i], top = Math.max(...counts);
   const p = plot(m, 100, 60), slot = p.w / n, Y = v => scale(v, 0, top, p.y + p.h, p.y);
-  if (slot < 22) fail('histogram bins too narrow; widen the canvas or use fewer bins');
+  if (slot < 22) warn('histogram bins are narrow; widen the canvas or use fewer bins');
   let out = '';
   for (const v of ticks(0, top).filter(Number.isInteger)) out += line(p.x, Y(v), p.x + p.w, Y(v)) + text(p.x - 10, Y(v) + 5, tick(v), { ...caption, 'text-anchor': 'end' });
   out += text(p.x, p.y - 16, s.countLabel || '筆數', caption);
@@ -114,7 +114,7 @@ function histogram(s, m) {
 function sharetrend(s, m) {
   const { categories, data, totals, shares } = composition(s, m, 12), p = plot(m, 100, 60), slot = p.w / data.length;
   const identities = U.categoryIndices(s, categories);
-  if (slot < 70) fail('sharetrend periods too dense; split the chart or use a table');
+  if (slot < 70) warn('sharetrend periods are dense; split the chart or use a table');
   let out = legend(p, categories, identities), smallNotes = [];
   data.forEach((row, r) => {
     const total = totals[r], width = slot * .62, x = p.x + r * slot + (slot - width) / 2;
@@ -129,7 +129,7 @@ function sharetrend(s, m) {
     out += label(x + width / 2, p.y + p.h + 26, row.label, slot - 6, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 18 }, 1);
     out += label(x + width / 2, p.y + p.h + 48, `總量 ${num(total)}`, slot - 6, { ...caption, 'text-anchor': 'middle' }, 1);
   });
-  if (smallNotes.length > 6) fail('sharetrend has too many small segments for companion labels; split or use a table');
+  if (smallNotes.length > 6) warn('sharetrend has many small segments; split or use a table');
   return out + label(p.x, p.y + p.h + 76, `每柱＝100%；比較組成變化，非總規模${smallNotes.length ? `。小區塊：${smallNotes.join('；')}` : ''}`, p.w, caption, 2);
 }
 

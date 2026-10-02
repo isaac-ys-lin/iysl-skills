@@ -1,10 +1,10 @@
 'use strict';
 
-const { C, finite, fail, text, line, rect, dot, countWidth, rows, namedFocus, domain, observedDomain, scale, num, tick, ticks, plot, label } = require('./chart-utils');
+const { C, finite, fail, warn, text, line, rect, dot, countWidth, rows, namedFocus, domain, observedDomain, scale, num, tick, ticks, plot, label } = require('./chart-utils');
 
 const caption = { fill: C.muted, 'font-size': 18 };
-const unitLabel = (value, name) => {
-  if (typeof value !== 'string' || !value.trim() || !/[（(].+[）)]/.test(value)) fail(`${name} must state its unit, for example "處理時間（天）"`);
+const axisLabel = (value, name) => {
+  if (typeof value !== 'string' || !value.trim()) fail(`${name} must name the axis and its unit, for example "處理時間（天）"`);
   return value;
 };
 const overlaps = (a, b, gap = 6) => a.left < b.right + gap && a.right + gap > b.left && a.top < b.bottom + gap && a.bottom + gap > b.top;
@@ -35,14 +35,14 @@ function valueGrid(p, yDomain, yLabel) {
 }
 
 function scatter(s, m) {
-  const data = rows(s, 3, 6), xLabel = unitLabel(s.xLabel, 'xLabel'), yLabel = unitLabel(s.yLabel, 'yLabel');
+  const data = rows(s, 2, 6), xLabel = axisLabel(s.xLabel, 'xLabel'), yLabel = axisLabel(s.yLabel, 'yLabel');
   data.forEach((r, i) => { if (!finite(r.x) || !finite(r.y)) fail(`row ${i + 1} needs finite x and y`); });
   const focus = s.focus === undefined ? null : namedFocus(s, data), p = plot(m, 105, 55);
   const explicitX = s.xDomain !== undefined, explicitY = s.yDomain !== undefined;
   const xDomain = observedDomain(data.map(r => r.x), s.xDomain, 'xDomain');
   const yDomain = observedDomain(data.map(r => r.y), s.yDomain, 'yDomain');
   const marks = data.map(r => ({ ...r, cx: scale(r.x, ...xDomain, p.x, p.x + p.w), cy: scale(r.y, ...yDomain, p.y + p.h, p.y) }));
-  for (let i = 0; i < marks.length; i++) for (let j = 0; j < i; j++) if (Math.hypot(marks[i].cx - marks[j].cx, marks[i].cy - marks[j].cy) < 34) fail('points or their index labels overlap; enlarge, split, or use a table');
+  if (marks.some((a, i) => marks.slice(0, i).some(b => Math.hypot(a.cx - b.cx, a.cy - b.cy) < 34))) warn('points or their labels overlap; enlarge, split, or use a table');
   let out = axes(p, xDomain, yDomain, xLabel, yLabel, true);
   const labels = [], direct = marks.every((r, i) => {
     const value = `${r.label}（${num(r.x)}，${num(r.y)}）`, w = countWidth(value) * 20;
@@ -71,28 +71,26 @@ function scatter(s, m) {
 }
 
 function box(s, m) {
-  const data = rows(s, 2, 10);
+  const data = rows(s, 1, 10);
   data.forEach((r, i) => {
     for (const key of ['low', 'q1', 'median', 'q3', 'high']) if (!finite(r[key])) fail(`row ${i + 1}.${key} must be finite`);
-    if (r.whiskerRule !== '1.5IQR') fail(`row ${i + 1}.whiskerRule must be "1.5IQR"`);
-    if (!Array.isArray(r.outliers) || r.outliers.length > 4 || r.outliers.some(v => !finite(v))) fail(`row ${i + 1}.outliers must be a numeric array of at most 4 values; split or use a table`);
-    if (!(r.low <= r.q1 && r.q1 <= r.median && r.median <= r.q3 && r.q3 <= r.high)) fail(`row ${i + 1} summary must be ordered`);
-    const iqr = r.q3 - r.q1, lo = r.q1 - 1.5 * iqr, hi = r.q3 + 1.5 * iqr;
-    if (r.low < lo || r.high > hi || r.outliers.some(v => v >= lo && v <= hi)) fail(`row ${i + 1} violates its 1.5 IQR whisker/outlier definition`);
+    if (r.outliers !== undefined && (!Array.isArray(r.outliers) || r.outliers.some(v => !finite(v)))) fail(`row ${i + 1}.outliers must be an array of numbers`);
+    if (!(r.low <= r.q1 && r.q1 <= r.median && r.median <= r.q3 && r.q3 <= r.high)) fail(`row ${i + 1} summary must be ordered low ≤ q1 ≤ median ≤ q3 ≤ high`);
   });
+  const outliers = r => r.outliers || [];
   const focus = s.focus === undefined ? null : namedFocus(s, data), p = plot(m, 105, 55);
-  if (p.w / data.length < 150) fail('box groups need at least 150px each for readable quartile labels; enlarge, split, or use a table');
-  const yDomain = observedDomain(data.flatMap(r => [r.low, r.high, ...r.outliers]), s.yDomain, 'yDomain');
+  if (p.w / data.length < 150) warn('box groups are narrow for quartile labels; enlarge, split, or use a table');
+  const yDomain = observedDomain(data.flatMap(r => [r.low, r.high, ...outliers(r)]), s.yDomain, 'yDomain');
   let out = valueGrid(p, yDomain, m.unit);
   const outlierLabels = [];
   data.forEach((r, i) => {
     const slot = p.w / data.length, x = p.x + (i + .5) * slot, half = Math.min(58, slot * .32), y = v => scale(v, ...yDomain, p.y + p.h, p.y), color = r.label === focus ? C.blue : C.gray, labelColor = r.label === focus ? C.blue : C.muted;
-    out += line(x, y(r.low), x, y(r.high), { stroke: color, 'stroke-width': 2, 'data-whisker-rule': r.whiskerRule });
+    out += line(x, y(r.low), x, y(r.high), { stroke: color, 'stroke-width': 2, ...(r.whiskerRule ? { 'data-whisker-rule': r.whiskerRule } : {}) });
     out += line(x - 13, y(r.low), x + 13, y(r.low), { stroke: color, 'stroke-width': 2 }) + line(x - 13, y(r.high), x + 13, y(r.high), { stroke: color, 'stroke-width': 2 });
     out += rect(x - half, y(r.q3), half * 2, y(r.q1) - y(r.q3), 'white', { stroke: color, 'stroke-width': 2, 'data-q1': r.q1, 'data-q3': r.q3 }) + line(x - half, y(r.median), x + half, y(r.median), { stroke: color, 'stroke-width': 3, 'data-median': r.median });
-    r.outliers.forEach(v => {
+    outliers(r).forEach(v => {
       const cy = y(v), value = num(v), note = `離群 ${value}`, item = { left: x + 9, right: x + 9 + countWidth(note) * 18, top: cy < p.y + 22 ? cy + 3 : cy - 22, bottom: cy < p.y + 22 ? cy + 22 : cy - 3 };
-      if (item.right > p.x + p.w || outlierLabels.some(other => item.left < other.right + 6 && item.right + 6 > other.left && item.top < other.bottom + 6 && item.bottom + 6 > other.top)) fail('box outlier labels overlap; enlarge, split, or use a table');
+      if (item.right > p.x + p.w || outlierLabels.some(other => overlaps(item, other))) warn('box outlier labels overlap; enlarge, split, or use a table');
       outlierLabels.push(item);
       out += dot(x, cy, 'white', { r: 4, stroke: color, 'stroke-width': 2, 'data-outlier': v }) + text(item.left, item.bottom - 3, note, { ...caption, fill: labelColor });
     });
@@ -103,8 +101,7 @@ function box(s, m) {
 }
 
 function matrix(s, m) {
-  const data = rows(s, 1, 16), xLabel = unitLabel(s.xLabel, 'xLabel'), yLabel = unitLabel(s.yLabel, 'yLabel');
-  if (typeof s.rubric !== 'string' || !s.rubric.trim()) fail('rubric must state the source-defined scoring meaning');
+  const data = rows(s, 1, 16), xLabel = axisLabel(s.xLabel, 'xLabel'), yLabel = axisLabel(s.yLabel, 'yLabel');
   const xDomain = domain(s.xDomain, 'xDomain'), yDomain = domain(s.yDomain, 'yDomain');
   if (!finite(s.xThreshold) || !finite(s.yThreshold) || s.xThreshold <= xDomain[0] || s.xThreshold >= xDomain[1] || s.yThreshold <= yDomain[0] || s.yThreshold >= yDomain[1]) fail('thresholds must be finite values strictly inside their explicit domains');
   if (s.quadrantLabels !== undefined && (!Array.isArray(s.quadrantLabels) || s.quadrantLabels.length !== 4 || s.quadrantLabels.some(value => typeof value !== 'string' || !value.trim()))) fail('quadrantLabels must be four nonempty labels in TL, TR, BL, BR order');
@@ -117,7 +114,7 @@ function matrix(s, m) {
   // ponytail: try four corners greedily; add backtracking if valid dense layouts are rejected.
   const headers = (s.quadrantLabels || []).map((value, index) => {
     const q = quadrants[index], width = countWidth(value) * 18;
-    if (width > q.w - 24 || q.h < 32) fail('matrix quadrant labels exceed their quadrant; enlarge, split, or use a table');
+    if (width > q.w - 24 || q.h < 32) warn('matrix quadrant labels exceed their quadrant; enlarge or shorten them');
     const corners = [
       { x: q.x + 12, y: q.y + 22, anchor: 'start' },
       { x: q.x + q.w - 12, y: q.y + 22, anchor: 'end' },
@@ -130,10 +127,10 @@ function matrix(s, m) {
       right: candidate.anchor === 'end' ? candidate.x : candidate.x + width, top: candidate.y - 18, bottom: candidate.y + 6,
     }));
     const placed = candidates.find(candidate => !marks.some(mark => mark.cx + 8 > candidate.left && mark.cx - 8 < candidate.right && mark.cy + 8 > candidate.top && mark.cy - 8 < candidate.bottom));
-    if (!placed) fail('matrix quadrant labels overlap points; enlarge, split, or use a table');
-    return placed;
+    if (!placed) warn('matrix quadrant labels overlap points; enlarge, split, or use a table');
+    return placed || candidates[0];
   });
-  for (let i = 0; i < headers.length; i++) for (let j = 0; j < i; j++) if (overlaps(headers[i], headers[j])) fail('matrix quadrant labels overlap; enlarge, split, or use a table');
+  if (headers.some((a, i) => headers.slice(0, i).some(b => overlaps(a, b)))) warn('matrix quadrant labels overlap; enlarge or shorten them');
   const occupied = [...headers], labels = [];
   for (const mark of marks) {
     const value = `${mark.label} ${num(mark.x)}／${num(mark.y)}`, width = countWidth(value) * 20;
@@ -142,8 +139,8 @@ function matrix(s, m) {
       { x: mark.cx - 12, y: mark.cy + 6, anchor: 'end' }, { x: mark.cx + 12, y: mark.cy + 6, anchor: 'start' },
     ].map(candidate => ({ ...candidate, value, left: candidate.anchor === 'end' ? candidate.x - width : candidate.anchor === 'start' ? candidate.x : candidate.x - width / 2, right: candidate.anchor === 'end' ? candidate.x : candidate.anchor === 'start' ? candidate.x + width : candidate.x + width / 2, top: candidate.y - 22, bottom: candidate.y + 6 }));
     const placed = candidates.find(candidate => candidate.left >= p.x && candidate.right <= p.x + p.w && candidate.top >= p.y && candidate.bottom <= p.y + p.h && !occupied.some(other => overlaps(candidate, other)) && !marks.some(other => other !== mark && candidate.left <= other.cx + 8 && candidate.right >= other.cx - 8 && candidate.top <= other.cy + 8 && candidate.bottom >= other.cy - 8));
-    if (!placed) fail('matrix labels overlap; enlarge, split, or use a table');
-    labels.push(placed); occupied.push(placed);
+    if (!placed) warn('matrix labels overlap; enlarge, split, or use a table');
+    labels.push(placed || candidates[0]); occupied.push(placed || candidates[0]);
   }
   let out = '';
   if (s.highlightedQuadrant) {

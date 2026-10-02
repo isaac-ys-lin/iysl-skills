@@ -1,5 +1,5 @@
 'use strict';
-const { C, finite, fail, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, observedDomain, categoryIndices, catFill, scale, num, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
+const { C, finite, fail, warn, pos, el, text, line, rect, dot, label, rows, namedFocus, extent, observedDomain, categoryIndices, catFill, scale, num, tick, ticks, plot, xAxis, columns } = require('./chart-utils');
 
 function bars(s, m, ordered = false) {
   const input = rows(s);
@@ -11,7 +11,7 @@ function bars(s, m, ordered = false) {
   // Ranking sorts observed values; missing rows remain present at the end.
   const data = ordered ? input : [...input].sort((a, b) => a.value === null ? 1 : b.value === null ? -1 : b.value - a.value);
   const slot = p.h / data.length;
-  if (slot < 40) fail('too many rows at this height; increase height or split the chart');
+  if (slot < 40) warn('rows are dense at this height; increase height or split the chart');
   const zero = scale(0, lo, hi, p.x, p.x + p.w), min = Math.min(...observed.map(r => r.value)), max = Math.max(...observed.map(r => r.value));
   let out = xAxis(p, lo, hi, m.unit);
   data.forEach((r, i) => {
@@ -31,7 +31,7 @@ function bullet(s, m) {
   const data = rows(s), p = plot(m, 220, 230);
   if (data.some(r => !finite(r.actual) || !finite(r.target))) fail('bullet needs numeric actual and target for every row');
   const [lo, hi] = extent(data.flatMap(r => [r.actual, r.target])), slot = p.h / data.length;
-  if (slot < 46) fail('bullet rows too dense; enlarge or split');
+  if (slot < 46) warn('bullet rows are dense; enlarge or split');
   const X = v => scale(v, lo, hi, p.x, p.x + p.w), zero = X(0);
   let out = xAxis(p, lo, hi, m.unit);
   out += text(p.x + p.w + 32, p.y - 16, '實際 / 目標', { fill: C.muted, 'font-size': 18 });
@@ -50,11 +50,11 @@ function bullet(s, m) {
 function heatmap(s, m) {
   const data = rows(s, 1, 10);
   const n = data[0].values?.length;
-  if (!Number.isInteger(n) || n < 1 || n > 12 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('heatmap requires equal rows of numbers/null, at most 12 columns');
+  if (!Number.isInteger(n) || n < 1 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('heatmap requires equal rows of numbers/null');
   const labels = columns(s, n), all = data.flatMap(r => r.values).filter(finite);
   if (!all.length) fail('heatmap has only missing values; use a table');
   const min = Math.min(...all), max = Math.max(...all), p = plot(m, 220, 50), cw = p.w / n, ch = p.h / data.length;
-  if (cw < 58 || ch < 45) fail('heatmap cells too small; enlarge or split');
+  if (cw < 58 || ch < 45) warn('heatmap cells are small; enlarge or split');
   let out = '';
   labels.forEach((v, i) => { out += label(p.x + (i + .5) * cw, p.y - 32, v, cw - 8, { 'text-anchor': 'middle', fill: C.muted }); });
   data.forEach((r, i) => {
@@ -73,14 +73,15 @@ function heatmap(s, m) {
 
 function trend(s, m, tracking = false) {
   const data = rows(s, 1, tracking ? 4 : 6), n = data[0].values?.length;
-  if (!Number.isInteger(n) || n < 2 || n > 20 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('trend needs equal series of 2–20 numbers/null');
+  if (!Number.isInteger(n) || n < 2 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('trend needs equal series of at least 2 numbers/null');
+  if (n > 20) warn(`${n} periods is dense; consider fewer periods or a table`);
   const labels = columns(s, n), all = data.flatMap(r => r.values).filter(finite), [lo, hi] = observedDomain(all, s.yDomain);
   const identities = tracking ? categoryIndices(s, data.map(r => r.label)) : data.map((_, i) => i);
   if (!tracking && s.focus !== undefined) namedFocus(s, data);
   const p = plot(m, 100, 260);
   // A fixed ordered-time grid is declared in the input guide. Irregular observations need explicit resampling with missing periods or another renderer.
   const step = p.w / (n - 1), X = i => p.x + i * step, Y = v => scale(v, lo, hi, p.y + p.h, p.y);
-  if (p.h < data.length * 52) fail('series labels too dense; use small multiples or increase height');
+  if (p.h < data.length * 52) warn('series labels are dense; use small multiples or increase height');
   const endpoints = data.map((r, i) => {
     const j = r.values.findLastIndex(v => v !== null);
     return { i, j, y: j < 0 ? p.y + p.h : Y(r.values[j]) };
