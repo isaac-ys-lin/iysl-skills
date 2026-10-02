@@ -68,4 +68,5 @@ node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg
 預設畫布 1200×800。放進 Word 或簡報時填 `layout: "document"`（840×720）或 `"slide"`（960×540）；
 `width`、`height` 可調整比例。再填實際置入寬度 `placementWidthInches`，工具會換算字級，
 換算後太小（文件 9 pt、簡報 16 pt 以下）時 `WARN`。
+要嵌進已有標題的頁面（HTML 報告、Word）時加 `--bare`：只畫圖，單位、期間、來源與附註印在終端，寫進圖說。
 每張圖交付輸入 JSON 與 SVG；重製需要完整的 `scripts` 目錄。

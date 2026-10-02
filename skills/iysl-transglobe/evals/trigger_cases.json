@@ -10,6 +10,14 @@
       "family": "script-to-deck-en"
     },
     {
+      "text": "把這份文字稿做成全球藍 HTML 報告，主管要能直接讀和列印。",
+      "family": "script-to-report"
+    },
+    {
+      "text": "Write this up as a TransGlobe-styled HTML report with charts.",
+      "family": "script-to-report-en"
+    },
+    {
       "text": "用全球藍版型把商品說明文字稿做成 10 頁簡報。",
       "family": "script-to-deck-product"
     },

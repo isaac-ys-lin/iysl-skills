@@ -220,7 +220,7 @@ function render(spec, options = {}) {
     const scaleToPoints = spec.placementWidthInches * 72 / w;
     const bodyPoints = Math.min(18, ...[...body.matchAll(/font-size="([\d.]+)"/g)].map(match => Number(match[1]))) * scaleToPoints;
     const footerPoints = 16 * scaleToPoints;
-    const [minBody, minFooter] = bare ? [12, 0] : layout === 'document' ? [9, 8] : [16, 12];
+    const [minBody, minFooter] = layout === 'document' ? [9, bare ? 0 : 8] : bare ? [12, 0] : [16, 12];
     if (bodyPoints < minBody || (!bare && footerPoints < minFooter)) warn(`text renders below ${minBody} pt at ${spec.placementWidthInches} inches; use a narrower canvas, a wider placement, or split the chart`);
     Object.assign(placement, { 'data-placement-width-inches': spec.placementWidthInches, 'data-body-size-pt': bodyPoints, 'data-footer-size-pt': footerPoints });
   }
@@ -234,12 +234,15 @@ function render(spec, options = {}) {
 
 module.exports = { render, footerLines, chartTypes: Object.keys(renderers) };
 if (require.main === module) {
-  const [input, output] = process.argv.slice(2);
-  if (!input || !output) { console.error('Usage: node render-chart.js input.json output.svg'); process.exit(2); }
+  // --bare: plot only, for a page that carries its own heading; prints the footer lines for the caption.
+  const bare = process.argv.includes('--bare');
+  const [input, output] = process.argv.slice(2).filter(arg => arg !== '--bare');
+  if (!input || !output) { console.error('Usage: node render-chart.js input.json output.svg [--bare]'); process.exit(2); }
   try {
     if (path.resolve(input) === path.resolve(output)) fail('input and output paths must differ');
-    const svg = render(JSON.parse(fs.readFileSync(input, 'utf8')));
-    fs.writeFileSync(output, svg);
+    const spec = JSON.parse(fs.readFileSync(input, 'utf8'));
+    fs.writeFileSync(output, render(spec, { bare }));
     for (const w of U.warnings) console.error(`WARN ${w}`);
+    if (bare) console.log(footerLines(spec).join('\n'));
   } catch (error) { console.error(error.message); process.exit(1); }
 }

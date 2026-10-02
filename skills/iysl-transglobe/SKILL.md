@@ -1,13 +1,13 @@
 ---
 name: iysl-transglobe
-description: Turn a text script, outline, meeting notes or report into a finished 全球藍 / TransGlobe (全球人壽) PowerPoint deck with the prototype's page layouts and native, editable charts; also restyle existing PowerPoint, Word, Excel, HTML or SVG to 全球藍, and recommend and render TransGlobe charts from data. Use whenever the user wants a 全球藍 or TransGlobe deck, 簡報, 文字稿／講稿做成簡報, chart or restyle, even when they only paste text and ask to 做成簡報 in a TransGlobe context. Exclude design-system maintenance, generic blue styling, and non-TransGlobe deck outlines or image-prompt decks.
+description: Turn a text script, outline, meeting notes or report into a finished 全球藍 / TransGlobe (全球人壽) PowerPoint deck with the prototype's page layouts and native, editable charts, or into a 全球藍 HTML report; also restyle existing PowerPoint, Word, Excel, HTML or SVG to 全球藍, and recommend and render TransGlobe charts from data. Use whenever the user wants a 全球藍 or TransGlobe deck, 簡報, 報告, 文字稿／講稿做成簡報或報告, chart or restyle, even when they only paste text and ask to 做成簡報 or 報告 in a TransGlobe context. Exclude design-system maintenance, generic blue styling, and non-TransGlobe deck outlines or image-prompt decks.
 metadata:
   compatibility: PPTX assembly requires Node.js 18 or later and npm (run npm ci once in scripts/); the SVG chart renderer alone needs only Node.js. LibreOffice or PowerPoint for Mac is optional for page previews.
 ---
 
 # iysl-transglobe
 
-把文字稿做成全球藍簡報，或把既有檔案套用全球藍。成品的標準是原型簡報
+把文字稿做成全球藍簡報或 HTML 報告，或把既有檔案套用全球藍。簡報的標準是原型簡報
 [`assets/example-deck.json`](assets/example-deck.json)：每頁一個判斷、每頁有主視覺、
 數字看得到出處、圖表在 PowerPoint 裡可以編輯。
 
@@ -16,11 +16,11 @@ metadata:
 原型的製作指南只有四句，遇到取捨時回到這四句：
 
 1. **觀點在前，證據在後。** 先給結論頁（主管摘要），再放支撐的數字與圖。
-2. **一頁，一個清楚的判斷。** 標題寫結論（「個險是唯一衰退的通路」），不寫主題（「通路表現」）；主題放 eyebrow。
+2. **一頁（報告是一節），一個清楚的判斷。** 標題寫結論（「個險是唯一衰退的通路」），不寫主題（「通路表現」）；主題放 eyebrow。
 3. **先寫結論，再選最能支持它的圖。** 圖的工作是讓讀者一眼看到標題說的事。
 4. **刪減內容優先於縮小字級。** 放不下就拆頁、改成表格或移到講者備忘稿。
 
-數字是簡報的信用，守住三件事：
+數字是成品的信用，守住三件事：
 
 - 數字來自使用者給的內容，保留原本的精度；沒給的標「未提供」。零是觀察值，缺值才留白。
 - 讀者看得到每個數字的單位、期間與來源，比例也看得到分母（lede、圖或頁尾都行）。
@@ -82,6 +82,32 @@ metadata:
   產生 PowerPoint 原生圖表，可在 PowerPoint 裡「編輯資料」；其餘圖型嵌入 SVG 並附 PNG 後備。
   需要保留 SVG 時，在該頁加 `"svg": true`。
 - 單獨需要 SVG（HTML、Word、純圖）時：`node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg`。
+
+## 文字稿 → 報告
+
+讀者要自己讀、轉寄或列印時，做 HTML 報告：連續閱讀的段落與表格，不切成投影片。
+
+1. **寫大綱。** 先寫讀者要帶走的一句話，再列每一節的一句判斷；判斷就是該節的標題。
+2. **填範本。** 把 [`assets/report.html`](assets/report.html) 複製到工作目錄，只替換 `{{…}}`；
+   用不到的元件刪掉、需要的重複使用。CSS 不動，樣式才會和其他全球藍文件一致。
+3. **放圖表。** spec 加 `"layout": "document"` 與 `"placementWidthInches": 6.8`（A4 版心寬），`height` 依內容調整
+   （類別少就調矮），再用 bare 模式只畫圖：
+
+   ```sh
+   node "$SKILL_DIR/scripts/render-chart.js" chart.json chart.svg --bare
+   ```
+
+   把 `<svg>` 貼進 `<figure class="chart">`，終端印出的單位、期間、來源與附註寫進 `<figcaption>`；
+   節標題已經說了判斷，圖不再重複標題。要逐項查的精確數字用表格。
+4. **檢視並改進。** 用瀏覽器看桌面與手機寬度；再印成 PDF 逐頁看，同時檢查分頁（範本已設 A4）：
+
+   ```sh
+   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer --print-to-pdf="$PWD/report.pdf" "file://$PWD/report.html"
+   ```
+
+   標題是否都是判斷、圖是否清楚、讀到最後是否推向結論？最弱的一節改好再交付。
+5. **交付** HTML（圖已嵌入）與各圖的輸入 JSON，確認全文找不到 `{{`，並列出標「未提供」的資料。
+   需要 PDF 時一併交付上一步的 PDF。
 
 ## 套用到既有檔案
 

@@ -32,6 +32,18 @@ def test_cli_preserves_input_metadata_and_writes_xml_svg():
             assert json.loads(metadata.text) == spec
             assert spec["subtitle"] in "".join(root.itertext())
 
+def test_cli_bare_prints_caption_lines():
+    spec = json.loads((ROOT / "assets" / "chart-examples.json").read_text(encoding="utf-8"))["charts"]["waterfall"]
+    with tempfile.TemporaryDirectory() as directory:
+        input_path, output_path = Path(directory) / "input.json", Path(directory) / "output.svg"
+        input_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+        result = subprocess.run(["node", str(ROOT / "scripts" / "render-chart.js"), str(input_path), str(output_path), "--bare"], text=True, capture_output=True)
+        assert result.returncode == 0, result.stderr
+        assert spec["source"] in result.stdout and spec["unit"] in result.stdout
+        root = ET.fromstring(output_path.read_text(encoding="utf-8"))
+        visible = "".join(node.text or "" for node in root.iter() if node.tag.endswith("}text"))
+        assert "資料來源" not in visible and spec["title"] not in visible, "bare SVG leaves title and footer to the page"
+
 def test_gallery_uses_the_same_composition_data_for_three_questions():
     source = json.loads((ROOT / "assets" / "chart-examples.json").read_text(encoding="utf-8"))["charts"]["stacked"]
     with tempfile.TemporaryDirectory() as directory:

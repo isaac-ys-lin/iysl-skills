@@ -66,6 +66,25 @@
       }
     },
     {
+      "id": "script-to-html-report",
+      "kind": "complex",
+      "prompt": "把這份會議文字稿做成全球藍 HTML 報告，主管要自己讀也要能列印：「上半年公司 FYP 年增 2.4%，同業平均 8.7%。四大通路中團險 +14.2%、銀保 +9.6%、經代 +5.1%，只有個險衰退 7.8%。主因判斷是招募與留存轉弱。建議投入 2.1 億元做招募與留存，請核定預算並在十月底前調整獎酬。」來源：營運月報。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "fill assets/report.html instead of writing a new page or slides",
+          "write each section heading as a judgement and open with the recommendation",
+          "embed the channel comparison as an SVG chart from render-chart.js",
+          "preserve every stated number, unit, period and source"
+        ],
+        "must_not_do": [
+          "rewrite the template's CSS",
+          "leave {{ placeholders in the delivered file",
+          "invent peer data or budget splits the script does not state"
+        ]
+      }
+    },
+    {
       "id": "script-order-becomes-storyline",
       "kind": "quality",
       "prompt": "用全球藍把這份講稿做成簡報：「先回顧今年三個專案：理賠線上化已上線、核保規則引擎延到明年 Q1、客服機器人試行中。預算已用 1.8 億元、剩 0.6 億元。最後建議把剩餘預算集中到核保規則引擎，確保 Q1 上線。」",
