@@ -40,7 +40,7 @@ installs are copied snapshots; they do not follow local source changes.
 - `iysl-equity-council` — run named Aswath Damodaran, George Soros, and Michael Mauboussin public-method members with distinct work products, then have a Stanley Druckenmiller public-method PM Chair issue Long, Short, or Avoid from a usable Public Equity Investing pack.
 - `iysl-sync` — record confirmed decisions and verified progress in one living plan when durable continuation or handoff is needed.
 - `iysl-ytdlp-html-report` — read one public video from its transcript and answer inline; explicit formal reports use the verified Traditional Chinese Markdown/HTML bundle.
-- `iysl-transglobe` — select suitable 全球藍 charts from the question and data, generate SVG from 18 design-system chart types plus 4 skill extensions, and restyle Office or HTML while preserving data and meaning.
+- `iysl-transglobe` — turn a text script into a 全球藍 PowerPoint deck built from the prototype's page layouts, with native editable charts for common chart types and SVG for the rest; also restyle existing Office or HTML files and render standalone SVG charts while preserving data and meaning.
 - `ask-matt` — route one situation to the right skill or flow over a curated map and render the recommended route as a self-contained HTML page, preserved and extended from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/engineering/ask-matt).
 - `writing-great-skills` — a user-invoked reference for writing predictable skills, preserved from [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-great-skills).
 

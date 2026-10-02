@@ -6,7 +6,8 @@ function bars(s, m, ordered = false) {
   if (input.some(r => r.value !== null && !finite(r.value))) fail('values must be numbers or null');
   const observed = input.filter(r => r.value !== null);
   const [lo, hi] = extent(observed.map(r => r.value)), p = plot(m);
-  if (!ordered) namedFocus(s, input);
+  // Focus is optional: without one every bar carries equal weight (all focus blue).
+  if (!ordered && s.focus !== undefined) namedFocus(s, input);
   // Ranking sorts observed values; missing rows remain present at the end.
   const data = ordered ? input : [...input].sort((a, b) => a.value === null ? 1 : b.value === null ? -1 : b.value - a.value);
   const slot = p.h / data.length;
@@ -18,7 +19,7 @@ function bars(s, m, ordered = false) {
     out += label(p.x - 16, y - 4, r.label, p.x - 40, { 'text-anchor': 'end' });
     if (r.value === null) { out += text(p.x + p.w + 12, y + 5, '未提供', { fill: C.muted }); return; }
     const x = scale(r.value, lo, hi, p.x, p.x + p.w);
-    const color = ordered ? C.seq[Math.round((r.value - min) / (max - min || 1) * 4)] : r.label === s.focus ? C.blue : C.gray;
+    const color = ordered ? C.seq[Math.round((r.value - min) / (max - min || 1) * 4)] : s.focus === undefined || r.label === s.focus ? C.blue : C.gray;
     out += rect(Math.min(x, zero), y - 10, Math.abs(x - zero), 20, color, { stroke: C.gray, 'stroke-width': .8, 'data-value': String(r.value), 'data-label': r.label });
     if (r.value === 0) out += line(zero, y - 10, zero, y + 10, { stroke: color, 'stroke-width': 2 });
     out += text(p.x + p.w + 12, y + 5, num(r.value), { fill: C.ink });
@@ -75,7 +76,7 @@ function trend(s, m, tracking = false) {
   if (!Number.isInteger(n) || n < 2 || n > 20 || data.some(r => !Array.isArray(r.values) || r.values.length !== n || r.values.some(v => v !== null && !finite(v)))) fail('trend needs equal series of 2–20 numbers/null');
   const labels = columns(s, n), all = data.flatMap(r => r.values).filter(finite), [lo, hi] = observedDomain(all, s.yDomain);
   const identities = tracking ? categoryIndices(s, data.map(r => r.label)) : data.map((_, i) => i);
-  if (!tracking) namedFocus(s, data);
+  if (!tracking && s.focus !== undefined) namedFocus(s, data);
   const p = plot(m, 100, 260);
   // A fixed ordered-time grid is declared in the input guide. Irregular observations need explicit resampling with missing periods or another renderer.
   const step = p.w / (n - 1), X = i => p.x + i * step, Y = v => scale(v, lo, hi, p.y + p.h, p.y);
@@ -95,7 +96,7 @@ function trend(s, m, tracking = false) {
   labels.forEach((v, i) => { out += label(X(i), p.y + p.h + 34, v, Math.min(step - 6, 90), { 'text-anchor': 'middle', fill: C.muted }); });
   if (m.unit) out += text(p.x, p.y - 14, m.unit, { fill: C.muted, 'font-size': 18 });
   data.forEach((r, i) => {
-    const identity = identities[i], color = tracking ? catFill(identity) : r.label === s.focus ? C.blue : C.gray;
+    const identity = identities[i], color = tracking ? catFill(identity) : s.focus === undefined || r.label === s.focus ? C.blue : C.gray;
     const dash = ['', '10 5', '3 5', '12 4 3 4', '2 4', '10 4 2 4'][identity];
     let path = '', connected = false;
     r.values.forEach((v, j) => {

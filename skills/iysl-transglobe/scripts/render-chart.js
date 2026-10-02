@@ -166,6 +166,15 @@ function readingNotes(spec) {
   return notes;
 }
 
+function extraNotes(spec) {
+  return [...(spec.chart === 'tornado' ? [`模型：${spec.model}；假設：${(spec.assumptions || []).join('；')}`] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : []), ...readingNotes(spec)];
+}
+
+// Everything a reader needs beside the plot: unit, period, source, notes and generated reading notes.
+function footerLines(spec) {
+  return [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...spec.notes, ...extraNotes(spec)];
+}
+
 // Long description for screen readers and detached SVGs: the plotted values, not only the metadata.
 function dataSummary(spec) {
   const value = v => v === null ? '未提供' : num(v), data = Array.isArray(spec.data) ? spec.data : [];
@@ -178,7 +187,10 @@ function dataSummary(spec) {
   return full.length > 600 ? full.slice(0, 600) + '…（完整數值見附表與 metadata）' : full;
 }
 
-function render(spec) {
+// options.bare: plot only, for slides/documents that already carry the title, reading guide and footer.
+// The caller must then show footerLines(spec) next to the chart so unit, period, source and notes stay visible.
+function render(spec, options = {}) {
+  const bare = options.bare === true;
   if (!spec || typeof spec !== 'object') fail('spec must be an object');
   for (const field of ['chart', 'title', 'unit', 'period', 'source']) if (typeof spec[field] !== 'string' || !spec[field].trim()) fail(`requires nonempty ${field}`);
   if (!Array.isArray(spec.notes) || spec.notes.some(v => typeof v !== 'string')) fail('notes must be an array of strings');
@@ -199,14 +211,15 @@ function render(spec) {
   if (layout === 'web' && spec.placementWidthInches !== undefined) fail('placementWidthInches requires document or slide layout');
   // Slide titles follow design-rules: 36px on the 1280 base × 0.75 = 27pt on a 960pt slide.
   const titleSize = layout === 'slide' ? 27 : 34, titleTop = 18 + titleSize, titleStep = Math.round(titleSize * 1.24);
-  const titleLines = wrap(spec.title, (w - 88) / titleSize);
+  const titleLines = bare ? [] : wrap(spec.title, (w - 88) / titleSize);
   if (titleLines.length > 2) fail('title needs more than two lines; increase width or revise title without changing meaning');
-  const subtitleLines = spec.subtitle ? wrap(spec.subtitle, (w - 88) / 18) : [];
+  const subtitleLines = spec.subtitle && !bare ? wrap(spec.subtitle, (w - 88) / 18) : [];
   if (subtitleLines.length > 3) fail('subtitle needs more than three lines; move supporting detail to notes');
-  const subtitleTop = titleTop + titleLines.length * titleStep;
-  const extra = [...(spec.chart === 'tornado' ? [`模型：${spec.model}；假設：${(spec.assumptions || []).join('；')}`] : spec.chart === 'matrix' ? [`評分：${spec.rubric}`] : []), ...readingNotes(spec)];
-  const footer = [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...spec.notes, ...extra].flatMap(v => wrap(v, (w - 88) / 16));
-  const footerTop = h - 32 - (footer.length - 1) * 22;
+  const subtitleTop = bare ? 0 : titleTop + titleLines.length * titleStep;
+  const extra = extraNotes(spec);
+  const footer = bare ? [] : footerLines(spec).flatMap(v => wrap(v, (w - 88) / 16));
+  // Bare charts have no footer rule, so the plot may run to the canvas edge minus the axis allowance.
+  const footerTop = bare ? h + 16 : h - 32 - (footer.length - 1) * 22;
   const bottomGap = { ranking: 70, ordered: 70, bullet: 90, heatmap: 100, trend: 75, tracking: 75, waterfall: 85, dumbbell: 120, funnel: 115, tornado: 70, table: 40, waffle: 40, stacked: 120, mekko: 145, pareto: 90, indexed: 110, scatter: 160, box: 110, matrix: 95, grouped: 70, combo: 95, histogram: 90, sharetrend: 130 }[spec.chart];
   const topGap = { heatmap: 60, stacked: 72, mekko: 72, grouped: 60, combo: 60, sharetrend: 60 }[spec.chart] || 40;
   const m = { w, h, unit: spec.unit, plotTop: subtitleTop + subtitleLines.length * 24 + topGap, plotBottom: footerTop - bottomGap };
@@ -217,19 +230,19 @@ function render(spec) {
     const scaleToPoints = spec.placementWidthInches * 72 / w;
     const bodyPoints = Math.min(18, ...[...body.matchAll(/font-size="([\d.]+)"/g)].map(match => Number(match[1]))) * scaleToPoints;
     const footerPoints = 16 * scaleToPoints;
-    const [minBody, minFooter] = layout === 'document' ? [9, 8] : [16, 12];
-    if (bodyPoints < minBody || footerPoints < minFooter) fail(`text would be too small at ${spec.placementWidthInches} inches; reflow with a narrower canvas, enlarge the placement, or split the chart`);
+    const [minBody, minFooter] = bare ? [12, 0] : layout === 'document' ? [9, 8] : [16, 12];
+    if (bodyPoints < minBody || (!bare && footerPoints < minFooter)) fail(`text would be too small at ${spec.placementWidthInches} inches; reflow with a narrower canvas, enlarge the placement, or split the chart`);
     Object.assign(placement, { 'data-placement-width-inches': spec.placementWidthInches, 'data-body-size-pt': bodyPoints, 'data-footer-size-pt': footerPoints });
   }
   const id = 'tg-' + crypto.createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 12);
   return el('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-labelledby': `${id}-title ${id}-desc`, 'font-family': 'Arial, Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif', ...placement },
     el('title', { id: `${id}-title` }, esc(spec.title)) + el('desc', { id: `${id}-desc` }, esc([spec.title, spec.subtitle, spec.unit, spec.period, spec.source, ...spec.notes, ...extra, `數值：${dataSummary(spec)}`, derivedSummary(spec)].filter(Boolean).join('；'))) +
     el('metadata', {}, esc(JSON.stringify(spec))) + rect(0, 0, w, h, '#FFFFFF') + titleLines.map((v, i) => text(44, titleTop + i * titleStep, v, { fill: '#000099', 'font-size': titleSize, 'font-weight': 700 })).join('') +
-    subtitleLines.map((v, i) => text(44, subtitleTop + i * 24, v, { fill: C.muted, 'font-size': 18, 'data-reading-guide': true })).join('') + body + line(44, footerTop - 24, w - 44, footerTop - 24) +
+    subtitleLines.map((v, i) => text(44, subtitleTop + i * 24, v, { fill: C.muted, 'font-size': 18, 'data-reading-guide': true })).join('') + body + (bare ? '' : line(44, footerTop - 24, w - 44, footerTop - 24)) +
     footer.map((v, i) => text(44, footerTop + i * 22, v, { fill: C.muted, 'font-size': 16 })).join(''));
 }
 
-module.exports = { render, chartTypes: Object.keys(renderers) };
+module.exports = { render, footerLines, chartTypes: Object.keys(renderers) };
 if (require.main === module) {
   const [input, output] = process.argv.slice(2);
   if (!input || !output) { console.error('Usage: node render-chart.js input.json output.svg'); process.exit(2); }

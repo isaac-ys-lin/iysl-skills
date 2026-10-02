@@ -1,0 +1,388 @@
+{
+ "title": "版型與圖表測試",
+ "source": "測試資料",
+ "pages": [
+  {
+   "layout": "chapter",
+   "number": "01",
+   "title": "整體營運概況",
+   "summary": "規模、成長與市場位置。"
+  },
+  {
+   "layout": "columns",
+   "eyebrow": "商品重點",
+   "title": "新商品以三項設計回應保障缺口",
+   "lede": "商品設計摘要",
+   "items": [
+    {
+     "kicker": "保障",
+     "value": "3",
+     "unit": "倍",
+     "heading": "重大傷病額外給付",
+     "body": "確診後一次給付保額三倍，減輕初期治療負擔。"
+    },
+    {
+     "kicker": "彈性",
+     "value": "20",
+     "unit": "年",
+     "heading": "繳費期間可選",
+     "body": "6、10、20 年期，配合不同年齡層的現金流。"
+    },
+    {
+     "kicker": "服務",
+     "value": "24",
+     "unit": "小時",
+     "heading": "理賠線上申請",
+     "body": "上傳文件即可受理，平均三個工作天完成審核。"
+    }
+   ],
+   "speakerNotes": "這頁說明新商品三項設計重點。"
+  },
+  {
+   "layout": "process",
+   "eyebrow": "上市時程",
+   "title": "十二月上市，十月完成送審與教育訓練",
+   "focus": 1,
+   "steps": [
+    {
+     "label": "2026.09",
+     "heading": "商品定案",
+     "body": "完成精算定價與條款。"
+    },
+    {
+     "label": "2026.10",
+     "heading": "送審",
+     "body": "提交主管機關備查。"
+    },
+    {
+     "label": "2026.11",
+     "heading": "教育訓練",
+     "body": "通路說明會與系統測試。"
+    },
+    {
+     "label": "2026.12",
+     "heading": "正式上市",
+     "body": "全通路同步銷售。"
+    }
+   ]
+  },
+  {
+   "layout": "flow",
+   "eyebrow": "商品定位",
+   "title": "新商品補上確診後前幾個月的資金缺口",
+   "lede": "客戶的擔心與本商品的回應",
+   "nodes": [
+    {
+     "label": "客戶擔心一",
+     "heading": "收入中斷",
+     "body": "確診後可能暫停工作。"
+    },
+    {
+     "label": "客戶擔心二",
+     "heading": "自費治療",
+     "body": "同一段時間要負擔自費項目。"
+    },
+    {
+     "label": "形成",
+     "heading": "治療初期資金缺口",
+     "body": "收入減少與支出增加同時發生。"
+    },
+    {
+     "label": "本商品",
+     "heading": "確診後一次給付保額三倍",
+     "body": "治療初期就有現金。"
+    }
+   ],
+   "connectors": [
+    "+",
+    "→",
+    "→"
+   ],
+   "note": "通路夥伴反映：客戶最擔心的不是住院費，而是確診後的現金需求。"
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "通路組成",
+   "title": "銀保以儲蓄險為主，業務員以壽險為主",
+   "chart": {
+    "chart": "stacked",
+    "unit": "萬元",
+    "period": "2026 H1",
+    "categories": [
+     "壽險",
+     "健康險",
+     "儲蓄險"
+    ],
+    "data": [
+     {
+      "label": "業務員",
+      "values": [
+       225,
+       175,
+       100
+      ]
+     },
+     {
+      "label": "銀保",
+      "values": [
+       60,
+       75,
+       165
+      ]
+     },
+     {
+      "label": "經代",
+      "values": [
+       60,
+       90,
+       50
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "通路成長",
+   "title": "三個通路中，經代連續兩年成長最快",
+   "chart": {
+    "chart": "grouped",
+    "unit": "億元",
+    "period": "2024–2026 H1",
+    "series": [
+     "2024",
+     "2025",
+     "2026"
+    ],
+    "data": [
+     {
+      "label": "業務員",
+      "values": [
+       60,
+       58,
+       56
+      ]
+     },
+     {
+      "label": "銀保",
+      "values": [
+       30,
+       33,
+       35
+      ]
+     },
+     {
+      "label": "經代",
+      "values": [
+       10,
+       13,
+       16
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "通路追蹤",
+   "title": "業務員占比逐年下降，經代逐年上升",
+   "chart": {
+    "chart": "tracking",
+    "unit": "%",
+    "period": "2022–2026",
+    "labels": [
+     "2022",
+     "2023",
+     "2024",
+     "2025",
+     "2026"
+    ],
+    "data": [
+     {
+      "label": "業務員",
+      "values": [
+       60,
+       57,
+       null,
+       52,
+       50
+      ]
+     },
+     {
+      "label": "銀保",
+      "values": [
+       30,
+       31,
+       32,
+       32,
+       33
+      ]
+     },
+     {
+      "label": "經代",
+      "values": [
+       10,
+       12,
+       14,
+       16,
+       17
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "保費與成長",
+   "title": "保費收入穩定成長，2025 年增率最高",
+   "chart": {
+    "chart": "combo",
+    "unit": "百萬元",
+    "rateLabel": "年增率（%）",
+    "period": "2022–2026",
+    "data": [
+     {
+      "label": "2022",
+      "value": 4210,
+      "rate": null
+     },
+     {
+      "label": "2023",
+      "value": 4380,
+      "rate": 4
+     },
+     {
+      "label": "2024",
+      "value": 4520,
+      "rate": 3.2
+     },
+     {
+      "label": "2025",
+      "value": 4890,
+      "rate": 8.2
+     },
+     {
+      "label": "2026",
+      "value": 5120,
+      "rate": 4.7
+     }
+    ]
+   }
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "圖表測試",
+   "title": "有效保單淨增 120 件，期末 1,120 件",
+   "chart": {
+    "chart": "waterfall",
+    "unit": "件",
+    "period": "2026 H1",
+    "source": "TransGlobe Blue token-system tools/mac-layout.js sampleData.examples.waterfall",
+    "notes": [
+     "新增、到期與解約可相加；資料為設計示意。"
+    ],
+    "start": 1000,
+    "end": 1120,
+    "data": [
+     {
+      "label": "新增",
+      "value": 260
+     },
+     {
+      "label": "到期",
+      "value": -80
+     },
+     {
+      "label": "解約",
+      "value": -60
+     }
+    ]
+   }
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "圖表測試",
+   "title": "文件審查縮短 13 分鐘",
+   "chart": {
+    "chart": "dumbbell",
+    "unit": "處理時間（分鐘）",
+    "period": "2026 H1",
+    "source": "TransGlobe Blue token-system tools/mac-layout.js sampleData.examples.dumbbell",
+    "notes": [
+     "所有流程值皆是設計示意的同口徑前後比較。"
+    ],
+    "beforeLabel": "改善前",
+    "afterLabel": "改善後",
+    "focus": "文件審查",
+    "data": [
+     {
+      "label": "資料建檔",
+      "before": 14,
+      "after": 6
+     },
+     {
+      "label": "身分核對",
+      "before": 19,
+      "after": 9
+     },
+     {
+      "label": "文件審查",
+      "before": 26,
+      "after": 13
+     },
+     {
+      "label": "案件結案",
+      "before": 31,
+      "after": 21
+     }
+    ]
+   },
+   "svg": true
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "圖表測試",
+   "title": "業務員通路規模最大",
+   "chart": {
+    "chart": "mekko",
+    "unit": "原始金額（萬元）",
+    "period": "2026 H1",
+    "source": "TransGlobe Blue token-system tools/mac-layout.js sampleData.examples.composition",
+    "notes": [
+     "與 100% 堆疊圖共用原始金額；各矩形面積才可比較整體份額。"
+    ],
+    "categories": [
+     "壽險",
+     "健康險",
+     "儲蓄險"
+    ],
+    "data": [
+     {
+      "label": "業務員",
+      "values": [
+       225,
+       175,
+       100
+      ]
+     },
+     {
+      "label": "銀保",
+      "values": [
+       60,
+       75,
+       165
+      ]
+     },
+     {
+      "label": "經代",
+      "values": [
+       60,
+       90,
+       50
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

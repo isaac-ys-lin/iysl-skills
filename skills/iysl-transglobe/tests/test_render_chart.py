@@ -13,6 +13,12 @@ def test_node_chart_suites():
         result = subprocess.run(["node", str(ROOT / "tests" / script)], text=True, capture_output=True)
         assert result.returncode == 0, result.stderr
 
+def test_build_deck_suite():
+    # PPTX assembly needs the pinned npm packages; install them with `npm ci --prefix scripts`.
+    assert (ROOT / "scripts" / "node_modules" / "pptxgenjs").is_dir(), "run: npm ci --prefix skills/iysl-transglobe/scripts"
+    result = subprocess.run(["node", str(ROOT / "tests" / "build-deck.test.js")], text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+
 def test_cli_preserves_input_metadata_and_writes_xml_svg():
     examples = json.loads((ROOT / "assets" / "chart-examples.json").read_text(encoding="utf-8"))["charts"]
     with tempfile.TemporaryDirectory() as directory:

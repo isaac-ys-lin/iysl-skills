@@ -1,0 +1,10 @@
+{
+  "name": "iysl-transglobe-scripts",
+  "private": true,
+  "description": "Runtime dependencies for build-deck.js (PPTX assembly and PNG fallbacks). The SVG chart renderer itself has no dependencies.",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "pptxgenjs": "4.0.1",
+    "jszip": "3.10.2"
+  }
+}

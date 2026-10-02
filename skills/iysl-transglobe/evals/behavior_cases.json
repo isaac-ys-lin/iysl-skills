@@ -1,6 +1,71 @@
 {
   "cases": [
     {
+      "id": "script-to-decision-deck",
+      "kind": "complex",
+      "prompt": "用全球藍把這份會議文字稿做成簡報：「上半年公司 FYP 年增 2.4%，同業平均 8.7%。四大通路中團險 +14.2%、銀保 +9.6%、經代 +5.1%，只有個險衰退 7.8%。我們判斷主因是招募與留存轉弱，其次是件均保費下降。提出三個方案：維持現況不花錢；投入 2.1 億元做招募與留存；或投入 3.2 億元全面加碼。建議採第二案，請會議核定預算、十月底前調整獎酬，並在一月檢視第四季招募是否成長 15%。」來源：營運月報。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "write a storyline with one stated judgement per page before building",
+          "open with a summary page that puts the recommendation first and supports it with the stated numbers",
+          "give every content page a visual subject such as KPI, native ranking chart, priority list, plan comparison or decisions page",
+          "keep the narration in speaker notes and deliver the PPTX with its deck.json",
+          "preserve every stated number, unit, period and source"
+        ],
+        "must_not_do": [
+          "produce pages that are only bullet lists of the script",
+          "invent peer data, market share or payback figures that the script does not state",
+          "ask the user to choose layouts or chart types"
+        ]
+      }
+    },
+    {
+      "id": "qualitative-script-still-visual",
+      "kind": "quality",
+      "prompt": "幫我把這份全球藍商品說明文字稿做成簡報：新商品有三個重點——重大傷病額外給付、繳費期間可選 6／10／20 年、理賠可線上申請；上市時程是九月定案、十月送審、十一月教育訓練、十二月上市；主要風險是送審延遲與通路熟悉度不足。",
+      "expected": {
+        "must_do": [
+          "use columns, process and list layouts so qualitative content still has a visual subject",
+          "state a judgement in each page title rather than a topic label"
+        ],
+        "must_not_do": [
+          "fabricate numbers or charts that the script does not support",
+          "fill the deck with text-only bullet pages"
+        ]
+      }
+    },
+    {
+      "id": "build-warning-means-edit",
+      "kind": "failure",
+      "prompt": "用全球藍做簡報時，build-deck.js 對第 4 頁回報 WARN: title wraps beyond two lines，第 7 頁回報 table has 14 rows but about 10 fit。請處理後交付。",
+      "expected": {
+        "must_do": [
+          "shorten the page 4 title to one clear judgement and rebuild",
+          "keep the rows that support the page 7 title and move the full table to an appendix page or split it",
+          "rebuild and confirm the warnings are gone"
+        ],
+        "must_not_do": [
+          "reduce font sizes to make content fit",
+          "drop table rows without keeping them elsewhere in the deck"
+        ]
+      }
+    },
+    {
+      "id": "editable-charts-in-deck",
+      "kind": "compatibility",
+      "prompt": "全球藍簡報裡的圖希望同事能在 PowerPoint 直接改數字。資料有：各通路保費（排名）、五年保費與年增率、期初到期末保單變動。",
+      "expected": {
+        "must_do": [
+          "use native PowerPoint charts for the ranking and the amount-and-rate combo",
+          "explain that the opening-to-closing bridge embeds as SVG with a PNG fallback and is not editable through Edit Data"
+        ],
+        "must_not_do": [
+          "claim the embedded SVG waterfall updates when its data is edited"
+        ]
+      }
+    },
+    {
       "id": "svg-first-ranking",
       "kind": "simple",
       "prompt": "把 HTML 圖表套用全球藍。2026 Q2，各通路金額百萬元：A=120、B=88、C=54、D=38；來源：示意資料。可重排與改標題。",

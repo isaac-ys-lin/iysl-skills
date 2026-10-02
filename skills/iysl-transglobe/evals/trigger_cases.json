@@ -2,6 +2,18 @@
   "recommended_threshold": 0.6,
   "should_trigger": [
     {
+      "text": "把這份會議講稿做成全球藍簡報，要有圖表。",
+      "family": "script-to-deck"
+    },
+    {
+      "text": "Turn these meeting notes into a TransGlobe PowerPoint deck with editable charts.",
+      "family": "script-to-deck-en"
+    },
+    {
+      "text": "用全球藍版型把商品說明文字稿做成 10 頁簡報。",
+      "family": "script-to-deck-product"
+    },
+    {
       "text": "把這份 PowerPoint 改成全球藍設計，保留所有數據。",
       "family": "pptx"
     },
@@ -58,6 +70,10 @@
     {
       "text": "修正文書錯字，不要改版面。",
       "family": "copy"
+    },
+    {
+      "text": "把這份演講稿整理成 Mode A 圖像提示詞與簡報大綱。",
+      "family": "deck-outline"
     }
   ]
 }
