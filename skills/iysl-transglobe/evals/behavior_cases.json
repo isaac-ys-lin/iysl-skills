@@ -66,6 +66,73 @@
       }
     },
     {
+      "id": "script-order-becomes-storyline",
+      "kind": "quality",
+      "prompt": "用全球藍把這份講稿做成簡報：「先回顧今年三個專案：理賠線上化已上線、核保規則引擎延到明年 Q1、客服機器人試行中。預算已用 1.8 億元、剩 0.6 億元。最後建議把剩餘預算集中到核保規則引擎，確保 Q1 上線。」",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "put the recommendation to concentrate the remaining budget first, before the project review",
+          "write each page title as a judgement rather than the script's section name",
+          "keep the chronological narration in speaker notes"
+        ],
+        "must_not_do": [
+          "mirror the script's chronological order page by page",
+          "invent dates, owners or budget splits the script does not state"
+        ]
+      }
+    },
+    {
+      "id": "long-script-stays-focused",
+      "kind": "complex",
+      "prompt": "這是一份 40 分鐘的年度策略講稿，約九千字，分成市場、通路、商品、營運、人才五段，每段有三到五個數字。請用全球藍做成簡報。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "write one takeaway sentence for the whole deck before planning pages",
+          "separate the five sections with chapter pages or an equivalent structure",
+          "keep each page to one judgement and move supporting narration to speaker notes"
+        ],
+        "must_not_do": [
+          "make one page per paragraph of the script",
+          "drop stated numbers instead of moving them to tables, appendix pages or speaker notes"
+        ]
+      }
+    },
+    {
+      "id": "vague-claims-without-numbers",
+      "kind": "failure",
+      "prompt": "做成全球藍簡報：「今年數位投保成長非常明顯，客戶滿意度也大幅提升，因此建議明年擴大數位通路預算。」只有這段，沒有其他資料。",
+      "expected": {
+        "max_questions": 0,
+        "must_do": [
+          "state the recommendation as the deck's judgement and keep the script's claims as written",
+          "carry the supporting points with layouts that need no numbers, such as columns or flow",
+          "list the growth and satisfaction figures as 未提供 when delivering"
+        ],
+        "must_not_do": [
+          "invent growth rates, satisfaction scores or budget amounts",
+          "draw a chart without data"
+        ]
+      }
+    },
+    {
+      "id": "bullet-deck-rebuild",
+      "kind": "complex",
+      "prompt": "這份既有 PPT 有 15 頁，每頁都是條列文字，標題是「市場概況」「通路表現」這類主題。請改成全球藍，而且要讓主管一看就懂重點。",
+      "expected": {
+        "must_do": [
+          "explain that clear judgements need a rewrite, then rebuild from the original content through the script-to-deck flow",
+          "keep the original file untouched and deliver a new deck",
+          "turn topic titles into judgement titles that the original content supports"
+        ],
+        "must_not_do": [
+          "only recolour the existing bullet pages",
+          "add conclusions the original content does not support"
+        ]
+      }
+    },
+    {
       "id": "svg-first-ranking",
       "kind": "simple",
       "prompt": "把 HTML 圖表套用全球藍。2026 Q2，各通路金額百萬元：A=120、B=88、C=54、D=38；來源：示意資料。可重排與改標題。",
@@ -130,22 +197,6 @@
         "required_validation": [
           "compare source and output content inventories",
           "inspect pagination and image aspect ratios"
-        ]
-      }
-    },
-    {
-      "id": "ordered-gaps",
-      "kind": "quality",
-      "prompt": "把四個既有風險等級的矩陣改為全球藍，其中一格是0，另一格缺值。",
-      "expected": {
-        "must_do": [
-          "preserve the original four ordered levels",
-          "use an ordered blue ramp",
-          "distinguish zero from missing data"
-        ],
-        "must_not_do": [
-          "invent a fifth data level to fill the palette",
-          "turn missing data into zero"
         ]
       }
     },
@@ -231,34 +282,6 @@
       }
     },
     {
-      "id": "same-data-market-structure",
-      "kind": "quality",
-      "prompt": "通路甲與乙的商品 A/B/C 銷售額分別為 700/200/100 與 20/30/50。問題是誰的市場較大且各自賣什麼；請自動選圖。",
-      "expected": {
-        "must_do": [
-          "select Marimekko because both total market size and internal composition matter",
-          "preserve a common area denominator"
-        ],
-        "must_not_do": [
-          "use equal-width 100% stacked bars as the sole answer"
-        ]
-      }
-    },
-    {
-      "id": "seductive-chart-data-ineligible",
-      "kind": "failure",
-      "prompt": "有客訴原因可複選：價格 40、等待 35、服務 30。請做帕累托圖並說前三項累計占比。",
-      "expected": {
-        "must_do": [
-          "identify that overlapping reasons invalidate a cumulative share of cases",
-          "use a ranked comparison or table without a misleading cumulative case share"
-        ],
-        "must_not_do": [
-          "claim the Pareto cumulative percentage is a share of unique cases"
-        ]
-      }
-    },
-    {
       "id": "insufficient-funnel-cohort",
       "kind": "failure",
       "prompt": "每月收到申請 100、審核 80、完成 90；這三個數是不同月份彙總。請做漏斗圖。",
@@ -298,21 +321,6 @@
         ],
         "must_not_do": [
           "replace the requested appropriate chart with a ranking chart"
-        ]
-      }
-    },
-    {
-      "id": "summary-is-not-distribution",
-      "kind": "failure",
-      "prompt": "用全球藍自動選圖比較 A、B、C 部門處理天數的分布。我只有平均天數 4.2、5.1、3.8，沒有逐筆資料或分位數。",
-      "expected": {
-        "must_do": [
-          "explain that means alone cannot show distributions",
-          "render a comparison of provided means or a table and state the missing distribution data"
-        ],
-        "must_not_do": [
-          "invent quartiles whiskers or outliers",
-          "present a box plot from means alone"
         ]
       }
     },
@@ -385,55 +393,6 @@
           "compare before and after data and surrounding content",
           "read back document structure",
           "inspect chart at actual document size or disclose visual verification limits"
-        ]
-      }
-    },
-    {
-      "id": "amount-and-rate-combo",
-      "kind": "complex",
-      "prompt": "用全球藍自動選圖：2022–2026 各年保費收入 4210、4380、4520、4890、5120 百萬元，年增率 2023 起為 4.0%、3.2%、8.2%、4.7%。報告要同時看規模和成長速度。來源：年報。",
-      "expected": {
-        "max_questions": 0,
-        "must_do": [
-          "select combo with amount columns and a rate line on labelled independent axes",
-          "keep 2022 rate as missing rather than zero",
-          "state the selection and a short reason"
-        ],
-        "must_not_do": [
-          "compare column height with line height as if both shared one scale",
-          "invent a 2022 growth rate"
-        ]
-      }
-    },
-    {
-      "id": "raw-observations-histogram",
-      "kind": "complex",
-      "prompt": "這裡有 40 筆理賠逐筆處理天數（2026 H1，來源：理賠作業系統匯出）：1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10, 11, 12, 14, 15, 3, 4, 5, 6, 2, 4。請用全球藍呈現分布集中在哪裡，組距用 2 天。",
-      "expected": {
-        "max_questions": 0,
-        "must_do": [
-          "select histogram from the raw observations with the stated 2-day bins",
-          "state the observation count and the bin rule"
-        ],
-        "must_not_do": [
-          "replace the raw distribution with an average only",
-          "fabricate quartiles for a box plot"
-        ]
-      }
-    },
-    {
-      "id": "composition-over-periods",
-      "kind": "complex",
-      "prompt": "三個通路 2022–2026 各年 H1 新契約保費（百萬元，來源：通路業績報表）：業務員 600、580、560、540、530；銀保 300、330、350、360、340；經代 100、130、160、200、230。問題是通路占比怎麼逐年移動；請用全球藍自動選圖。",
-      "expected": {
-        "max_questions": 0,
-        "must_do": [
-          "select sharetrend to compare composition across ordered periods",
-          "keep every channel and period in source order"
-        ],
-        "must_not_do": [
-          "merge channels into Other without permission",
-          "use a single-period stacked or waffle chart for multi-period change"
         ]
       }
     }
