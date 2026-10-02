@@ -276,7 +276,7 @@
         "max_questions": 0,
         "must_do": [
           "select waterfall because the values are an additive bridge from opening to closing",
-          "state the selection and a short reason",
+          "tell the reader how to read the chart in its subtitle or the page lede",
           "preserve all signed changes period unit and source"
         ],
         "must_not_do": [
