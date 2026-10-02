@@ -9,7 +9,7 @@ if (!out) throw Error('give an output directory');
 const examples = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/chart-examples.json'), 'utf8'));
 const { provenance, charts } = examples;
 const catalog = {};
-for (const row of fs.readFileSync(path.join(__dirname, '../references/chart-selection.md'), 'utf8').split('\n')) {
+for (const row of fs.readFileSync(path.join(__dirname, '../references/chart-inputs.md'), 'utf8').split('\n')) {
   const cells = row.split('|').map(s => s.trim()), id = cells[1]?.match(/^\`([^\`]+)\` (.+)/);
   if (id) catalog[id[1]] = { name: id[2], question: cells[2] };
 }
