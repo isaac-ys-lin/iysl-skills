@@ -65,7 +65,8 @@ function bars(spec, box, ordered) {
   const rows = ordered ? data : [...data].sort((a, b) => a.value === null ? 1 : b.value === null ? -1 : b.value - a.value);
   const values = rows.map(r => r.value), seen = values.filter(isNum);
   const lo = Math.min(...seen), hi = Math.max(...seen);
-  const colors = rows.map(r => ordered ? T.seq[1 + Math.round((r.value - lo) / (hi - lo || 1) * 3)] : spec.focus === undefined || r.label === spec.focus ? T.blue : T.gray);
+  // A missing value draws no bar but still needs a valid colour slot.
+  const colors = rows.map(r => r.value === null ? T.gray : ordered ? T.seq[1 + Math.round((r.value - lo) / (hi - lo || 1) * 3)] : spec.focus === undefined || r.label === spec.focus ? T.blue : T.gray);
   const opts = {
     ...base(box), barDir: 'bar', barGapWidthPct: rows.length <= 4 ? 150 : 90, catAxisOrientation: 'maxMin', catAxisLabelPos: 'low',
     valAxisHidden: true, valGridLine: { style: 'none' }, chartColors: colors, invertedColors: colors,

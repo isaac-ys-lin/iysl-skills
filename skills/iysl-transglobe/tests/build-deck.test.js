@@ -76,6 +76,10 @@ async function unpack(deck) {
   // Native ranking does not require a focus; without one all bars share the focus blue.
   const nofocus = await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'ranking', unit: '%', period: 'p', data: [{ label: 'A', value: 2 }, { label: 'B', value: 1 }] } }] });
   assert.deepEqual(nofocus.warnings, []);
+  // A missing value in an ordered chart still gets a valid colour (no val="undefined" in the chart XML).
+  const gap = await JSZip.loadAsync((await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'ordered', unit: '%', period: 'p', data: [{ label: 'A', value: 10 }, { label: 'B', value: null }, { label: 'C', value: 20 }] } }] })).buffer);
+  const gapChart = await gap.file(Object.keys(gap.files).find(n => /^ppt\/charts\/chart\d+\.xml$/.test(n))).async('string');
+  assert.ok(!gapChart.includes('undefined'), 'ordered chart with a null value writes only valid colours');
 
   // render(spec, { bare: true }) keeps metadata and description but drops title and footer chrome.
   const spec = read('assets/chart-examples.json').charts.waterfall;
