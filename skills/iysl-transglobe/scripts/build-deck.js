@@ -349,7 +349,7 @@ function table(slide, page, ctx) {
   const weights = colDefs.map(c => c.width || 1), sum = weights.reduce((s, v) => s + v, 0);
   const rowH = 0.42, maxRows = Math.floor((a.h - 0.45) / rowH);
   if (rows.length > maxRows) warn(`table has ${rows.length} rows but about ${maxRows} fit; split it or move the full table to an appendix page`);
-  const hl = new Set((page.highlight || []).map(Number));
+  const hl = new Set([].concat(page.highlight ?? []).map(Number));
   const body = rows.map((r, i) => r.map((v, j) => cell(v ?? '—', {
     align: align[j], bold: hl.has(i), color: hl.has(i) && align[j] === 'left' && j > 0 ? C.blue : C.ink,
     fill: hl.has(i) ? { color: C.tint } : undefined, border: border(true),
@@ -424,6 +424,21 @@ async function finish(buffer, chartMeta) {
       }
       return out;
     });
+  }
+  // pptxgenjs writes 0 as an empty workbook cell (`value || ''`), so Edit Data would turn zeros into gaps; restore them from the chart cache.
+  for (const name of charts) {
+    const rels = zip.file(name.replace('charts/', 'charts/_rels/') + '.rels');
+    const target = rels && (await rels.async('string')).match(/Target="\.\.\/(embeddings\/[^"]+\.xlsx)"/);
+    if (!target) continue;
+    const xml = await zip.file(name).async('string'), zeros = [];
+    for (const [, col, row, cache] of xml.matchAll(/<c:numRef><c:f>Sheet1!\$([A-Z]+)\$(\d+)(?::[^<]*)?<\/c:f>\s*<c:numCache>([\s\S]*?)<\/c:numCache>/g)) {
+      for (const [, idx] of cache.matchAll(/<c:pt idx="(\d+)"><c:v>0<\/c:v><\/c:pt>/g)) zeros.push(`${col}${Number(row) + Number(idx)}`);
+    }
+    if (!zeros.length) continue;
+    const book = await JSZip.loadAsync(await zip.file(`ppt/${target[1]}`).async('nodebuffer'));
+    const sheet = 'xl/worksheets/sheet1.xml';
+    book.file(sheet, zeros.reduce((s, ref) => s.replace(`<c r="${ref}"><v></v></c>`, `<c r="${ref}"><v>0</v></c>`), await book.file(sheet).async('string')));
+    zip.file(`ppt/${target[1]}`, await book.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
   }
   for (const name of files.filter(n => /^ppt\/theme\/theme\d+\.xml$/.test(n))) {
     await edit(name, xml => xml

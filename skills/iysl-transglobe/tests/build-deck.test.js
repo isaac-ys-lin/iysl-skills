@@ -80,6 +80,15 @@ async function unpack(deck) {
   const gap = await JSZip.loadAsync((await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'ordered', unit: '%', period: 'p', data: [{ label: 'A', value: 10 }, { label: 'B', value: null }, { label: 'C', value: 20 }] } }] })).buffer);
   const gapChart = await gap.file(Object.keys(gap.files).find(n => /^ppt\/charts\/chart\d+\.xml$/.test(n))).async('string');
   assert.ok(!gapChart.includes('undefined'), 'ordered chart with a null value writes only valid colours');
+  // Zeros survive into the editable workbook (pptxgenjs writes them as empty cells); grouped gaps are named in the footer.
+  const zero = await JSZip.loadAsync((await build({ source: 's', pages: [{ layout: 'chart', title: 't', chart: { chart: 'grouped', unit: '%', period: 'p', series: ['x', 'y'], data: [{ label: 'A', values: [0, null] }, { label: 'B', values: [2, 3] }] } }] })).buffer);
+  const book = await JSZip.loadAsync(await zero.file(Object.keys(zero.files).find(n => /^ppt\/embeddings\/.*\.xlsx$/.test(n))).async('nodebuffer'));
+  const sheet = await book.file('xl/worksheets/sheet1.xml').async('string');
+  assert.ok(sheet.includes('<c r="B2"><v>0</v></c>') && sheet.includes('<c r="C2"><v></v></c>'), 'workbook keeps 0 and leaves null blank');
+  assert.ok((await zero.file('ppt/slides/slide1.xml').async('string')).includes('未提供：A／y'), 'grouped missing value is named');
+  // highlight accepts a single row index as well as an array.
+  const hl = await JSZip.loadAsync((await build({ pages: [{ layout: 'table', title: 't', columns: ['a', 'b'], rows: [['x', '1'], ['y', '2']], highlight: 1 }] })).buffer);
+  assert.ok((await hl.file('ppt/slides/slide1.xml').async('string')).includes('F6F6FA'), 'single highlight index tints its row');
 
   // render(spec, { bare: true }) keeps metadata and description but drops title and footer chrome.
   const spec = read('assets/chart-examples.json').charts.waterfall;

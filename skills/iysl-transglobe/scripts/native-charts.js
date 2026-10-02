@@ -16,7 +16,7 @@ const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const text = v => typeof v === 'string' && v.trim();
 
 function decimals(values) {
-  return Math.min(3, Math.max(0, ...values.filter(isNum).map(v => {
+  return Math.min(6, Math.max(0, ...values.filter(isNum).map(v => {
     const [m, e = '0'] = String(v).split('e');
     return Math.max(0, (m.split('.')[1]?.length || 0) - Number(e));
   })));
@@ -119,7 +119,8 @@ function grouped(spec, box) {
     valAxisHidden: true, valGridLine: { style: 'none' }, showValue: true, dataLabelPosition: 'outEnd',
     dataLabelFontSize: AXIS_PT, dataLabelFormatCode: numberFormat(all), showLegend: true, legendPos: 't',
   };
-  return { type: 'bar', data: series.map((name, j) => ({ name, labels: data.map(r => r.label), values: data.map(r => r.values[j]) })), opts };
+  return { type: 'bar', data: series.map((name, j) => ({ name, labels: data.map(r => r.label), values: data.map(r => r.values[j]) })), opts,
+    missing: data.flatMap(r => series.filter((_, j) => r.values[j] === null).map(name => `${r.label}／${name}`)) };
 }
 
 function composition(spec, box) {
@@ -139,7 +140,7 @@ function composition(spec, box) {
   const totals = data.map(r => `${r.label} 合計 ${U.num(U.sum(r.values))}`).join('；');
   return {
     type: 'bar', opts, labelColors: colors.map(labelOn), extraFooter: [`每列＝100%；${totals} ${spec.unit}`],
-    data: spec.categories.map((name, j) => ({ name, labels: data.map(r => r.label), values: shares.map(row => Number(row[j].toFixed(3))) })),
+    data: spec.categories.map((name, j) => ({ name, labels: data.map(r => r.label), values: shares.map(row => row[j]) })),
   };
 }
 
