@@ -167,12 +167,17 @@ a nonempty qualitative `missed_entry_cost`; it may not fabricate a number.
 After all three memos seal, Data checks material discoveries through the
 existing PEI receipt path. New Council roots use schema version 5 and
 `artifact_bindings.authority_version` 4. The root binds the original
-preliminary underwrite, all packets, memos, and adjudication by digest. The
-adjudication uses `pei-council-adjudication-v4` and repeats
-`preliminary_underwrite_sha256`; packet hashes bind to that underwrite and memo
-hashes bind to their packets. These hashes and timestamps make later changes
-detectable. Without external trust they cannot prevent an owner who can rewrite
-the complete artifact set from resealing it.
+preliminary underwrite, all packets, memos, and adjudication by digest. Its
+identity cutoff is the final `pei_input_receipt` cutoff: the root does not
+repeat `evidence_cutoff` or bind a separate FV freeze receipt, and memo
+`sealed_at` <= `adjudicated_at` <= `model_committed_at`. Sealed v5 runs that
+still carry these fields or a decision label stay valid; a present root cutoff
+must equal the final receipt cutoff. The adjudication uses
+`pei-council-adjudication-v4` and repeats `preliminary_underwrite_sha256`;
+packet hashes bind to that underwrite and memo hashes bind to their packets.
+These hashes and timestamps make later changes detectable. Without external
+trust they cannot prevent an owner who can rewrite the complete artifact set
+from resealing it.
 
 `source_dispositions` maps each discovered candidate exactly once to its
 `candidate_id`, disposition (`accepted`, `rejected`, `not_material`), admitted
@@ -185,7 +190,7 @@ the candidate. A classification correction rejects the sealed candidate and is
 explained separately in the owner decision.
 
 The owner adjudicates every preliminary assumption exactly once. A decision
-records the original `prior_base`/`prior_range`, final Base/range, decision,
+records the original `prior_base`/`prior_range`, final Base/range,
 contributing seats, evidence IDs, reason, model input IDs, and
 `range_comparisons`. `range_comparisons` maps every seat to exactly one of
 `owner_below_range`, `owner_above_range`, `within_range`, or `not_estimable`.
@@ -194,11 +199,12 @@ both range endpoints count as `within_range`. These are numeric comparisons,
 not economic upside/downside labels: a higher cost estimate can reduce value.
 The owner does not choose the comparison direction.
 
-For a v5 run, a withdrawn assumption uses `decision: "reject"`,
-`final_base: null`, `final_range: null`, and `model_input_ids: []`. Its reason
-names the replacement calculation or remaining gap. The two final value fields
-must be null together; a retained estimate keeps numeric Base/range and
-nonempty model input IDs. Earlier v3/v4 contracts still require numeric values.
+For a v5 run, a withdrawn assumption uses `final_base: null`,
+`final_range: null`, and `model_input_ids: []`; no decision label is needed.
+Its reason names the replacement calculation or remaining gap. The two final
+value fields must be null together; a retained estimate keeps numeric
+Base/range and nonempty model input IDs. Earlier v3/v4 contracts still require
+numeric values and an `accept`/`conditional`/`reject` decision.
 
 Each decision also has `retention_basis`: null, or an object with
 `omitted_evidence_ids` (final accepted IDs) and `omitted_mechanism`. The
@@ -215,7 +221,7 @@ JSON shaped `{assumption_id: {seat: comparison}}`; copy every comparison to the
 matching `decision.range_comparisons`. It does not change sealed artifacts.
 Then run the normal full validator separately.
 The comparison command validates the root, receipts, underwrite, packets and
-memos; final model/adjudication/freeze descriptors may still be placeholders.
+memos; final model/adjudication descriptors may still be placeholders.
 It is not a completed-run verdict. Keep the output in the run and seal the
 completed adjudication only after incorporating it.
 

@@ -1141,11 +1141,12 @@ def _validate_agent_council_v3(
         "security_identity",
         "current_price",
         "decision_horizon",
-        "evidence_cutoff",
         "pei_input_receipt",
         "research_admission",
         "artifact_bindings",
     }
+    if not blind or "evidence_cutoff" in payload:
+        root_fields.add("evidence_cutoff")
     if discovery:
         root_fields.add("council_input_pei_receipt")
     split_cutoff_fields = {
@@ -1170,8 +1171,13 @@ def _validate_agent_council_v3(
         errors.append("ticker must be a non-empty string")
     if not _nonempty_string(payload.get("decision_horizon")):
         errors.append("decision_horizon must be a non-empty string")
-    cutoff = _parse_time(payload.get("evidence_cutoff"), "evidence_cutoff", errors)
-    owner_model_cutoff = payload.get("evidence_cutoff")
+    receipt, _ = _descriptor_payload(
+        artifact_dir, payload.get("pei_input_receipt"), "pei_input_receipt", errors
+    )
+    # A v5 root may omit evidence_cutoff; the final PEI receipt cutoff anchors identity.
+    root_cutoff = payload.get("evidence_cutoff", _identity_values(receipt or {})[2])
+    cutoff = _parse_time(root_cutoff, "evidence_cutoff", errors)
+    owner_model_cutoff = root_cutoff
     if present_split_cutoff_fields:
         if present_split_cutoff_fields != split_cutoff_fields:
             errors.append("Council split cutoff fields must be complete")
@@ -1184,9 +1190,7 @@ def _validate_agent_council_v3(
             "final_research_evidence_cutoff",
             errors,
         )
-        if payload.get("evidence_cutoff") != payload.get(
-            "final_research_evidence_cutoff"
-        ):
+        if root_cutoff != payload.get("final_research_evidence_cutoff"):
             errors.append("Council evidence_cutoff must equal final research cutoff")
         if (
             owner_cutoff is not None
@@ -1234,15 +1238,12 @@ def _validate_agent_council_v3(
     root_identity = (
         payload.get("ticker"),
         identity.get("security_id"),
-        payload.get("evidence_cutoff"),
+        root_cutoff,
     )
     owner_model_identity = (
         payload.get("ticker"),
         identity.get("security_id"),
         owner_model_cutoff,
-    )
-    receipt, _ = _descriptor_payload(
-        artifact_dir, payload.get("pei_input_receipt"), "pei_input_receipt", errors
     )
     accepted_evidence: set[str] = set()
     accepted_evidence_natures: dict[str, str] = {}
@@ -1377,8 +1378,7 @@ def _validate_agent_council_v3(
             "owner_adjudication",
             "final_model_spec",
             "model_committed_at",
-            "fv_freeze_receipt",
-        },
+        } | ({"fv_freeze_receipt"} if not blind or "fv_freeze_receipt" in bindings else set()),
         "artifact_bindings",
         errors,
     )
@@ -2036,12 +2036,12 @@ def _validate_agent_council_v3(
                     "prior_range",
                     "final_base",
                     "final_range",
-                    "decision",
                     "council_sources",
                     "evidence_ids",
                     "reason",
                     "model_input_ids",
-                } | ({"range_comparisons", "retention_basis"} if blind else set()),
+                } | ({"range_comparisons", "retention_basis"} if blind else set())
+                | ({"decision"} if not blind or "decision" in decision else set()),
                 label,
                 errors,
             )
@@ -2069,8 +2069,7 @@ def _validate_agent_council_v3(
                 errors.append(f"{label}.prior_range must equal the preliminary range")
             final_base = decision.get("final_base")
             final_range = decision.get("final_range")
-            withdrawn = (blind and decision.get("decision") == "reject"
-                         and final_base is None and final_range is None)
+            withdrawn = blind and final_base is None and final_range is None
             if not withdrawn and not _number(final_base):
                 errors.append(f"{label}.final_base must be numeric")
             if not withdrawn and (
@@ -2082,7 +2081,7 @@ def _validate_agent_council_v3(
                 errors.append(f"{label}.final_range must be an ordered numeric pair")
             elif _number(final_base) and not final_range[0] <= final_base <= final_range[1]:
                 errors.append(f"{label}.final_base must fall within final_range")
-            if decision.get("decision") not in {"accept", "conditional", "reject"}:
+            if (not blind or "decision" in decision) and decision.get("decision") not in {"accept", "conditional", "reject"}:
                 errors.append(f"{label}.decision is invalid")
             if not isinstance(decision.get("council_sources"), list) or not set(
                 decision.get("council_sources", [])
@@ -2165,12 +2164,13 @@ def _validate_agent_council_v3(
         "artifact_bindings.model_committed_at",
         errors,
     )
+    freeze_bound = "fv_freeze_receipt" in bindings
     freeze, _ = _descriptor_payload(
         artifact_dir,
         bindings.get("fv_freeze_receipt"),
         "artifact_bindings.fv_freeze_receipt",
         errors,
-    )
+    ) if freeze_bound else (None, None)
     frozen_at = None
     if freeze is not None:
         if _identity_values(freeze) != owner_model_identity:
@@ -2184,10 +2184,10 @@ def _validate_agent_council_v3(
             freeze.get("frozen_at"), "fv_freeze_receipt.frozen_at", errors
         )
     latest_memo = max(memo_times, default=None)
-    timeline = [latest_memo, adjudicated_at, committed_at, frozen_at]
+    timeline = [latest_memo, adjudicated_at, committed_at] + ([frozen_at] if freeze_bound else [])
     if all(value is not None for value in timeline) and timeline != sorted(timeline):
         errors.append(
-            "current Council timeline must be memos <= adjudication <= model commit <= FV freeze"
+            "current Council timeline must be memos <= adjudication <= model commit (<= FV freeze when bound)"
         )
     return errors
 

@@ -44,6 +44,7 @@ class EquityCouncilContractTest(unittest.TestCase):
     def test_template_has_one_v5_authority_root(self):
         self.assertEqual(self.template["schema_version"], 5)
         self.assertEqual(self.template["council_runtime"], "collaboration_available")
+        self.assertNotIn("evidence_cutoff", self.template)
         self.assertEqual(set(self.template["council_input_pei_receipt"]), {"path", "sha256"})
         bindings = self.template["artifact_bindings"]
         self.assertEqual(bindings["authority_version"], 4)
@@ -60,7 +61,6 @@ class EquityCouncilContractTest(unittest.TestCase):
                 "owner_adjudication",
                 "final_model_spec",
                 "model_committed_at",
-                "fv_freeze_receipt",
             },
         )
 

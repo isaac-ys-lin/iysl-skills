@@ -16,7 +16,6 @@
     "source_id": ""
   },
   "decision_horizon": "",
-  "evidence_cutoff": "",
   "pei_input_receipt": {
     "path": "support/pei_input_receipt.json",
     "sha256": ""
@@ -65,11 +64,7 @@
       "path": "support/owner-model/model.json",
       "sha256": ""
     },
-    "model_committed_at": "",
-    "fv_freeze_receipt": {
-      "path": "",
-      "sha256": ""
-    }
+    "model_committed_at": ""
   },
   "council_input_pei_receipt": {
     "path": "support/council_input_pei_receipt.json",

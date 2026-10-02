@@ -198,14 +198,11 @@ def test_v5_withdrawn_assumption_has_no_compatibility_value_or_model_input(tmp_p
     spec["assumption_ids"].remove("revenue_growth")
     LEGACY._write_json(spec_path, spec)
     bindings["final_model_spec"] = LEGACY._descriptor(spec_path, root)
-    freeze_path = root / bindings["fv_freeze_receipt"]["path"]
-    freeze = json.loads(freeze_path.read_text())
-    freeze["model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
-    LEGACY._write_json(freeze_path, freeze)
-    bindings["fv_freeze_receipt"] = LEGACY._descriptor(freeze_path, root)
+    bindings.pop("fv_freeze_receipt")
     adjudication = json.loads(_adjudication(root, council).read_text())
     decision = adjudication["decisions"][0]
-    decision.update(decision="reject", final_base=None, final_range=None, model_input_ids=[],
+    decision.pop("decision")
+    decision.update(final_base=None, final_range=None, model_input_ids=[],
                     reason="The acquisition-only EBIT estimate was withdrawn; the consolidated model supersedes it.")
     adjudication["final_model_spec_sha256"] = bindings["final_model_spec"]["sha256"]
     _write_adjudication(root, council, adjudication)
@@ -213,10 +210,9 @@ def test_v5_withdrawn_assumption_has_no_compatibility_value_or_model_input(tmp_p
 
 
 @pytest.mark.parametrize("changes, expected", [
-    ({"decision": "reject", "final_base": None}, "final_base must be numeric"),
-    ({"decision": "reject", "final_range": None}, "final_range must be an ordered numeric pair"),
-    ({"decision": "accept", "final_base": None, "final_range": None}, "final_base must be numeric"),
-    ({"decision": "reject", "final_base": None, "final_range": None}, "model_input_ids must be empty"),
+    ({"final_base": None}, "final_base must be numeric"),
+    ({"final_range": None}, "final_range must be an ordered numeric pair"),
+    ({"final_base": None, "final_range": None}, "model_input_ids must be empty"),
     ({"final_base": True}, "final_base must be numeric"),
     ({"final_base": float("nan")}, "final_base must be numeric"),
 ])
@@ -226,6 +222,19 @@ def test_v5_rejects_ambiguous_withdrawal_or_invalid_scalar(tmp_path, changes, ex
     adjudication["decisions"][0].update(changes)
     _write_adjudication(root, council, adjudication)
     assert any(expected in error for error in _errors(council, plugin, root))
+
+
+def test_v5_lean_root_anchors_on_final_receipt_and_keeps_model_timeline(tmp_path):
+    plugin, root, council = _v5_fixture(tmp_path)
+    council.pop("evidence_cutoff")
+    council["artifact_bindings"].pop("fv_freeze_receipt")
+    adjudication = json.loads(_adjudication(root, council).read_text())
+    for decision in adjudication["decisions"]:
+        decision.pop("decision")
+    _write_adjudication(root, council, adjudication)
+    assert _errors(council, plugin, root) == []
+    council["artifact_bindings"]["model_committed_at"] = "2026-08-22T10:22:00+08:00"
+    assert any("current Council timeline" in error for error in _errors(council, plugin, root))
 
 
 @pytest.mark.parametrize("fixture", [LEGACY._v3_fixture, LEGACY._v4_fixture])
