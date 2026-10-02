@@ -89,6 +89,7 @@
     },
     {
       "layout": "list",
+      "exhibit": true,
       "eyebrow": "02　通路表現",
       "title": "招募與留存是個險改善的優先診斷項目",
       "lede": "以下為待驗證假設，依處理優先序排列；各因素可能重疊。",
@@ -125,6 +126,7 @@
     },
     {
       "layout": "compare",
+      "exhibit": true,
       "eyebrow": "04　資源配置",
       "title": "建議方案 B，聚焦招募與留存",
       "lede": "下半年預算上限 3.2 億元・預估 FYP 為 2027 全年年增率",

@@ -21,7 +21,7 @@ const C = {
 };
 const PT = { cover: 48, chapter: 39, title: 27, body: 18, label: 15, caption: 13.5, source: 12, kpi: 90, metric: 39, secondary: 27, benchmark: 21 };
 const LAYOUTS = ['cover', 'chapter', 'summary', 'kpi', 'chart', 'list', 'columns', 'process', 'flow', 'table', 'compare', 'decisions'];
-const EXHIBITS = new Set(['chart', 'list', 'table', 'compare']);
+const EXHIBITS = new Set(['chart', 'table']);
 
 const warnings = [];
 let current = '';
@@ -106,7 +106,7 @@ function area(top, bottom) {
   if (h < 1.5) warn('little room left for content; shorten the title, lede or footer');
   return { x: ML, y: top, w: CW, h };
 }
-// Vertically centre a block of known height inside an area.
+// Vertically centre a block of known height inside an area (summary, kpi and chart asides fill their page).
 const centre = (a, h) => a.y + Math.max(0, (a.h - h) / 2);
 
 // Layouts --------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ function list(slide, page, ctx) {
     str(it.note) ? lineCount(it.note, noteW, PT.label) * lineHeight(PT.label) : 0));
   const total = heights.reduce((s, v) => s + v, 0);
   if (total > a.h) warn('list rows overflow the page; shorten bodies or split the list');
-  let y = centre(a, total);
+  let y = a.y;
   items.forEach((it, i) => {
     if (!str(it.heading)) fail('every list item needs a heading');
     const focus = page.focus === i;
@@ -278,7 +278,7 @@ function columns(slide, page, ctx) {
   const blockH = it => 0.25 + (hasKicker ? 0.35 : 0) + (hasValue ? 0.75 : 0) + lineCount(it.heading, cw, PT.body) * lineHeight(PT.body, 1.4) + (str(it.body) ? 0.125 + lineCount(it.body, cw, PT.label) * lineHeight(PT.label) : 0);
   const total = Math.max(...items.map(blockH));
   if (total > a.h) warn('column text overflows; shorten bodies to two or three lines');
-  const top = centre(a, total);
+  const top = a.y;
   items.forEach((it, i) => {
     if (!str(it.heading)) fail('every column needs a heading');
     const x = ML + i * (cw + gap), focus = page.focus === undefined || page.focus === i;
@@ -300,7 +300,7 @@ function processPage(slide, page, ctx) {
   const textH = Math.max(...steps.map(s => lineCount(s.heading, tw, PT.body) * lineHeight(PT.body, 1.4) + (str(s.body) ? 0.125 + lineCount(s.body, tw, PT.label) * lineHeight(PT.label) : 0)));
   const total = 0.35 + 0.2 + r * 2 + 0.3 + textH;
   if (total > a.h) warn('process step text overflows; shorten step bodies');
-  const top = centre(a, total), lineY = top + 0.35 + 0.2 + r;
+  const top = a.y, lineY = top + 0.35 + 0.2 + r;
   rule(slide, ML + r, lineY, colW * (steps.length - 1), C.gray, 1.5);
   steps.forEach((s, i) => {
     if (!str(s.heading)) fail('every step needs a heading');
@@ -324,7 +324,7 @@ function flow(slide, page, ctx) {
   const boxH = Math.max(...nodes.map(textH)) + 0.5;
   const noteH = str(page.note) ? 0.35 + lineCount(page.note, CW - 0.4, PT.label) * lineHeight(PT.label) + 0.2 : 0;
   if (boxH + noteH > a.h) warn('flow boxes overflow; shorten node text');
-  const top = centre(a, boxH + noteH);
+  const top = a.y;
   nodes.forEach((n, i) => {
     if (!str(n.heading)) fail('every flow node needs a heading');
     const x = ML + i * (w + gap), on = i === focus;
@@ -399,7 +399,7 @@ function decisions(slide, page, ctx) {
   const heights = items.map(it => 0.5 + Math.max(lineCount(it.heading, hw, PT.body) * lineHeight(PT.body, 1.4), (lineCount(it.owner, ownW, PT.label) + (str(it.deadline) ? 1 : 0)) * lineHeight(PT.label) + 0.083));
   const total = heights.reduce((s, v) => s + v, 0);
   if (total > a.h) warn('decision rows overflow; keep each to a short heading, owner and date');
-  let y = centre(a, total);
+  let y = a.y;
   items.forEach((it, i) => {
     if (!str(it.heading)) fail('every decision needs a heading');
     addText(slide, String(i + 1).padStart(2, '0'), { x: ML, y: y + 0.25, w: idxW, h: 0.3 }, { size: PT.label, color: C.darkMuted });
@@ -490,7 +490,9 @@ async function build(deck, baseDir = process.cwd()) {
     slide.background = { color: 'FFFFFF' };
     const isExhibit = page.exhibit ?? EXHIBITS.has(page.layout);
     const pageCtx = Object.assign(ctx, { exhibit: isExhibit ? ++exhibit : 0, folio: page.layout === 'cover' ? '' : String(i + 1).padStart(2, '0') });
-    drawers[page.layout](slide, page, pageCtx, pptx);
+    // Pages without their own footer carry the deck's source; chart pages build theirs from the chart spec.
+    const footer = page.footer ?? (str(deck.source) && !['cover', 'chapter', 'chart'].includes(page.layout) ? [`資料來源：${deck.source}`] : undefined);
+    drawers[page.layout](slide, { ...page, footer }, pageCtx, pptx);
     if (str(page.speakerNotes)) slide.addNotes(page.speakerNotes);
   });
   const raw = await pptx.write({ outputType: 'nodebuffer' });

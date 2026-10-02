@@ -9,7 +9,7 @@
 ```json
 {
   "title": "簡報名稱（寫進檔案屬性）",
-  "source": "預設資料來源，chart 頁沒填 source 時使用",
+  "source": "預設資料來源：chart 頁沒填 source 時使用；其他內容頁沒填 footer 時顯示在頁尾",
   "logo": "可選：使用者提供的官方 Logo 檔路徑，相對於 deck.json",
   "pages": [ { "layout": "cover", "...": "..." } ]
 }
@@ -25,7 +25,7 @@
 | `lede` | 標題下一行：指標、範圍、期間、單位，例如 `"四大通路 FYP 年增率・2026 H1・%"` |
 | `footer` | 字串陣列：資料來源、定義、限制。每頁 1–3 行 |
 | `speakerNotes` | 講者備忘稿：原稿中這頁的講述內容放這裡 |
-| `exhibit` | `chart`、`table`、`compare`、`list` 會自動編 EXHIBIT 號；填 `false` 取消，填 `true` 加給其他版型 |
+| `exhibit` | `chart`、`table` 會自動編 EXHIBIT 號；分析性的 `list`、`compare` 等頁填 `true` 加入編號，填 `false` 取消 |
 
 文字中的 `\n` 是換行。頁碼自動產生（封面不編）。
 
@@ -36,7 +36,7 @@
 
 **summary**：`thesis` = `{label, heading, body}`，左欄的建議；`evidence` 是 1–4 列
 `{value, unit, heading, body}`，右欄的支撐數字。每列的 `body` 寫一行。
-`evidence` 放稿子裡真正支撐建議的數字；稿子沒有這類數字時，摘要頁改用 `columns` 或 `flow`。
+`evidence` 放稿子裡真正支撐建議的數字。
 
 **kpi**：`main` = `{label, value, unit, benchmarks: [{label, value, unit}]}`，左側大數字與 1–3 個對照；
 `secondary` 是 0–4 個 `{label, value, unit}` 次要指標。數字用字串寫出要顯示的樣子（`"+2.4"`、`"−7.8"`）。
@@ -52,10 +52,10 @@
 一頁約放 9–10 列；更多時只放和標題有關的列，完整表放附錄頁。
 
 **compare**：`options` 是 2–4 個 `{label, name}`（如 `{"label": "PLAN B・建議", "name": "招募與留存"}`）；
-`rows` 是 `{label, values}`，`values` 與 `options` 一一對應；`recommended` 是建議方案的索引。
+`rows` 是 `{label, values}`，`values` 與 `options` 一一對應；`recommended` 是建議方案的索引，只是並列比較時省略。
 只放能區分方案的比較項目，通常 4–6 列。
 
-**list**：`items` 是 2–5 個 `{tag, heading, body, note}`。`tag` 是左欄短標（「優先查核」），
+**list**：`items` 是 `{tag, heading, body, note}`，通常 3 項；每項 body 只有一行時可放到 4–5 項。`tag` 是左欄短標（「優先查核」），
 `note` 是右欄補充（「查核：…」），兩者可省略。`focus` 是要用藍色強調的項目索引。
 
 **columns**：`items` 是 2–4 個 `{kicker, value, unit, heading, body}`；`kicker` 是小標，

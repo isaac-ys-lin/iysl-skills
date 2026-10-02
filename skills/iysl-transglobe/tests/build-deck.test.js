@@ -90,6 +90,14 @@ async function unpack(deck) {
   const sheet = await book.file('xl/worksheets/sheet1.xml').async('string');
   assert.ok(sheet.includes('<c r="B2"><v>0</v></c>') && sheet.includes('<c r="C2"><v></v></c>'), 'workbook keeps 0 and leaves null blank');
   assert.ok((await zero.file('ppt/slides/slide1.xml').async('string')).includes('未提供：A／y'), 'grouped missing value is named');
+  // Text decks: the deck source fills pages without a footer, and only data pages are numbered as exhibits by default.
+  const text = await JSZip.loadAsync((await build({ source: '原文', pages: [
+    { layout: 'list', title: 't', items: [{ heading: 'A' }, { heading: 'B' }] },
+    { layout: 'list', title: 't', exhibit: true, footer: ['自訂頁尾'], items: [{ heading: 'A' }, { heading: 'B' }] },
+  ] })).buffer);
+  const [plain, numbered] = await Promise.all([1, 2].map(n => text.file(`ppt/slides/slide${n}.xml`).async('string')));
+  assert.ok(plain.includes('資料來源：原文') && !plain.includes('EXHIBIT'), 'deck source becomes the default footer; lists are not auto-numbered');
+  assert.ok(numbered.includes('EXHIBIT 1') && numbered.includes('自訂頁尾') && !numbered.includes('資料來源：原文'), 'opt-in exhibit and own footer win');
   // highlight accepts a single row index as well as an array.
   const hl = await JSZip.loadAsync((await build({ pages: [{ layout: 'table', title: 't', columns: ['a', 'b'], rows: [['x', '1'], ['y', '2']], highlight: 1 }] })).buffer);
   assert.ok((await hl.file('ppt/slides/slide1.xml').async('string')).includes('F6F6FA'), 'single highlight index tints its row');

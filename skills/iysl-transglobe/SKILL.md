@@ -2,7 +2,7 @@
 name: iysl-transglobe
 description: Turn a text script, outline, meeting notes or report into a finished 全球藍 / TransGlobe (全球人壽) PowerPoint deck with the prototype's page layouts and native, editable charts; also restyle existing PowerPoint, Word, Excel, HTML or SVG to 全球藍, and recommend and render TransGlobe charts from data. Use whenever the user wants a 全球藍 or TransGlobe deck, 簡報, 文字稿／講稿做成簡報, chart or restyle, even when they only paste text and ask to 做成簡報 in a TransGlobe context. Exclude design-system maintenance, generic blue styling, and non-TransGlobe deck outlines or image-prompt decks.
 metadata:
-  compatibility: PPTX assembly requires Node.js 18 or later and npm (run npm ci once in scripts/); the SVG chart renderer alone needs only Node.js. LibreOffice is optional for page previews.
+  compatibility: PPTX assembly requires Node.js 18 or later and npm (run npm ci once in scripts/); the SVG chart renderer alone needs only Node.js. LibreOffice or PowerPoint for Mac is optional for page previews.
 ---
 
 # iysl-transglobe
@@ -48,14 +48,15 @@ metadata:
 
    `WARN` 是版面提醒（標題太長、文字可能溢出、表格太長、圖太擠）；精簡、拆頁或保留由你決定。
    只有缺必要欄位或資料形狀不對、畫不出來時才會中止。
-5. **檢視並改進。** 有 LibreOffice 時轉成圖片，像台下的聽眾一樣逐頁看：
+5. **檢視並改進。** 轉成逐頁圖片，像台下的聽眾一樣看：
 
    ```sh
-   soffice --headless --convert-to pdf deck.pptx && pdftoppm -png -r 60 deck.pdf page
+   node "$SKILL_DIR/scripts/preview-deck.js" deck.pptx preview
    ```
 
    判斷是否一眼可見、圖是否在替標題作證、整份是否一路推向結論？找出最弱的一兩頁，
-   改到滿意再交付。LibreOffice 用替代字型，只能看版面；沒有預覽工具時交付時提一句。
+   改到滿意再交付。腳本優先用 LibreOffice（替代字型，只能看版面），沒有時用 Mac 上的 PowerPoint（實際畫面）；
+   兩者都沒有時交付時提一句。
 6. **交付** PPTX 與 `deck.json`，用幾句話說明故事線，並列出稿子沒有、因此標「未提供」的資料。
 
 ## 版型
@@ -63,7 +64,7 @@ metadata:
 | `layout` | 用途 |
 | --- | --- |
 | `cover` | 封面 |
-| `summary` | 主管摘要：一個建議加 2–3 個支撐數字 |
+| `summary` | 主管摘要：一個建議加 2–3 個支撐數字；稿子沒有支撐數字時，摘要改用 `flow` 或 `columns` |
 | `kpi` | 一個核心數字，加對照（同業、目標、去年）與次要指標 |
 | `chart` | 一張圖回答一個問題：高低、變化、組成 |
 | `table` | 排名或需要逐項查的精確數值 |
@@ -72,7 +73,7 @@ metadata:
 | `columns` | 並列重點，可帶數字 |
 | `process` | 流程、時程、上線步驟 |
 | `flow` | 因果或「問題 → 回應」 |
-| `decisions` | 深色結尾頁：要聽眾決定或核准的事 |
+| `decisions` | 深色結尾頁：要聽眾決定或核准的事；聽眾不用做決定時，用 `list` 或 `columns` 收尾 |
 | `chapter` | 長簡報的深色章節頁 |
 
 ## 圖表
