@@ -36,6 +36,8 @@ jobs:
         run: python -m pip install --requirement requirements-dev.txt
       - name: Install Playwright Chromium
         run: python -m playwright install chromium
+      - name: Install iysl-transglobe deck dependencies
+        run: npm ci --prefix skills/iysl-transglobe/scripts
       - name: Run portable release gates
         shell: bash
         run: tools/verify-release.sh

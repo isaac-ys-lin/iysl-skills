@@ -1,6 +1,6 @@
 interface:
   display_name: "iysl-transglobe"
-  short_description: "Select and render TransGlobe charts; restyle Office and HTML."
-  default_prompt: "Use $iysl-transglobe 依報告情境與資料自動選出最適合的全球藍圖表，產生 SVG 或套用到文件，保留數據與原意。"
+  short_description: "Turn a script into a TransGlobe PowerPoint deck; restyle files and charts."
+  default_prompt: "Use $iysl-transglobe 把這份文字稿做成全球藍簡報：先寫每頁一句判斷的故事線，每頁配一個主視覺，圖表用可編輯的原生圖表，保留所有數字與出處。"
 policy:
   allow_implicit_invocation: true

@@ -14,7 +14,9 @@ const bars = [...ranking.matchAll(/<rect[^>]+>/g)].map(m => m[0]);
 assert.equal(bars.length, 3, 'missing value has no fake bar');
 assert.equal(bars.filter(x => x.includes('#28317B')).length, 1);
 assert(bars.every(x => !/width="-/.test(x)), 'signed data must not create negative widths');
-assert.throws(() => charts.ranking({ data }, frame), /focus/);
+assert.throws(() => charts.ranking({ data, focus: '不存在' }, frame), /focus/);
+const unfocused = [...charts.ranking({ data }, frame).matchAll(/<rect[^>]+>/g)].map(m => m[0]);
+assert(unfocused.length === 3 && unfocused.every(x => x.includes('#28317B')), 'without focus every bar has equal weight');
 assert.throws(() => charts.ranking({ data: [{ label: 'A', value: 1 }, { label: 'A', value: 2 }], focus: 'A' }, frame), /unique/);
 
 const ordered = charts.ordered({ data: [{ label: '先', value: 9 }, { label: '後', value: 2 }] }, frame);
