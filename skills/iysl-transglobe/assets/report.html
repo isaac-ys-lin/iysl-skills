@@ -48,8 +48,9 @@
   .evidence .value small, .value small { font-size: 14px; margin-left: 4px; }
   .evidence strong { display: block; font-size: 15px; }
   .evidence span { font-size: 14px; color: var(--muted); }
+  .evidence.text li { grid-template-columns: 1fr; gap: 2px; }
 
-  /* 目錄：五節以上的長報告才用 */
+  /* 目錄：六節以上的長報告才用 */
   .toc { padding: 32px 0; border-bottom: 1px solid var(--line); }
   .toc ol { margin-top: 8px; padding-left: 1.4em; }
   .toc a { color: var(--focus); text-decoration: none; }
@@ -71,6 +72,7 @@
   table { width: 100%; border-collapse: collapse; font-size: 15px; }
   th { text-align: left; font-size: 13px; font-weight: 700; padding: 8px 12px; border-bottom: 1.5px solid var(--focus); vertical-align: bottom; }
   td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th:first-child, td:first-child { min-width: 6em; }
   th.num, td.num { text-align: right; }
   tr.hl td { background: var(--tint); font-weight: 700; }
   table.compare th.rec { background: var(--focus); color: #FFFFFF; }
@@ -147,7 +149,7 @@
     <h2>{{建議或結論，一兩行}}</h2>
     <p>{{兩三句理由：為什麼是這個結論、要讀者做什麼}}</p>
   </div>
-  <!-- 支撐數字只放稿子裡真正支撐結論的 2–4 個；稿子沒有這類數字時，刪掉這個清單，改用條列理由 -->
+  <!-- 支撐數字只放稿子裡真正支撐結論的 2–4 個。稿子沒有這類數字時，刪掉每項的 .value，把 ul 改成 class="evidence text"，放 2–4 個支撐理由 -->
   <ul class="evidence">
     <li><span class="value">{{數字}}<small>{{單位}}</small></span><div><strong>{{這個數字說明什麼}}</strong><span>{{一行補充：對照、期間或來源}}</span></div></li>
     <li><span class="value">{{數字}}<small>{{單位}}</small></span><div><strong>{{這個數字說明什麼}}</strong><span>{{一行補充}}</span></div></li>

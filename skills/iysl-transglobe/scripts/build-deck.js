@@ -491,7 +491,7 @@ async function build(deck, baseDir = process.cwd()) {
     const isExhibit = page.exhibit ?? EXHIBITS.has(page.layout);
     const pageCtx = Object.assign(ctx, { exhibit: isExhibit ? ++exhibit : 0, folio: page.layout === 'cover' ? '' : String(i + 1).padStart(2, '0') });
     // Pages without their own footer carry the deck's source; chart pages build theirs from the chart spec.
-    const footer = page.footer ?? (str(deck.source) && !['cover', 'chapter', 'chart'].includes(page.layout) ? [`資料來源：${deck.source}`] : undefined);
+    const footer = page.footer ?? (str(deck.source) && !['cover', 'chapter', 'chart'].includes(page.layout) ? [U.sourceLine(deck.source)] : undefined);
     drawers[page.layout](slide, { ...page, footer }, pageCtx, pptx);
     if (str(page.speakerNotes)) slide.addNotes(page.speakerNotes);
   });

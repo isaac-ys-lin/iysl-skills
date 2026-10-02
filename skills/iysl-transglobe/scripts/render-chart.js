@@ -168,7 +168,7 @@ function extraNotes(spec) {
 
 // Everything a reader needs beside the plot: unit, period, source, notes and generated reading notes.
 function footerLines(spec) {
-  return [`單位：${spec.unit}　期間：${spec.period}`, `資料來源：${spec.source}`, ...(spec.notes || []), ...extraNotes(spec)];
+  return [`單位：${spec.unit}　期間：${spec.period}`, U.sourceLine(spec.source), ...(spec.notes || []), ...extraNotes(spec)];
 }
 
 // Long description for screen readers and detached SVGs: the plotted values, not only the metadata.

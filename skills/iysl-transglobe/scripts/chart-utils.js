@@ -97,6 +97,8 @@ const scale = (v, lo, hi, start, end) => start + (v - lo) / (hi - lo) * (end - s
 // Visible numbers get thousands separators; data-* attributes and metadata keep raw values.
 const num = v => typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(v) ? String(v).replace(/^-?\d+/, s => s.replace(/\B(?=(\d{3})+$)/g, ',')) : String(v);
 const tick = v => num(v);
+// Footer source line; a source already written as 「資料來源：…」 keeps its own prefix.
+const sourceLine = source => /^\s*(資料)?來源\s*[:：]/.test(source) ? source : `資料來源：${source}`;
 
 function domain(value, name) {
   if (!Array.isArray(value) || value.length !== 2 || !value.every(finite) || value[0] >= value[1] || !finite(value[1] - value[0])) fail(`${name} must be [min, max] with min < max and a finite span`);
@@ -257,4 +259,4 @@ function histogramData(s) {
   return { counts, edges };
 }
 
-module.exports = { warnings, warn, catFill, catText, categoryIndices, sum, percent, derived, difference, indexedData, waterfallData, histogramData, funnelRates, paretoData, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, domain, observedDomain, niceStep, scale, num, tick, ticks, plot, xAxis, columns };
+module.exports = { sourceLine, warnings, warn, catFill, catText, categoryIndices, sum, percent, derived, difference, indexedData, waterfallData, histogramData, funnelRates, paretoData, categorySet, composition, C, esc, finite, fail, pos, el, text, line, rect, dot, countWidth, wrap, label, rows, namedFocus, extent, domain, observedDomain, niceStep, scale, num, tick, ticks, plot, xAxis, columns };
