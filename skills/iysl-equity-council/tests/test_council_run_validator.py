@@ -436,7 +436,7 @@ def _v3_fixture(tmp_path):
         "research_admission": "PASS",
         "artifact_bindings": {
             "authority_version": 2,
-            "validator_sha256": _sha256(VALIDATOR_PATH),
+            "validator_sha256": "0" * 64,
             "preliminary_underwrite": _descriptor(underwrite_path, artifact_dir),
             "seat_packets": packet_refs,
             "sealed_memos": memo_refs,

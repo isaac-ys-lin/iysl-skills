@@ -23,7 +23,6 @@
   "research_admission": "PASS",
   "artifact_bindings": {
     "authority_version": 4,
-    "validator_sha256": "",
     "preliminary_underwrite": {
       "path": "",
       "sha256": ""

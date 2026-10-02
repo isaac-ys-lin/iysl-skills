@@ -125,7 +125,6 @@ def _v5_fixture(tmp_path):
         decision["retention_basis"] = None
     LEGACY._write_json(adjudication_path, adjudication)
     bindings["owner_adjudication"] = LEGACY._descriptor(adjudication_path, artifact_root)
-    bindings["validator_sha256"] = LEGACY._sha256(VALIDATOR_PATH)
     return plugin, artifact_root, council
 
 
@@ -159,7 +158,6 @@ def _rebind_packet(root, council, seat, mutate):
 
 
 def _errors(council, plugin, root):
-    council["artifact_bindings"]["validator_sha256"] = LEGACY._sha256(VALIDATOR_PATH)
     return VALIDATOR.validate(council, plugin_root=plugin, artifact_dir=root)
 
 

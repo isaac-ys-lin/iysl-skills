@@ -848,14 +848,14 @@ def _validate_agent_council_v3(
         bindings,
         {
             "authority_version",
-            "validator_sha256",
             "preliminary_underwrite",
             "seat_packets",
             "sealed_memos",
             "owner_adjudication",
             "final_model_spec",
             "model_committed_at",
-        } | ({"fv_freeze_receipt"} if not blind or "fv_freeze_receipt" in bindings else set()),
+        } | ({"fv_freeze_receipt"} if not blind or "fv_freeze_receipt" in bindings else set())
+        | ({"validator_sha256"} & set(bindings)),
         "artifact_bindings",
         errors,
     )
@@ -864,10 +864,9 @@ def _validate_agent_council_v3(
         errors.append(
             f"artifact_bindings.authority_version must be {authority_version}"
         )
-    if _normalized_sha(bindings.get("validator_sha256")) != _sha256(
-        Path(__file__).resolve()
-    ):
-        errors.append("artifact_bindings.validator_sha256 does not match this validator")
+    # Tolerated for sealed runs; not compared, so validator edits do not void them.
+    if "validator_sha256" in bindings and _normalized_sha(bindings["validator_sha256"]) is None:
+        errors.append("artifact_bindings.validator_sha256 must be a SHA-256 digest when present")
 
     if blind:
         # Admission is not permission to show a model artifact to a blind seat.

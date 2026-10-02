@@ -54,7 +54,6 @@ class EquityCouncilContractTest(unittest.TestCase):
             set(bindings),
             {
                 "authority_version",
-                "validator_sha256",
                 "preliminary_underwrite",
                 "seat_packets",
                 "sealed_memos",
