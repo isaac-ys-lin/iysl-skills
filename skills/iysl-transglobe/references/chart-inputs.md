@@ -1,10 +1,54 @@
-# 圖表 spec
+# 選圖與圖表 spec
 
-同一份 spec 有兩個用途：放在 `deck.json` 的 chart 頁，或交給 SVG renderer 產生獨立圖檔。
+## 選圖
 
-```sh
-node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg
-```
+先寫出標題要說的那一句話，再選能讓讀者一眼看到它的圖：
+
+1. **要不要圖？** 只有一個數字用 `kpi` 版型；要逐項查精確值或項目太多用 `table`；
+   沒有數字的並列、流程、選項用 `columns`、`process`、`compare`。
+2. **回答什麼問題？** 用下表找圖型。使用者指定且資料適用就照做；沒指定就直接選，交付時用一句話說理由。
+3. **資料夠不夠？** 不夠就改用要求較低的圖或表格並說明缺什麼；不補造分母、分布、目標或模型。
+
+- 同一份組成資料：比總量用 `ranking`（加總後），比組成用 `stacked`，兩者都要看用 `mekko`。
+- 只有兩個時點、重點是差距用 `dumbbell`；三期以上用 `trend`。
+- 類別超過四個又要固定顏色時，拆圖或改表格。
+- 一頁一張圖；兩張要對照時拆頁或改用 `grouped`、`combo`。
+
+上色見[設計規範](design-rules.md)；標題點名主角時填 `focus`。
+
+## 圖型
+
+「原生」欄有 ● 的圖型在簡報中產生 PowerPoint 原生圖表，其餘嵌入 SVG。
+
+| `chart` | 回答的問題 | `data` 每列 | 工具查不到、要自己確認的事 | 原生 |
+| --- | --- | --- | --- | :-: |
+| `ranking` 排行比較 | 同期誰高誰低 | `{label, value}` | 同單位、單一期間 | ● |
+| `ordered` 階段與強度 | 有順序的等級或區間 | `{label, value}` | 照來源分級，缺級不補 | ● |
+| `trend` 單一趨勢與同業 | 主角與比較對象隨時間的變化 | `{label, values}`＋`labels` | 期間等間距；`focus` 指定主角 | ● |
+| `tracking` 跨期追蹤 | 2–4 個固定類別各期變化 | 同 `trend` | 類別跨期一致 | ● |
+| `grouped` 多序列分組長條 | 項目在 2–4 個序列（年度、情境）下的大小 | `{label, values}`＋`series` | 同單位 | ● |
+| `stacked` 100% 堆疊長條 | 各群的內部組成 | `{label, values}`＋`categories` | 類別互斥；第五類只能是既有的「其他」 | ● |
+| `sharetrend` 組成隨期間變化 | 組成如何隨期間移動 | 同 `stacked`，每列一期 | 同 `stacked` | ● |
+| `combo` 金額柱＋比率線 | 規模與比率一起看 | `{label, value, rate}`＋`rateLabel`（含單位） | 兩軸獨立，不比高度 | ● |
+| `waterfall` 瀑布圖 | 期初加減到期末 | `{label, value}`＋`start`，可選 `end`、`focus` | 各項可相加、不重疊 | |
+| `dumbbell` 啞鈴圖 | 同一項目在兩個時點或情境差多少 | `{label, before, after}`，可設 `beforeLabel`／`afterLabel` | 同一項目、同口徑 | |
+| `bullet` 實際與目標 | 實際離目標多遠 | `{label, actual, target}` | 目標要有來源 | |
+| `heatmap` 二維強度 | 兩個維度交叉的強弱 | `{label, values}`＋`labels` | 各格同口徑 | |
+| `funnel` 漏斗圖 | 同一批對象在哪一階段流失 | `{label, value}`＋`sameCohort: true` | 同一母體、同一期間 | |
+| `waffle` 百格占比圖 | 單一整體的占比 | `{label, value}` | 部分互斥 | |
+| `mekko` Marimekko 市場結構圖 | 規模與組成同時比較 | 同 `stacked` | 共同的整體分母 | |
+| `pareto` 帕累托圖 | 少數原因是否占多數 | `{label, value}` | 原因互斥 | |
+| `indexed` 指數化小倍數趨勢圖 | 起點不同的相對成長 | 同 `trend` | 共同基期 | |
+| `tornado` 敏感度龍捲風圖 | 哪個假設最影響結果 | `{label, low, high}`＋`baseline`、`model`、`assumptions` | 來自一次只改一項的已算好模型 | |
+| `scatter` 散點圖 | 兩個指標的關係與例外 | `{label, x, y}`＋`xLabel`、`yLabel` | 不宣稱因果 | |
+| `box` 箱型圖 | 分布、中位數與離群值 | `{label, low, q1, median, q3, high, whiskerRule: "1.5IQR", outliers}` | 真實分位數，只有平均不能用 | |
+| `histogram` 直方圖 | 原始觀察值的分布 | 數字陣列＋`binWidth` | 組距來自來源或分析計畫 | |
+| `matrix` 2×2 優先矩陣 | 兩個評分維度的優先序 | `{label, x, y}`＋`xLabel`、`yLabel`、`xDomain`、`yDomain`、`xThreshold`、`yThreshold`、`rubric` | 評分與門檻來自來源 | |
+| `table` 資料表 | 單欄數值清單 | `{label, value}` | 簡報中改用 `table` 版型 | |
+
+## Spec
+
+同一份 spec 可放在 `deck.json` 的 chart 頁，或交給 renderer 產生獨立 SVG：
 
 ```json
 {
@@ -20,53 +64,12 @@ node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg
 }
 ```
 
-獨立 SVG 必填 `chart`、`title`、`unit`、`period`、`source`、`notes`（無註解時 `[]`）與 `data`；
-放在 chart 頁時 `title`、`source`、`notes` 可省略。數字寫成數字、保留原始精度，千分位由工具加。
-完整例子在 [chart-examples.json](../assets/chart-examples.json)（示意資料，只參考格式）。
+獨立 SVG 必填 `chart`、`title`、`unit`、`period`、`source`、`notes`（可為 `[]`）與 `data`；
+放在 chart 頁時 `title`、`source`、`notes` 可省略。數字寫成數字，千分位由工具加。
+各圖型的完整例子在 [chart-examples.json](../assets/chart-examples.json)（示意資料，只參考格式）。
 
-## 圖型與資料形狀
-
-前八種在簡報中產生 PowerPoint 原生圖表，其餘嵌入 SVG。
-
-| `chart` | 回答的問題 | `data` 每列 | 備註 |
-| --- | --- | --- | --- |
-| `ranking` | 誰高誰低 | `{label, value}` | 依數值排序；`focus` 可選，指定時主角藍、其他灰 |
-| `ordered` | 有順序的等級或區間 | `{label, value}` | 保留輸入順序，藍階上色 |
-| `trend` | 一條主線隨時間的變化 | `{label, values}`，另有 `labels` | `focus` 指定主角序列；只有一條時可省略 |
-| `tracking` | 2–4 個固定類別各期變化 | 同 `trend` | 類別色固定 |
-| `grouped` | 項目在 2–4 個序列（年度、情境）下的大小 | `{label, values}`，另有 `series` | |
-| `stacked` | 各群的內部組成 | `{label, values}`，另有 `categories` | 2–4 類，第五類只能是既有的「其他」；值非負 |
-| `sharetrend` | 組成隨期間變化 | 同 `stacked`，每列一期 | |
-| `combo` | 金額與比率一起看 | `{label, value, rate}`，另有 `rateLabel`（含單位） | 兩軸獨立 |
-| `waterfall` | 期初加減到期末 | `{label, value}`，另有 `start`、可選 `end`、`focus` | 各項可加總 |
-| `dumbbell` | 同一項目前後差多少 | `{label, before, after}` | 可設 `beforeLabel`／`afterLabel` |
-| `bullet` | 實際與目標 | `{label, actual, target}` | |
-| `heatmap` | 兩個維度交叉的強弱 | `{label, values}`，另有 `labels` | 最多 10×12 |
-| `funnel` | 同一批對象在哪一階段流失 | `{label, value}`，另有 `sameCohort: true` | 數值不可增加 |
-| `waffle` | 單一整體的占比 | `{label, value}` | 整數百分點，合計 100 |
-| `mekko` | 規模與組成同時比較 | 同 `stacked` | |
-| `pareto` | 少數原因是否占多數 | `{label, value}` | 原因互斥 |
-| `indexed` | 起點不同的相對成長 | 同 `trend` | 首期須大於 0 |
-| `tornado` | 哪個假設最影響結果 | `{label, low, high}`，另有 `baseline`、`model`、`assumptions` | 來自已算好的模型 |
-| `scatter` | 兩個指標的關係 | `{label, x, y}`，另有 `xLabel`、`yLabel` | 3–6 點 |
-| `box` | 分布與中位數 | `{label, low, q1, median, q3, high, whiskerRule: "1.5IQR", outliers}` | 需要真實分位數 |
-| `histogram` | 原始觀察值的分布 | `data` 為數字陣列，另有 `binWidth` | 10 筆以上 |
-| `matrix` | 兩個評分維度的優先序 | `{label, x, y}`，另有 `xLabel`、`yLabel`、`xDomain`、`yDomain`、`xThreshold`、`yThreshold`、`rubric` | 評分定義來自來源 |
-| `table` | 單欄數值清單 | `{label, value}` | 簡報中改用 `table` 版型 |
-
-缺值寫 `null`：長條保留該列並註明，折線斷開並在頁尾列出缺的期間。
-零是觀察值，不是缺值。
-
-## 跨圖一致
-
-- 同份簡報追蹤相同類別時，在 `stacked`、`sharetrend`、`grouped`、`tracking`、`waffle`、`mekko`
-  填同一份 `categoryDomain`（例如 `["壽險","醫療","意外"]`），顏色就不會因排列或缺類而換掉。
-- `trend`、`tracking`、`box`、`scatter` 可用 `yDomain: [下界, 上界]` 指定縱軸，須涵蓋所有值；
-  長條一律從零起。
-
-## 獨立 SVG 的尺寸
-
-預設畫布 1200×800。放進 Word 或簡報時填 `layout: "document"`（840×720）或 `"slide"`（960×540），
-並填實際置入寬度 `placementWidthInches`；工具會檢查換算後的字級（文件 9 pt、簡報 16 pt 以上），
-太小時改排版或拆圖，不要縮字。`width`、`height` 可調整比例。
-每張圖交付輸入 JSON 與 SVG；重製需要完整的 `scripts` 目錄。
+- **缺值**寫 `null`：長條保留該列，折線斷開，工具會在頁尾列出。零是觀察值，不是缺值。
+- **跨圖同色**：同份文件追蹤相同類別時，填同一份 `categoryDomain`（例如 `["壽險","醫療","意外"]`）。
+- **縱軸範圍**：`trend`、`tracking`、`box`、`scatter` 可用 `yDomain: [下界, 上界]`，須涵蓋所有值；長條一律從零起。
+- **獨立 SVG 尺寸**：預設 1200×800；放進 Word 或簡報時填 `layout: "document"` 或 `"slide"` 與實際置入寬度
+  `placementWidthInches`，工具會檢查換算後的字級。重製需要完整的 `scripts` 目錄。

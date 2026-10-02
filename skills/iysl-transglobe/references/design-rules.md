@@ -1,10 +1,7 @@
 # 全球藍設計規則
 
-依據使用者的[全球藍設計系統](https://transglobe-blue.isaacyslin.chatgpt.site/) v2.5.1 與其原型簡報
-（2026-09 快照）。它是應用規範，不是已核准的企業 CIS；只有三個官方 Logo SVG
-（`TGL Logo_blue.svg`、`TGL Logo_white.svg`、`TGL Logo_English.svg`）確認為官方。
-使用者要求最新規範或遇到衝突時，再回網站核對並記下採用版本。
-版本差異見[來源研究](https://github.com/isaac-ys-lin/iysl-skills/blob/eaae0419c379def4d483747e0c26f6df028bc95a/reports/transglobe-sources-research.md)。
+依據使用者的[全球藍設計系統](https://transglobe-blue.isaacyslin.chatgpt.site/) v2.5.1 與其原型簡報（2026-09 快照），
+是應用規範，不是已核准的企業 CIS。使用者要求最新規範或遇到衝突時，再回網站核對並記下採用版本。
 
 ## 色彩角色
 
@@ -28,32 +25,15 @@
 - **Focus**（預設）：標題點名一個主角，主角 `#28317B`，其他 `#7F7F7F`。沒有主角時全部用藍色。
 - **Ordered**：有順序的等級或區間，用藍階 `#D1DDF7`、`#9DB1D9`、`#7285BB`、`#4B5A9C`、`#28317B`，保持原有分級。
 - **Categorical**：固定、無序且要跨圖追蹤的類別，依序 `#28317B`、`#04696C`、`#4A8F5B`、`#D09FE2`，
-  最多四類，加上來源既有的「其他」（`#DDDDDD`）。同份簡報同一類別永遠同色（用 `categoryDomain`）。
+  加上來源既有的「其他」（`#DDDDDD`）。
 
-## 字型
+## 字型與尺寸
 
-| 角色 | Windows 優先 | macOS 後備 | 用在 |
-| --- | --- | --- | --- |
-| 文字／資料 | Arial + Microsoft JhengHei | PingFang TC | 內文、圖表、表格、數字 |
-| 展示 | Cambria + PMingLiU | Songti TC | 封面與章節標題 |
+文字與資料用 Arial + 微軟正黑體（macOS：PingFang TC）；封面與章節標題用 Cambria + 新細明體（macOS：Songti TC）。
+標題粗體，內文一般字重。
 
-標題粗體，內文一般字重。`build-deck.js` 會把英數設為 Arial／Cambria、中文設為微軟正黑體／新細明體。
-
-## 簡報尺寸
-
-原型以 1920×1080 設計，PowerPoint 16:9（13.333×7.5 in）上的對應值：
-
-| 元素 | pt | 元素 | pt |
-| --- | ---: | --- | ---: |
-| 封面標題 | 48 | 主要內文 | 18 |
-| 章節標題 | 39 | 圖表標籤、表格 | 15 |
-| 頁標題 | 27 | eyebrow、軸標 | 13.5 |
-| KPI 大數字 | 90 | 來源、頁碼 | 12 |
-
-邊界上與左右 0.67 in、下 0.58 in。含圖頁帶來源，非封面頁帶頁碼，圖表與表格頁帶 EXHIBIT 編號。
-放不下時拆頁或改表格，不縮小字級。
-
-## 文件與純圖
+新簡報的字級與版面由 `build-deck.js` 處理。改既有簡報時參考：頁標題 27 pt、內文 18 pt、
+圖表標籤與表格 15 pt、來源與頁碼 12 pt；邊界上與左右 0.67 in、下 0.58 in。
 
 Word、HTML 長報告維持連續閱讀的段落與表格，不改成投影片；報告主標可用展示字型。
 純 SVG 依最終閱讀尺寸決定字級，不套投影片邊距。
@@ -61,14 +41,11 @@ Word、HTML 長報告維持連續閱讀的段落與表格，不改成投影片�
 ## 表格
 
 深色文字、細中性分隔線；表頭下方 `#28317B` 線。強調列用極淺藍底（`#F6F6FA`）加粗，
-不用整片深藍底。數字欄靠右，長條不截斷零基準。
+不用整片深藍底。數字欄靠右。
 
 ## Logo
 
-只用使用者提供的三個官方 SVG，不重繪或修改；沒有提供或不需要時不加。
-在 `deck.json` 填 `logo` 路徑即放在封面左上角。
+只用使用者提供的官方 SVG（`TGL Logo_blue.svg`、`TGL Logo_white.svg`、`TGL Logo_English.svg`），
+不重繪或修改；沒有提供時不加。在 `deck.json` 填 `logo` 路徑即放在封面左上角。
 
-## 已知限制
-
-原型校準過 Focus 與 Mac 上的 PowerPoint／Word／Excel；Windows、Office Web 與舊版 Office 的實際顯示，
-以及 Categorical 圖在各平台的顯示，仍需在成品上確認。
+原型只在 Mac 上的 Office 校準過；Windows、Office Web 與舊版 Office 的顯示要在成品上確認。

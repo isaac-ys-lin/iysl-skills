@@ -22,7 +22,7 @@ metadata:
 
 資料底線只有這幾條，其餘交給工具檢查：
 
-- 數字只來自使用者給的內容，不估、不補、不改精度；缺值就標「未提供」。
+- 數字只來自使用者給的內容，不估、不補；精度照來源呈現的樣子（例如儲存格格式），不自行增減；缺值標「未提供」。
 - 單位、期間、分母與來源要在頁面上看得到（lede、圖或頁尾）。
 - 標題的判斷要有資料支持；稿子本身的主張照原意寫，不自行加強成因果或預測。
 - 工具拒絕或警告時，依訊息改圖型、拆頁或改表格，不刪資料、不合併類別。
@@ -33,12 +33,10 @@ metadata:
    決策型簡報預設：封面 → 主管摘要 → 證據（KPI、圖、表）→ 診斷或選項 → 決議事項。
    說明型（商品、制度、專案）可用：封面 → 重點摘要 → 重點拆解（columns／list）→ 流程或時程 → 下一步。
    一般稿子做成 6–12 頁；同一個論點不要拆成兩頁重複講。
-2. **每頁配一個主視覺。** 有數字就用 KPI 或圖；比較精確數值用表格；選擇題用方案比較；
-   步驟或時程用 process；因果或「問題 → 回應」用 flow；並列重點用 columns；有先後順序的原因、風險或行動用 list。
+2. **每頁配一個主視覺**：KPI、圖、表、方案比較、流程等，稿子內容與版型的對照見[版型說明](references/page-layouts.md)。
    不做只有條列文字的頁面——那是講者稿，放進 `speakerNotes`。
-3. **寫 `deck.json`。** 版型與欄位見 [版型說明](references/page-layouts.md)，完整範例是
-   [`assets/example-deck.json`](assets/example-deck.json)；圖表 spec 見[圖表輸入](references/chart-inputs.md)，
-   選圖見[選圖指南](references/chart-selection.md)。
+3. **寫 `deck.json`。** 照 [`assets/example-deck.json`](assets/example-deck.json) 的密度寫；
+   選圖與圖表 spec 見[圖表輸入](references/chart-inputs.md)。
 4. **建置。** `$SKILL_DIR` 是本 skill 的目錄。
 
    ```sh
@@ -58,29 +56,11 @@ metadata:
 6. **交付** PPTX，並附 `deck.json` 供重製。簡述故事線與頁數、哪些圖是原生圖表、
    哪些是 SVG，以及稿子裡沒有、因此留白或標「未提供」的資料。
 
-## 版型
-
-| `layout` | 用途 | 主要欄位 |
-| --- | --- | --- |
-| `cover` | 封面 | `title`、`eyebrow`、`summary`、`tag`、`meta` |
-| `summary` | 主管摘要：一個建議加 2–3 個支撐數字 | `thesis`、`evidence` |
-| `kpi` | 一個主指標，加對照與次要指標 | `main`、`secondary` |
-| `chart` | 一張圖回答一個問題，可加旁註大數字 | `chart`、`aside` |
-| `table` | 排名或需要精確數值的資料 | `columns`、`rows`、`highlight` |
-| `compare` | 方案或選項比較，標出建議方案 | `options`、`rows`、`recommended` |
-| `list` | 有優先序的原因、風險或行動（2–5 項） | `items`、`focus` |
-| `columns` | 2–4 個並列重點，可帶數字 | `items`、`focus` |
-| `process` | 3–6 步的流程或時程 | `steps`、`focus` |
-| `flow` | 2–5 個方框的因果或「問題 → 回應」 | `nodes`、`connectors`、`note` |
-| `decisions` | 深色結尾頁：要決定或要做的事 | `items` |
-| `chapter` | 長簡報的深色章節頁 | `number`、`title`、`summary` |
-
 ## 圖表
 
-- `ranking`、`ordered`、`trend`、`tracking`、`grouped`、`stacked`、`sharetrend`、`combo`
-  產生 PowerPoint 原生圖表，可在 PowerPoint 裡「編輯資料」；其餘圖型嵌入 SVG 並附 PNG 後備。
-  需要保留 SVG 時，在該頁加 `"svg": true`。
-- 單獨需要 SVG（HTML、Word、純圖）時：`node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg`。
+[圖表輸入](references/chart-inputs.md)標「原生」的圖型產生 PowerPoint 原生圖表（可「編輯資料」），
+其餘嵌入 SVG 並附 PNG 後備；該頁加 `"svg": true` 可改用 SVG。
+單獨需要 SVG（HTML、Word、純圖）時：`node "$SKILL_DIR/scripts/render-chart.js" input.json chart.svg`。
 
 ## 套用到既有檔案
 
