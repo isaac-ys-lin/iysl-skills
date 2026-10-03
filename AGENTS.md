@@ -9,7 +9,6 @@
 - Use `$skill-creator` when creating or materially updating a skill.
 - Use `$plugin-creator` only when the requested deliverable is a Codex plugin.
 - Use `$skill-cleaner` for skill inventory, duplicate, usage, root, or prompt-budget audits.
-- Use `$iysl-sync` only when a confirmed ongoing change needs durable plan state.
 
 ## Development rules
 

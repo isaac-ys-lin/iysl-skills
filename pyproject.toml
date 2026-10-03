@@ -5,4 +5,4 @@
 # aborts during collection even though every per-skill run is green. importlib
 # mode imports each file under its full path and removes the collision.
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib"
+addopts = "--import-mode=importlib --ignore=archive"
